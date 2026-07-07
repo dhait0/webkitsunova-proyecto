@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  PSYCHOLOGIST
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+}
+
+model User {
+  id               String            @id @default(cuid())
+  email            String            @unique
+  passwordHash     String
+  role             Role              @default(USER)
+  status           AccountStatus     @default(ACTIVE)
+  twoFactorEnabled Boolean           @default(false)
+  twoFactorSecret  String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  profile          Profile?
+  sessions         Session[]
+}
+
+model Profile {
+  id                 String               @id @default(cuid())
+  userId             String               @unique
+  firstName          String?
+  lastName           String?
+  username           String?              @unique
+  avatarUrl          String?
+  bio                String?
+  timezone           String?
+  birthDate          DateTime?
+  phone              String?
+  country            String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  psychologistProfile PsychologistProfile?
+}
+
+model PsychologistProfile {
+  id            String   @id @default(cuid())
+  profileId     String   @unique
+  specialties   String[] @default([])
+  sessionPrice  Int?
+  isApproved    Boolean  @default(false)
+  rating        Float    @default(0)
+  reviewsCount  Int      @default(0)
+  patientsCount Int      @default(0)
+  profile       Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt   DateTime
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
