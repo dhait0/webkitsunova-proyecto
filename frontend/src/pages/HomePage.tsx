@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { apiFetch } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import PublicFooter from '@/components/PublicFooter';
 import PublicHeader from '@/components/PublicHeader';
 import {
@@ -41,24 +41,29 @@ function HomePage() {
     setLoading(true);
 
     try {
-      await apiFetch<{ success: boolean }>('/auth/register', {
-        method: 'POST',
-        body: {
-          email: form.email,
-          password: form.password,
-          username: form.username || undefined
-        }
+      const { error } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: {
+          data: {
+            username: form.username || undefined,
+          },
+        },
       });
 
-      setStatus('Cuenta creada. Ahora puedes entrar con tus credenciales.');
-      setForm({
-        email: '',
-        password: '',
-        confirmPassword: '',
-        username: ''
-      });
-      setShowPassword(false);
-      setShowConfirmPassword(false);
+      if (error) {
+        setStatus(error.message);
+      } else {
+        setStatus('Cuenta creada. Ahora puedes entrar con tus credenciales.');
+        setForm({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          username: ''
+        });
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'No se pudo crear la cuenta.');
     } finally {

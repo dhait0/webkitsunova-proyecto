@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { apiFetch } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import type { SessionUser } from '@/types/session';
 
@@ -36,7 +36,7 @@ function DashboardLayout({ session }: DashboardLayoutProps) {
     setLoggingOut(true);
 
     try {
-      await apiFetch('/auth/logout', { method: 'POST' });
+      await supabase.auth.signOut();
       navigate('/login');
     } catch {
       navigate('/login');

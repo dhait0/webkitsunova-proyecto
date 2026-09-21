@@ -25,7 +25,7 @@ Reconstruir Kitsunova como una plataforma web moderna con:
 
 - Usar TypeScript en frontend y backend.
 - Mantener validación de entrada en servidor con `zod`.
-- Mantener el estado de sesión en cookies `httpOnly`, no en `localStorage`.
+- Mantener el estado de sesión en localStorage vía Supabase Auth (httpOnly cookies no aplican con esta arquitectura).
 - Priorizar componentes reutilizables y rutas por dominio.
 - Evitar mezclar lógica de negocio dentro de componentes de UI.
 
@@ -43,6 +43,7 @@ Reconstruir Kitsunova como una plataforma web moderna con:
 - La API debe responder con JSON consistente.
 - Los errores de validación deben retornar `400`.
 - Los errores de autenticación deben retornar `401` o `403` según corresponda.
+- Los roles se leen de `user.app_metadata.role` (NO de `user.role` que es el tipo de auth de Supabase: 'default'/'authenticated'/'anon').
 
 ## Frontend
 
@@ -73,7 +74,9 @@ Reconstruir Kitsunova como una plataforma web moderna con:
 
 ## Siguientes pasos recomendados
 
-- Completar auth con registro, login y 2FA.
+- Implementar MFA frontend (enrollment, challenge, verify screens).
+- Ejecutar migración Prisma formal (requiere DATABASE_URL de Supabase).
+- Eliminar `passwordHash` del modelo User en schema.prisma (legacy).
 - Definir modelos de hábitos, mensajes, talleres, foro y psicólogos.
 - Crear layout base para `admin`, `user` y `psy`.
 - Añadir pruebas y seed inicial para Prisma.

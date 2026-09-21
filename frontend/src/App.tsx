@@ -3,17 +3,21 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import MfaVerifyPage from './pages/MfaVerifyPage';
 import DashboardHomePage from './pages/dashboard/DashboardHomePage';
 import AppointmentsPage from './pages/dashboard/AppointmentsPage';
 import ChatsPage from './pages/dashboard/ChatsPage';
 import HabitsPage from './pages/dashboard/HabitsPage';
 import PsychologistsPage from './pages/dashboard/PsychologistsPage';
+import MfaEnrollPage from './pages/MfaEnrollPage';
+import MfaSettingsPage from './pages/MfaSettingsPage';
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/mfa/verify" element={<MfaVerifyPage mode="login" />} />
       <Route
         path="/dashboard"
         element={
@@ -28,6 +32,22 @@ function App() {
         <Route path="citas" element={<AppointmentsPage />} />
         <Route path="psicologos" element={<PsychologistsPage />} />
       </Route>
+      <Route
+        path="/mfa/enroll"
+        element={
+          <ProtectedRoute>
+            <MfaEnrollPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mfa/settings"
+        element={
+          <ProtectedRoute>
+            <MfaSettingsPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

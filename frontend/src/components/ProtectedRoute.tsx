@@ -1,14 +1,18 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { apiFetch } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import type { SessionUser } from '@/types/session';
+
+function getRoleFromUser(user: { app_metadata?: Record<string, unknown> } | null | undefined): string {
+  const appMetadata = user?.app_metadata;
+  if (appMetadata?.role && typeof appMetadata.role === 'string') {
+    return appMetadata.role;
+  }
+  return 'USER';
+}
 
 type ProtectedRouteProps = {
   children: ReactNode | ((session: SessionUser) => ReactNode);
-};
-
-type MeResponse = {
-  user: SessionUser;
 };
 
 function ProtectedRoute({ children }: ProtectedRouteProps) {
@@ -20,23 +24,30 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     let isMounted = true;
 
-    apiFetch<MeResponse>('/auth/me')
-      .then((data) => {
-        if (isMounted) {
-          setSession(data.user);
-          setIsAllowed(true);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setIsAllowed(false);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setChecking(false);
-        }
-      });
+    supabase.auth.getSession().then(({ data: { session: supabaseSession } }) => {
+      if (!isMounted) return;
+
+      if (supabaseSession) {
+        const user = supabaseSession.user;
+        const profile = (user.user_metadata as { first_name?: string; last_name?: string; username?: string }) ?? {};
+        const role = getRoleFromUser(user);
+        setSession({
+          id: user.id,
+          email: user.email ?? '',
+          role,
+          status: 'ACTIVE',
+          profile: {
+            firstName: profile.first_name ?? null,
+            lastName: profile.last_name ?? null,
+            username: profile.username ?? null,
+          },
+        });
+        setIsAllowed(true);
+      } else {
+        setIsAllowed(false);
+      }
+      setChecking(false);
+    });
 
     return () => {
       isMounted = false;

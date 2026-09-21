@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiFetch } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -14,22 +14,13 @@ function LoginPage() {
   useEffect(() => {
     let active = true;
 
-    apiFetch('/auth/me')
-      .then(() => {
-        if (active) {
-          navigate('/dashboard', { replace: true });
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setCheckingSession(false);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setCheckingSession(false);
-        }
-      });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (active && session) {
+        navigate('/dashboard', { replace: true });
+      } else if (active) {
+        setCheckingSession(false);
+      }
+    });
 
     return () => {
       active = false;
@@ -42,12 +33,28 @@ function LoginPage() {
     setStatus('');
 
     try {
-      await apiFetch<{ success: boolean }>('/auth/login', {
-        method: 'POST',
-        body: { email, password }
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-      navigate('/dashboard');
+      if (error) {
+        setStatus(error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!data.session) {
+        setStatus('No hay sesión activa');
+        setLoading(false);
+        return;
+      }
+
+      const currentLevel = (data.session as unknown as { aal?: { level?: string; next_level?: string } }).aal?.level;
+      const nextLevel = (data.session as unknown as { aal?: { level?: string; next_level?: string } }).aal?.next_level;
+
+      if (currentLevel === 'aal1' && nextLevel === 'aal2') {
+        navigate('/mfa/verify', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Error inesperado');
     } finally {

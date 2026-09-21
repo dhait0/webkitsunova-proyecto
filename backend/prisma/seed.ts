@@ -58,10 +58,16 @@ async function main() {
     }
   });
 
-  console.log('Admin seed completed');
+  console.log('Admin seed completed (LEGACY AUTH)');
   console.log(`Email: ${user.email}`);
-  console.log(`Username: ${user.profile?.username ?? seedEnv.SEED_ADMIN_USERNAME}`);
   console.log(`Password: ${seedEnv.SEED_ADMIN_PASSWORD}`);
+  console.log('');
+  console.log('LEGACY AUTH MIGRATION REQUIRED');
+  console.log('Este usuario usa passwordHash legacy. Para Supabase Auth:');
+  console.log('1. Crea el usuario en Supabase Dashboard → Authentication → Add user');
+  console.log(`   Email: ${seedEnv.SEED_ADMIN_EMAIL}`);
+  console.log('2. Asigna app_metadata.role = "ADMIN" al usuario');
+  console.log('3. Elimina este seed cuando la migración esté completa');
 }
 
 main()

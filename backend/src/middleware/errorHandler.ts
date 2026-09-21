@@ -10,7 +10,11 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
     });
   }
 
-  console.error(error);
+  if (error instanceof Error && error.message.includes('Prisma')) {
+    console.error('[Prisma Error]', error.message);
+  } else {
+    console.error('[Unhandled Error]', error instanceof Error ? error.message : String(error));
+  }
 
   res.status(500).json({
     success: false,
