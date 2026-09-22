@@ -1,5 +1,5 @@
-import app from './app';
-import { env } from './config/env';
+import app from './app.js';
+import { env } from './config/env.js';
 
 if (process.env.NODE_ENV !== 'test' && process.env.VERCEL !== '1') {
   app.listen(env.PORT, () => {
