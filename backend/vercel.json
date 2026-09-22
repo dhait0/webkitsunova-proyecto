@@ -1,1 +1,1 @@
-{"version": 2, "buildCommand": "npm run build", "functions": {"api/index.ts": {"runtime": "nodejs20.x"}}}
+{"version": 2, "build": [{"src": "api/index.ts", "use": "@vercel/node"}], "routes": [{"src": "/api/(.*)", "dest": "api/index.ts"}]}
