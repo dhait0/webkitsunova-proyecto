@@ -9,7 +9,7 @@ function AuthHandler() {
   const navigate = useNavigate();
   React.useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
+      if (event === 'SIGNED_OUT') {
         navigate('/login', { replace: true });
       }
     });
