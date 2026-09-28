@@ -1,0 +1,65 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/**'
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Backend typecheck
+        working-directory: backend
+        run: npm ci && npm run typecheck
+
+      - name: Frontend typecheck
+        working-directory: frontend
+        run: npm ci && npm run typecheck
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Backend tests
+        working-directory: backend
+        run: npm ci && npm run test
+
+      - name: Frontend tests
+        working-directory: frontend
+        run: npm ci && npm run test
+
+  build:
+    name: Build
+    needs: [typecheck, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Backend build
+        working-directory: backend
+        run: npm ci && npm run build
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm ci && npm run build
