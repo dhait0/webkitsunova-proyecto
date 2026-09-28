@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import type { SessionUser } from '@/types/session';
 
@@ -17,6 +17,7 @@ type ProtectedRouteProps = {
 
 function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
   const [isAllowed, setIsAllowed] = useState(false);
   const [session, setSession] = useState<SessionUser | null>(null);
@@ -53,6 +54,32 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isAllowed || !session) return;
+
+    let isMounted = true;
+
+    supabase.auth.mfa
+      .getAuthenticatorAssuranceLevel()
+      .then(({ data: aalData }) => {
+        if (!isMounted) return;
+
+        const currentLevel = aalData?.currentLevel ?? 'aal1';
+        const nextLevel = aalData?.nextLevel ?? null;
+
+        if (currentLevel === 'aal1' && nextLevel === 'aal2') {
+          navigate('/mfa/verify', { replace: true });
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return;
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAllowed, session, navigate]);
 
   if (checking) {
     return (

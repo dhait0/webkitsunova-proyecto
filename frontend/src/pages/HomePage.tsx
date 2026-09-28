@@ -71,6 +71,28 @@ function HomePage() {
     }
   }
 
+  async function handleGoogleSignUp() {
+    setLoading(true);
+    setStatus('');
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+
+    if (error) {
+      setStatus(error.message);
+      setLoading(false);
+      return;
+    }
+
+    if (data?.url) {
+      window.location.href = data.url;
+    }
+  }
+
   return (
     <div className="landing-page">
       <PublicHeader />
@@ -178,9 +200,9 @@ function HomePage() {
               </div>
 
               <div className="social-stack">
-                <button className="social-btn" type="button" disabled title="Próximamente">
-                  Google (próximamente)
-                </button>
+              <button className="social-btn" type="button" onClick={handleGoogleSignUp} disabled={loading}>
+                Google
+              </button>
                 <button className="social-btn" type="button" disabled title="Próximamente">
                   Apple (próximamente)
                 </button>
