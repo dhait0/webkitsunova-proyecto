@@ -4,9 +4,16 @@ import { supabase } from '@/lib/supabase';
 
 type EnrollState = 'idle' | 'enrolled' | 'verified' | 'error';
 
+type EnrollData = {
+  factor?: { id?: string };
+  qr_code?: { url?: string };
+  secret?: string;
+};
+
 function MfaEnrollPage() {
   const navigate = useNavigate();
   const [state, setState] = useState<EnrollState>('idle');
+  const [factorId, setFactorId] = useState('');
   const [secret, setSecret] = useState('');
   const [qrUrl, setQrUrl] = useState('');
   const [code, setCode] = useState('');
@@ -25,6 +32,7 @@ function MfaEnrollPage() {
     setError('');
     setSecret('');
     setQrUrl('');
+    setFactorId('');
     setState('idle');
 
     const { data, error: err } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
@@ -36,8 +44,12 @@ function MfaEnrollPage() {
       return;
     }
 
-    if ((data as unknown as { qr_code?: { url?: string } }).qr_code?.url) setQrUrl((data as unknown as { qr_code?: { url: string } }).qr_code!.url!);
-    if ((data as unknown as { factor?: { totp?: { secret?: string } } }).factor?.totp?.secret) setSecret((data as unknown as { factor: { totp: { secret: string } } }).factor.totp.secret);
+    const enrollData = data as unknown as EnrollData;
+
+    if (enrollData.qr_code?.url) setQrUrl(enrollData.qr_code.url);
+    if (enrollData.factor?.id) setFactorId(enrollData.factor.id);
+    if (enrollData.secret) setSecret(enrollData.secret);
+
     setState('enrolled');
     setLoading(false);
   }
@@ -47,20 +59,17 @@ function MfaEnrollPage() {
     setLoading(true);
     setError('');
 
-    const factorsResp = await supabase.auth.mfa.listFactors();
-    const totpFactor = factorsResp.data?.totp?.find((f) => f.factor_type === 'totp');
-
-    if (!totpFactor) {
+    if (!factorId) {
       setError('No se encontró el factor TOTP');
       setState('error');
       setLoading(false);
       return;
     }
 
-    const { data, error: verifyErr } = await supabase.auth.mfa.verify({
+    const { data, error: verifyErr } = await supabase.auth.mfa.challengeAndVerify({
+      factorId,
       code,
-      factorId: totpFactor.id,
-    } as any);
+    });
 
     if (verifyErr || !data) {
       setError(verifyErr?.message ?? 'Código incorrecto');
@@ -73,11 +82,17 @@ function MfaEnrollPage() {
     setLoading(false);
   }
 
+  function handleBackToSettings() {
+    navigate('/mfa/settings');
+  }
+
   if (state === 'verified') {
     return (
       <div className="route-guard">
         <p>Autenticación de dos factores activada correctamente.</p>
-        <Link to="/dashboard/mfa/settings">Ir a configuración de seguridad</Link>
+        <button className="secondary-btn" type="button" onClick={handleBackToSettings}>
+          Ir a configuración de seguridad
+        </button>
       </div>
     );
   }
@@ -122,7 +137,8 @@ function MfaEnrollPage() {
                       <input value={secret} readOnly type="text" aria-label="Clave secreta TOTP" />
                     </label>
                     <p className="hint">
-                      Introduce esta clave en tu aplicación autenticadora si no puedes escanear el código QR.
+                      Introduce esta clave en tu aplicación autenticadora si no puedes escanear el
+                      código QR.
                     </p>
                   </div>
                 )}
