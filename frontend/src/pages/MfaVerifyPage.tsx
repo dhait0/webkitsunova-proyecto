@@ -1,32 +1,55 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 
-type VerifyMode = 'login' | 'recovery';
-
-function MfaVerifyPage({ mode }: { mode: VerifyMode }) {
+function MfaVerifyPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const mode = searchParams.get('mode') ?? 'login';
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [checking, setChecking] = useState(true);
+  const [factorId, setFactorId] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
+
       if (!session) {
         navigate('/login', { replace: true });
         return;
       }
-      const currentLevel = (session as unknown as { aal?: { level?: string; next_level?: string } }).aal?.level;
-      const nextLevel = (session as unknown as { aal?: { level?: string; next_level?: string } }).aal?.next_level;
-      if (currentLevel === 'aal1' && nextLevel === 'aal2') {
-        setChecking(false);
-      } else if (currentLevel === 'aal2') {
-        navigate('/dashboard', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
+
+      supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data: aalData }) => {
+        if (!active) return;
+
+        const currentLevel = aalData?.currentLevel ?? 'aal1';
+        const nextLevel = aalData?.nextLevel ?? null;
+
+        if (currentLevel === 'aal1' && nextLevel === 'aal2') {
+          supabase.auth.mfa.listFactors().then(({ data: factorsData }) => {
+            if (!active) return;
+            const totpFactor = factorsData?.totp?.[0];
+            if (totpFactor) {
+              setFactorId(totpFactor.id);
+            }
+            setChecking(false);
+          });
+        } else if (currentLevel === 'aal2') {
+          navigate('/dashboard', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+      });
     });
+
+    return () => {
+      active = false;
+    };
   }, [navigate]);
 
   async function handleVerify(e: FormEvent) {
@@ -34,19 +57,16 @@ function MfaVerifyPage({ mode }: { mode: VerifyMode }) {
     setLoading(true);
     setError('');
 
-    const factorsResp = await supabase.auth.mfa.listFactors();
-    const totpFactor = factorsResp.data?.totp?.[0];
-
-    if (!totpFactor) {
-      setError('No hay factor TOTP configurado');
+    if (!factorId) {
+      setError('No se encontró el factor TOTP');
       setLoading(false);
       return;
     }
 
-    const { data, error: verifyErr } = await supabase.auth.mfa.verify({
+    const { data, error: verifyErr } = await supabase.auth.mfa.challengeAndVerify({
+      factorId,
       code,
-      factorId: totpFactor.id,
-    } as any);
+    });
 
     if (verifyErr || !data) {
       setError(verifyErr?.message ?? 'Código incorrecto');
@@ -54,6 +74,8 @@ function MfaVerifyPage({ mode }: { mode: VerifyMode }) {
       return;
     }
 
+    setCode('');
+    setLoading(false);
     navigate('/dashboard', { replace: true });
   }
 
@@ -61,19 +83,31 @@ function MfaVerifyPage({ mode }: { mode: VerifyMode }) {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setInfo('');
 
     try {
-      const { error: mfaErr } = await supabase.auth.mfa.challenge({
-        factorId: '',
-      } as { factorId: string });
-      if (mfaErr) {
-        setError(mfaErr.message);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.email) {
+        setError('No se pudo recuperar el correo del usuario');
         setLoading(false);
         return;
       }
-      navigate('/dashboard', { replace: true });
+
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
+        session.user.email,
+        {
+          redirectTo: `${window.location.origin}/login`,
+        }
+      );
+
+      if (resetErr) {
+        setError(resetErr.message);
+      } else {
+        setInfo('Te enviamos un correo para restablecer tu contraseña. Al restablecerla, tu MFA se desactivará.');
+      }
     } catch {
-      setError('Error en recuperación de MFA');
+      setError('Error al procesar la recuperación');
+    } finally {
       setLoading(false);
     }
   }
@@ -88,7 +122,7 @@ function MfaVerifyPage({ mode }: { mode: VerifyMode }) {
 
   return (
     <div className="login-page">
-      <Link to="/dashboard" className="back-btn" aria-label="Volver al dashboard">
+      <Link to={mode === 'login' ? '/dashboard' : '/mfa/verify?mode=login'} className="back-btn" aria-label="Volver">
         ←
       </Link>
 
@@ -96,39 +130,64 @@ function MfaVerifyPage({ mode }: { mode: VerifyMode }) {
         <section className="login-column">
           <div className="login-box">
             <span className="eyebrow">Seguridad</span>
-            <h1>Verificación de dos factores</h1>
+            <h1>
+              {mode === 'login' ? 'Verificación de dos factores' : 'Recuperar acceso MFA'}
+            </h1>
             <p className="section-copy">
-              Introduce el código de tu aplicación autenticadora para completar el acceso.
+              {mode === 'login'
+                ? 'Introduce el código de tu aplicación autenticadora para completar el acceso.'
+                : 'Si no tienes acceso a tu autenticador, restablece tu contraseña y se desactivará el MFA.'}
             </p>
 
             {error && <p className="feedback">{error}</p>}
+            {info && <p className="hint">{info}</p>}
 
-            <form onSubmit={mode === 'recovery' ? handleRecovery : handleVerify}>
-              <label className="field">
-                <span>Código de 6 dígitos</span>
-                <input
-                  value={code}
-                  onChange={(event) => setCode(event.target.value)}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="000000"
-                  required
-                />
-              </label>
+            {mode === 'login' && (
+              <form onSubmit={handleVerify}>
+                <label className="field">
+                  <span>Código de 6 dígitos</span>
+                  <input
+                    value={code}
+                    onChange={(event) => setCode(event.target.value)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    required
+                  />
+                </label>
 
-              <button className="login-submit" type="submit" disabled={loading}>
-                {loading ? 'Verificando...' : mode === 'recovery' ? 'Iniciar recuperación' : 'Verificar'}
-              </button>
-            </form>
+                <button className="login-submit" type="submit" disabled={loading}>
+                  {loading ? 'Verificando...' : 'Verificar'}
+                </button>
+              </form>
+            )}
+
+            {mode === 'recovery' && (
+              <form onSubmit={handleRecovery}>
+                <button className="login-submit" type="submit" disabled={loading}>
+                  {loading ? 'Enviando...' : 'Enviar enlace de recuperación'}
+                </button>
+              </form>
+            )}
 
             {mode === 'login' && (
               <button
                 className="forgot-password"
                 type="button"
-                onClick={() => navigate('/mfa/verify?mode=recovery')}
+                onClick={() => setSearchParams({ mode: 'recovery' })}
               >
                 ¿No tienes tu autenticador? Recuperar acceso
+              </button>
+            )}
+
+            {mode === 'recovery' && (
+              <button
+                className="forgot-password"
+                type="button"
+                onClick={() => setSearchParams({ mode: 'login' })}
+              >
+                ← Volver a verificación con código
               </button>
             )}
           </div>

@@ -1,6 +1,10 @@
 import { supabase } from './supabase';
+import type { SessionUser } from '../types/session';
 
-export async function apiFetch<T>(path: string, options: { method?: string; body?: Record<string, unknown> | FormData } = {}): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  options: { method?: string; body?: Record<string, unknown> | FormData } = {}
+): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {
@@ -32,4 +36,33 @@ export async function apiFetch<T>(path: string, options: { method?: string; body
   }
 
   return data;
+}
+
+export type LoginResponse = {
+  success: boolean;
+  session: { access_token: string; refresh_token: string; expires_at: number };
+  user: { id: string; email: string; role: string; profile: Record<string, unknown> | null; factors: unknown[] };
+};
+
+export type MfaStatusResponse = {
+  success: boolean;
+  mfaEnabled: boolean;
+  mfaType: 'totp' | null;
+  factorId: string | null;
+};
+
+export async function getMe(): Promise<{ user: SessionUser }> {
+  return apiFetch<{ user: SessionUser }>('/auth/me');
+}
+
+export async function getMfaStatus(): Promise<MfaStatusResponse> {
+  return apiFetch<MfaStatusResponse>('/auth/mfa/status');
+}
+
+export async function signOut(): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    await apiFetch('/auth/logout', { method: 'POST' });
+  }
+  await supabase.auth.signOut();
 }

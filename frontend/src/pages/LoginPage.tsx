@@ -27,6 +27,30 @@ function LoginPage() {
     };
   }, [navigate]);
 
+  async function handleGoogleLogin() {
+    setLoading(true);
+    setStatus('');
+
+    const redirectTo = `${window.location.origin}/dashboard`;
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+      },
+    });
+
+    if (error) {
+      setStatus(error.message);
+      setLoading(false);
+      return;
+    }
+
+    if (data?.url) {
+      window.location.href = data.url;
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -41,14 +65,15 @@ function LoginPage() {
         return;
       }
 
-      if (!data.session) {
+      if (!data.session || !data.user) {
         setStatus('No hay sesión activa');
         setLoading(false);
         return;
       }
 
-      const currentLevel = (data.session as unknown as { aal?: { level?: string; next_level?: string } }).aal?.level;
-      const nextLevel = (data.session as unknown as { aal?: { level?: string; next_level?: string } }).aal?.next_level;
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      const currentLevel = aalData?.currentLevel ?? 'aal1';
+      const nextLevel = aalData?.nextLevel ?? null;
 
       if (currentLevel === 'aal1' && nextLevel === 'aal2') {
         navigate('/mfa/verify', { replace: true });
@@ -60,6 +85,10 @@ function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
   }
 
   if (checkingSession) {
@@ -150,8 +179,13 @@ function LoginPage() {
               <span />
             </div>
 
-            <button className="social-btn" type="button" disabled title="Próximamente">
-              Google (próximamente)
+            <button
+              className="social-btn"
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+            >
+              Google
             </button>
             <button className="social-btn" type="button" disabled title="Próximamente">
               Apple (próximamente)

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { getMfaStatus } from '@/lib/api';
 
 function MfaSettingsPage() {
+  const navigate = useNavigate();
   const [mfaEnabled, setMfaEnabled] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,9 +18,14 @@ function MfaSettingsPage() {
     setLoading(true);
     setError('');
     try {
-      const { data } = await supabase.auth.mfa.listFactors();
-      const hasTotp = data?.totp && data.totp.length > 0 ? true : false;
-      setMfaEnabled(hasTotp);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login', { replace: true });
+        return;
+      }
+
+      const status = await getMfaStatus();
+      setMfaEnabled(status.mfaEnabled);
     } catch {
       setError('Error al cargar estado de MFA');
     } finally {
@@ -26,33 +33,38 @@ function MfaSettingsPage() {
     }
   }
 
-  async function handleEnroll() {
-    const { data, error: err } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
-    if (err || !data) {
-      setError(err?.message ?? 'Error al activar MFA');
-      return;
-    }
-    setMfaEnabled(true);
-  }
-
   async function handleDisable() {
     if (!confirmDisable) {
       setConfirmDisable(true);
       return;
     }
+
     setLoading(true);
     setError('');
+
     try {
       const { data } = await supabase.auth.mfa.listFactors();
       const totpFactor = data?.totp?.[0];
+
       if (totpFactor) {
-        await supabase.auth.mfa.unenroll({ factorId: totpFactor.id });
+        const { error: unenrollErr } = await supabase.auth.mfa.unenroll({
+          factorId: totpFactor.id,
+        });
+
+        if (unenrollErr) {
+          setError(unenrollErr.message);
+          setLoading(false);
+          setConfirmDisable(false);
+          return;
+        }
       }
+
       setMfaEnabled(false);
       setConfirmDisable(false);
     } catch {
       setError('Error al desactivar MFA');
       setLoading(false);
+      setConfirmDisable(false);
     }
   }
 
@@ -93,7 +105,11 @@ function MfaSettingsPage() {
               )}
             </>
           ) : (
-            <button className="btn-primary" onClick={handleEnroll} disabled={loading}>
+            <button
+              className="btn-primary"
+              onClick={() => navigate('/mfa/enroll')}
+              disabled={loading}
+            >
               Activar
             </button>
           )}

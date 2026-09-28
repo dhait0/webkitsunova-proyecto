@@ -19,11 +19,15 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+const mfaUnenrollSchema = z.object({
+  factorId: z.string().min(1),
+});
+
 authRouter.post('/register', async (req, res, next) => {
   try {
     const payload = registerSchema.parse(req.body);
 
-    const { data, error } = await (supabaseAdmin.auth.admin as unknown as { createUser(params: { email: string; password: string; user_metadata?: Record<string, unknown> }): Promise<{ data: { user?: { id?: string; email?: string }; error?: { message?: string } }; error?: { message?: string } }> }).createUser({
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: payload.email,
       password: payload.password,
       user_metadata: {
@@ -46,7 +50,7 @@ authRouter.post('/register', async (req, res, next) => {
 
     const userId = data.user?.id ?? '';
 
-    await (supabaseAdmin.auth.admin as unknown as { updateUserById(id: string, params: { app_metadata: Record<string, unknown> }): Promise<{ data: { user?: { id?: string }; error?: { message?: string } }; error?: { message?: string } }>}).updateUserById(userId, {
+    await supabaseAdmin.auth.admin.updateUserById(userId, {
       app_metadata: { role: 'USER' },
     });
 
@@ -73,6 +77,14 @@ authRouter.post('/login', async (req, res, next) => {
     });
 
     if (error || !data.session) {
+      const mfaError = error?.message ?? '';
+      if (mfaError.toLowerCase().includes('mfa') || mfaError.toLowerCase().includes('factor')) {
+        return res.status(401).json({
+          success: false,
+          message: 'Se requiere verificación de dos factores',
+          requiresMfa: true,
+        });
+      }
       return res.status(401).json({ success: false, message: 'Credenciales inválidas' });
     }
 
@@ -80,11 +92,17 @@ authRouter.post('/login', async (req, res, next) => {
 
     return res.json({
       success: true,
+      session: {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
+      },
       user: {
         id: user.id,
         email: user.email ?? '',
         role: user.app_metadata?.role ?? 'USER',
         profile: user.user_metadata as Record<string, unknown> | null,
+        factors: user.factors ?? [],
       },
     });
   } catch (error) {
@@ -92,8 +110,20 @@ authRouter.post('/login', async (req, res, next) => {
   }
 });
 
-authRouter.post('/logout', async (_req, res) => {
-  return res.json({ success: true, message: 'Sesión cerrada' });
+authRouter.post('/logout', async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.startsWith('Bearer ')
+      ? req.headers.authorization.slice(7)
+      : undefined;
+
+    if (token) {
+      await supabaseAdmin.auth.admin.signOut(token);
+    }
+
+    return res.json({ success: true, message: 'Sesión cerrada' });
+  } catch (error) {
+    return res.json({ success: true, message: 'Sesión cerrada' });
+  }
 });
 
 authRouter.get('/me', requireAuth, async (req, res, next) => {
@@ -116,10 +146,6 @@ authRouter.get('/admin/check', requireAuth, requireRole('ADMIN'), async (req, re
   return res.json({ success: true, message: 'Acceso de administrador verificado' });
 });
 
-const mfaStatusSchema = z.object({
-  mfaEnabled: z.boolean(),
-});
-
 authRouter.get('/mfa/status', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabaseAdmin.auth.getUser(req.user!.id);
@@ -135,7 +161,53 @@ authRouter.get('/mfa/status', requireAuth, async (req, res, next) => {
       success: true,
       mfaEnabled: !!totpFactor,
       mfaType: totpFactor?.factor_type ?? null,
+      factorId: totpFactor?.id ?? null,
     });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+authRouter.post('/mfa/unenroll', requireAuth, async (req, res, next) => {
+  try {
+    const payload = mfaUnenrollSchema.parse(req.body);
+
+    const { data, error } = await supabaseAdmin.auth.admin.mfa.deleteFactor({
+      userId: req.user!.id,
+      id: payload.factorId,
+    });
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message ?? 'Error al desactivar MFA',
+      });
+    }
+
+    return res.json({ success: true, factorId: data?.id ?? null });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+authRouter.get('/google', async (_req, res, next) => {
+  try {
+    const { data, error } = await supabaseAdmin.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${process.env.FRONTEND_URL ?? 'http://localhost:5174'}/dashboard`,
+      },
+    });
+
+    if (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+
+    if (data?.url) {
+      return res.json({ success: true, url: data.url });
+    }
+
+    return res.json({ success: true, url: data?.url ?? null });
   } catch (error) {
     return next(error);
   }

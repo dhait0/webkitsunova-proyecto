@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
 import DashboardSidebar from '@/components/DashboardSidebar';
+import { signOut } from '@/lib/api';
 import type { SessionUser } from '@/types/session';
 
 export type DashboardOutletContext = {
@@ -36,10 +36,10 @@ function DashboardLayout({ session }: DashboardLayoutProps) {
     setLoggingOut(true);
 
     try {
-      await supabase.auth.signOut();
-      navigate('/login');
+      await signOut();
+      navigate('/login', { replace: true });
     } catch {
-      navigate('/login');
+      navigate('/login', { replace: true });
     } finally {
       setLoggingOut(false);
     }

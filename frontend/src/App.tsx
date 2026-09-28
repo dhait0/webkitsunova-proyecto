@@ -17,7 +17,7 @@ function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/mfa/verify" element={<MfaVerifyPage mode="login" />} />
+      <Route path="/mfa/verify" element={<MfaVerifyPage />} />
       <Route
         path="/dashboard"
         element={
