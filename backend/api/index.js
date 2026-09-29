@@ -1,4 +1,11 @@
-module.exports = async (req, res) => {
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ message: 'JS function works!' }));
-};
+import app from '../dist/src/app.js';
+
+export default async function handler(req, res) {
+    return new Promise((resolve, reject) => {
+        app(req, res, (err) => {
+            if (err)
+                return reject(err);
+            resolve();
+        });
+    });
+}
