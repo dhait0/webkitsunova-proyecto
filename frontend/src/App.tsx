@@ -1,6 +1,8 @@
 import { Route, Routes } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminRoute from '@/components/AdminRoute';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import AdminLayout from '@/layouts/AdminLayout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import MfaVerifyPage from './pages/MfaVerifyPage';
@@ -11,6 +13,9 @@ import HabitsPage from './pages/dashboard/HabitsPage';
 import PsychologistsPage from './pages/dashboard/PsychologistsPage';
 import MfaEnrollPage from './pages/MfaEnrollPage';
 import MfaSettingsPage from './pages/MfaSettingsPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminUserPage from './pages/admin/AdminUserPage';
+import AdminPsychologistsPage from './pages/admin/AdminPsychologistsPage';
 
 function App() {
   return (
@@ -31,6 +36,18 @@ function App() {
         <Route path="chats" element={<ChatsPage />} />
         <Route path="citas" element={<AppointmentsPage />} />
         <Route path="psicologos" element={<PsychologistsPage />} />
+       </Route>
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            {(session) => <AdminLayout session={session} />}
+          </AdminRoute>
+        }
+      >
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="users" element={<AdminUserPage />} />
+        <Route path="psychologists" element={<AdminPsychologistsPage />} />
       </Route>
       <Route
         path="/mfa/enroll"

@@ -17,6 +17,7 @@
     "jsx": "react-jsx",
     "ignoreDeprecations": "5.0",
     "baseUrl": ".",
+    "types": ["vitest/globals"],
     "paths": {
       "@/*": ["src/*"]
     }

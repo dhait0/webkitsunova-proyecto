@@ -61,6 +61,7 @@ function MfaSettingsPage() {
 
       setMfaEnabled(false);
       setConfirmDisable(false);
+      setLoading(false);
     } catch {
       setError('Error al desactivar MFA');
       setLoading(false);

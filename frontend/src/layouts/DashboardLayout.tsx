@@ -10,6 +10,8 @@ export type DashboardOutletContext = {
   roleLabel: string;
   loggingOut: boolean;
   logout: () => Promise<void>;
+  sidebarCollapsed: boolean;
+  toggleSidebar: () => void;
 };
 
 type DashboardLayoutProps = {
@@ -19,6 +21,7 @@ type DashboardLayoutProps = {
 function DashboardLayout({ session }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const displayName =
     session.profile?.firstName?.trim() ||
@@ -45,9 +48,19 @@ function DashboardLayout({ session }: DashboardLayoutProps) {
     }
   }
 
+  function toggleSidebar() {
+    setSidebarCollapsed((prev) => !prev);
+  }
+
   return (
     <div className="dashboard-layout">
-      <DashboardSidebar session={session} onLogout={handleLogout} loggingOut={loggingOut} />
+      <DashboardSidebar
+        session={session}
+        onLogout={handleLogout}
+        loggingOut={loggingOut}
+        sidebarCollapsed={sidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+      />
 
       <main className="dashboard-main">
         <header className="inicio-header">
@@ -59,9 +72,33 @@ function DashboardLayout({ session }: DashboardLayoutProps) {
             </p>
           </div>
 
-          <div className="dashboard-chip">
-            <strong>{roleLabel}</strong>
-            <span>{session.status ?? 'Cuenta activa'}</span>
+          <div className="dashboard-header-actions">
+            <button
+              type="button"
+              className="notif-bell-wrapper"
+              aria-label="Notificaciones"
+              title="Próximamente"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              <span className="notif-badge hidden" aria-hidden="true">
+                0
+              </span>
+            </button>
+
+            <div className="dashboard-chip">
+              <strong>{roleLabel}</strong>
+              <span>{session.status ?? 'Cuenta activa'}</span>
+            </div>
           </div>
         </header>
 
@@ -71,7 +108,9 @@ function DashboardLayout({ session }: DashboardLayoutProps) {
             displayName,
             roleLabel,
             loggingOut,
-            logout: handleLogout
+            logout: handleLogout,
+            sidebarCollapsed,
+            toggleSidebar
           }}
         />
       </main>
