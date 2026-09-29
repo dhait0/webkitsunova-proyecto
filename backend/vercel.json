@@ -2,8 +2,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/index.ts": {
-      "runtime": "nodejs22.x"
+    "api/index.js": {
+      "runtime": "nodejs20.x"
     }
   },
   "routes": [
