@@ -574,7 +574,6 @@ button {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin-top: -58px;
 }
 
 .hero-image {
@@ -615,7 +614,7 @@ button {
 }
 
 .info-section {
-  padding: 80px 5% 100px;
+  padding: 60px 5% 50px;
 }
 
 .info-box {
@@ -625,7 +624,7 @@ button {
   border-radius: 28px;
   padding: 40px 60px;
   text-align: center;
-  margin-bottom: 70px;
+  margin-bottom: 40px;
 }
 
 .info-box h2,
@@ -711,13 +710,13 @@ button {
 }
 
 .benefits-section {
-  padding: 40px 5% 120px;
+  padding: 40px 5% 50px;
 }
 
 .benefits-title,
 .mobile-app-title {
   width: 100%;
-  margin: 0 0 80px;
+  margin: 0 0 40px;
   background: linear-gradient(90deg, #6f63ff, #8a7dff);
   padding: 28px 40px;
 }
@@ -726,6 +725,11 @@ button {
   .benefits-title,
   .mobile-app-title {
     padding: 20px 20px;
+  }
+
+  .info-box {
+    padding: 30px 20px;
+    margin-bottom: 25px;
   }
 }
 
@@ -1916,6 +1920,7 @@ button {
 
   .hero-text {
     text-align: center;
+    margin-top: 16px;
   }
 
   .info-box {
@@ -2173,7 +2178,7 @@ body::after {
 
 .stats-strip {
   width: min(1400px, calc(100% - 40px));
-  margin: 0 auto 80px;
+  margin: 0 auto 50px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
@@ -2209,7 +2214,7 @@ body::after {
 
 .journey-section {
   width: min(1400px, calc(100% - 40px));
-  margin: 0 auto 90px;
+  margin: 0 auto 50px;
 }
 
 .journey-intro {
@@ -2268,7 +2273,7 @@ body::after {
 
 .support-cta {
   width: min(1400px, calc(100% - 40px));
-  margin: 0 auto 90px;
+  margin: 0 auto 50px;
   padding: 28px;
   border-radius: 28px;
   background: linear-gradient(135deg, rgba(15, 23, 74, 0.88), rgba(4, 8, 26, 0.88));
