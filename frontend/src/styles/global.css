@@ -182,6 +182,75 @@ button {
   box-shadow: 0 10px 26px rgba(124, 108, 255, 0.36);
 }
 
+.mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 28px;
+  height: 22px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 100;
+}
+
+.mobile-menu-toggle span {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background: white;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  .main-nav-links,
+  .auth-buttons {
+    position: fixed;
+    top: 0;
+    right: -120%;
+    flex-direction: column;
+    padding-top: 85px;
+    width: min(320px, calc(100% - 24px));
+    height: calc(100vh - 85px);
+    background: rgba(10, 26, 99, 0.97);
+    backdrop-filter: blur(12px);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
+    transition: right 0.3s ease;
+    z-index: 99;
+  }
+
+  .main-nav-links {
+    padding-bottom: 120px;
+  }
+
+  .main-nav-links.open,
+  .auth-buttons.open {
+    right: 0;
+  }
+
+  .main-nav-links a {
+    padding: 16px 24px;
+    font-size: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .auth-buttons {
+    padding-top: calc(85px + 5 * 58px);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .auth-buttons .login-btn {
+    width: 100%;
+  }
+}
+
 .eyebrow {
   display: inline-flex;
   align-items: center;
@@ -581,13 +650,20 @@ button {
 
 .feature-card,
 .benefit-card {
-  width: 360px;
+  width: 340px;
   max-width: 100%;
   border-radius: 28px;
   padding: 23px;
   background: var(--card-purple);
   border: 1px solid rgba(255, 255, 255, 0.12);
   transition: transform 0.25s ease;
+}
+
+@media (max-width: 480px) {
+  .feature-card,
+  .benefit-card {
+    width: 100%;
+  }
 }
 
 .feature-card:hover,
@@ -640,14 +716,17 @@ button {
 
 .benefits-title,
 .mobile-app-title {
-  width: calc(100% + 60px);
-  margin: 0 -30px 80px;
+  width: 100%;
+  margin: 0 0 80px;
   background: linear-gradient(90deg, #6f63ff, #8a7dff);
   padding: 28px 40px;
 }
 
-.mobile-app-title {
-  margin-bottom: 50px;
+@media (max-width: 640px) {
+  .benefits-title,
+  .mobile-app-title {
+    padding: 20px 20px;
+  }
 }
 
 .mobile-app-content {
@@ -2199,6 +2278,13 @@ body::after {
   gap: 24px;
 }
 
+@media (max-width: 768px) {
+  .support-cta {
+    grid-template-columns: 1fr;
+    padding: 24px;
+  }
+}
+
 .support-copy h2 {
   font-size: clamp(26px, 4vw, 42px);
   margin: 10px 0 12px;
@@ -2238,6 +2324,12 @@ body::after {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin: 22px 0 8px;
+}
+
+@media (max-width: 640px) {
+  .login-highlights {
+    grid-template-columns: 1fr;
+  }
 }
 
 .login-highlight {
