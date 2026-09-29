@@ -242,8 +242,17 @@ adminRouter.patch('/psychologists/:id/approve', async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    const profile = await prisma.profile.findUnique({
+      where: { userId: id },
+      select: { id: true },
+    });
+
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Perfil no encontrado' });
+    }
+
     await prisma.psychologistProfile.update({
-      where: { profile: { userId: id } },
+      where: { profileId: profile.id },
       data: { isApproved: true },
     });
 
