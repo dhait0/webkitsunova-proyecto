@@ -9,8 +9,8 @@ on:
       - '.github/workflows/**'
 
 jobs:
-  typecheck:
-    name: Typecheck
+  backend-typecheck:
+    name: Backend Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,17 +18,14 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-
-      - name: Backend typecheck
+          cache-dependency-path: 'backend/package-lock.json'
+      - run: npm ci
         working-directory: backend
-        run: npm ci && npm run typecheck
+      - run: npm run typecheck
+        working-directory: backend
 
-      - name: Frontend typecheck
-        working-directory: frontend
-        run: npm ci && npm run typecheck
-
-  test:
-    name: Tests
+  frontend-typecheck:
+    name: Frontend Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,18 +33,14 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-
-      - name: Backend tests
-        working-directory: backend
-        run: npm ci && npm run test
-
-      - name: Frontend tests
+          cache-dependency-path: 'frontend/package-lock.json'
+      - run: npm ci
         working-directory: frontend
-        run: npm ci && npm run test
+      - run: npm run typecheck
+        working-directory: frontend
 
-  build:
-    name: Build
-    needs: [typecheck, test]
+  backend-tests:
+    name: Backend Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,11 +48,55 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-
-      - name: Backend build
+          cache-dependency-path: 'backend/package-lock.json'
+      - run: npm ci
         working-directory: backend
-        run: npm ci && npm run build
+      - run: npm run test
+        working-directory: backend
 
-      - name: Frontend build
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+      - run: npm ci
         working-directory: frontend
-        run: npm ci && npm run build
+      - run: npm run test
+        working-directory: frontend
+
+  backend-build:
+    name: Backend Build
+    needs: [backend-typecheck, backend-tests, frontend-typecheck, frontend-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+      - run: npm ci
+        working-directory: backend
+      - run: npm run build
+        working-directory: backend
+
+  frontend-build:
+    name: Frontend Build
+    needs: [backend-typecheck, backend-tests, frontend-typecheck, frontend-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
