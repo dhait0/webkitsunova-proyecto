@@ -1,11 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import app from '../src/app.js';
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
-  return new Promise<void>((resolve, reject) => {
-    (app as unknown as (req: unknown, res: unknown, next?: unknown) => void)(req, res, (err?: unknown) => {
-      if (err) return reject(err);
-      resolve();
-    });
-  });
+export default function handler(_req: VercelRequest, res: VercelResponse) {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ message: 'Vercel function works!' }));
 }
