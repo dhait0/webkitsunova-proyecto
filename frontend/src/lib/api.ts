@@ -62,7 +62,11 @@ export async function getMfaStatus(): Promise<MfaStatusResponse> {
 export async function signOut(): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession();
   if (session) {
-    await apiFetch('/api/auth/logout', { method: 'POST' });
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // eslint-disable-next-line no-empty
+    }
   }
   await supabase.auth.signOut();
 }
