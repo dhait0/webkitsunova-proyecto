@@ -1,5 +1,38 @@
 export type RegisterRole = 'USER' | 'PSYCHOLOGIST';
 
+/**
+ * Landing sections in reading order. The header anchors and the section ids in
+ * HomePage both derive from this list, so a link can never point at a missing
+ * anchor again.
+ */
+export const siteNavigation = [
+  { id: 'inicio', label: 'Inicio' },
+  { id: 'nosotros', label: 'Sobre nosotros' },
+  { id: 'como-funciona', label: 'Cómo funciona' },
+  { id: 'solucion', label: 'Solución' },
+  { id: 'app', label: 'App' },
+] as const;
+
+export const aboutSection = {
+  badge: 'Quiénes somos',
+  title: 'Kitsunova acompaña el cambio de hábitos con tecnología y profesionales',
+  lead: 'Somos una plataforma de acompañamiento que combina seguimiento automatizado y apoyo psicológico en un mismo proceso, para que la persona no tenga que decidir sola cuándo necesita ayuda.',
+  points: [
+    {
+      title: 'Para quién es',
+      text: 'Personas que quieren construir hábitos sostenibles con una guía clara y sin quedar atrapadas en la automatización.'
+    },
+    {
+      title: 'Qué resolvemos',
+      text: 'La duda de saber cuándo insistir con el hábito y cuándo pedir ayuda profesional, y el vacío entre una app y una consulta.'
+    },
+    {
+      title: 'Cómo lo hacemos',
+      text: 'Una ruta por etapas: seguimiento diario, asistencia automatizada y escalamiento a chat o cita con psicólogos.'
+    }
+  ]
+} as const;
+
 export const landingFeatureCards = [
   {
     image: '/brand/lista.png',
