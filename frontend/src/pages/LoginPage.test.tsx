@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import LoginPage from '@/pages/LoginPage';
 import { supabase } from '@/lib/supabase';
@@ -280,5 +280,79 @@ describe('LoginPage', () => {
     });
 
     expect(supabase.auth.signUp).not.toHaveBeenCalled();
+  });
+});
+
+describe('LoginPage restores the session to the right area', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function renderRestoredSession(appMetadata: Record<string, unknown>) {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: {
+        session: {
+          user: {
+            id: 'user-1',
+            email: 'test@example.com',
+            app_metadata: appMetadata,
+            user_metadata: {},
+          },
+        },
+      },
+    } as any);
+
+    return render(
+      <MemoryRouter initialEntries={['/login']}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin" element={<div>Panel admin</div>} />
+          <Route path="/psy" element={<div>Panel del psicólogo</div>} />
+          <Route path="/dashboard" element={<div>Panel de usuario</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+  }
+
+  it('sends an ADMIN to the admin area', async () => {
+    renderRestoredSession({ role: 'ADMIN' });
+
+    await waitFor(() => {
+      expect(screen.getByText('Panel admin')).toBeInTheDocument();
+    });
+  });
+
+  it('sends a PSYCHOLOGIST to the psychologist area', async () => {
+    renderRestoredSession({ role: 'PSYCHOLOGIST' });
+
+    await waitFor(() => {
+      expect(screen.getByText('Panel del psicólogo')).toBeInTheDocument();
+    });
+  });
+
+  it('sends a USER to the user area', async () => {
+    renderRestoredSession({ role: 'USER' });
+
+    await waitFor(() => {
+      expect(screen.getByText('Panel de usuario')).toBeInTheDocument();
+    });
+  });
+
+  // Regression: a lowercase role used to fall through to /dashboard with no
+  // message, which is how an administrator ended up staring at the user panel.
+  it('treats a malformed role as USER instead of granting an area', async () => {
+    renderRestoredSession({ role: 'admin' });
+
+    await waitFor(() => {
+      expect(screen.getByText('Panel de usuario')).toBeInTheDocument();
+    });
+  });
+
+  it('treats a missing role as USER', async () => {
+    renderRestoredSession({});
+
+    await waitFor(() => {
+      expect(screen.getByText('Panel de usuario')).toBeInTheDocument();
+    });
   });
 });
