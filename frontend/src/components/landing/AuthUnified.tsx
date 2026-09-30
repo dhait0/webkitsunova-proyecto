@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Button, Input, Card, Tabs, Flex, Grid } from '@/components/ui';
 
 type AuthMode = 'login' | 'register';
+
+export type AuthSuccessHandler = (mode: AuthMode, session: Session) => void;
 
 const emailIcon = (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,7 +55,7 @@ const tabsItems = [
 
 interface AuthUnifiedProps {
   mode?: AuthMode;
-  onSuccess?: (mode: AuthMode) => void;
+  onSuccess?: AuthSuccessHandler;
   onModeChange?: (mode: AuthMode) => void;
   showModeToggle?: boolean;
   redirectTo?: string;
@@ -139,7 +142,7 @@ export function AuthUnified({
         if (signUpError) throw signUpError;
 
         if (data.session) {
-          onSuccess?.('register');
+          onSuccess?.('register', data.session);
         } else {
           setSuccess('Cuenta creada. Revisa tu correo para confirmar el acceso.');
         }
@@ -155,7 +158,7 @@ export function AuthUnified({
           return;
         }
 
-        onSuccess?.('login');
+        onSuccess?.('login', data.session);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error de autenticación');
