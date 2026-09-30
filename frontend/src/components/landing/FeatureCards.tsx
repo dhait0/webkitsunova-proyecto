@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Card, CardImage, Grid, Container, Section, Badge } from '@/components/ui';
-import { landingFeatureCards } from '@/content/siteContent';
+import { landingBenefitCards, landingFeatureCards } from '@/content/siteContent';
 
 interface FeatureCardsProps {
   title?: string;
@@ -9,7 +9,7 @@ interface FeatureCardsProps {
 }
 
 export function FeatureCards({ title, subtitle, variant = 'feature' }: FeatureCardsProps) {
-  const cards = landingFeatureCards;
+  const cards = variant === 'benefit' ? landingBenefitCards : landingFeatureCards;
 
   return (
     <Section padding="lg" background="none" divider="none" className="relative">
@@ -49,7 +49,15 @@ export function FeatureCards({ title, subtitle, variant = 'feature' }: FeatureCa
               whileHover={{ y: -6, scale: 1.01, transition: { duration: 0.2 } }}
             >
               <Card variant={variant} hover className="h-full">
-                <CardImage src={card.image} alt={card.title} ratio="4/3" radius="xl" className="mb-5" />
+                <CardImage
+                  src={card.image}
+                  alt={card.title}
+                  ratio="4/3"
+                  radius="xl"
+                  width={card.imageWidth}
+                  height={card.imageHeight}
+                  className="mb-5"
+                />
                 <h3 className="text-xl font-bold mb-3 text-white text-center">{card.title}</h3>
                 <p className="text-white/60 leading-relaxed text-center">{card.text}</p>
               </Card>

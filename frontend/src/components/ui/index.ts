@@ -18,3 +18,5 @@ export type { GridProps, FlexProps } from './Grid';
 
 export { Tabs, tabListVariants, tabTriggerVariants } from './Tabs';
 export type { TabsProps, TabItem } from './Tabs';
+
+export { PictureImage, webpSource } from './PictureImage';

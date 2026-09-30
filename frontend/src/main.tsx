@@ -4,6 +4,8 @@ import { BrowserRouter, useNavigate } from 'react-router-dom';
 import App from './App';
 import { supabase } from './lib/supabase';
 import { homeForRole, roleFromSupabaseUser } from './lib/roles';
+
+import './styles/tailwind.css';
 import './styles/global.css';
 
 function AuthHandler() {

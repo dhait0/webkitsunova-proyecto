@@ -1,11 +1,18 @@
 import { Link } from 'react-router-dom';
+import { PictureImage } from '@/components/ui';
 
 function PublicFooter() {
   return (
     <footer className="main-footer">
       <div className="footer-container">
         <div className="footer-brand">
-          <img src="/brand/isotipo.png" alt="Kitsunova" className="footer-logo" />
+          <PictureImage
+            src="/brand/isotipo.png"
+            alt="Kitsunova"
+            width={300}
+            height={280}
+            className="footer-logo"
+          />
           <p>Hábitos, apoyo profesional y seguimiento continuo</p>
         </div>
 
