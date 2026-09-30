@@ -283,8 +283,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 88vh;
-  padding: 48px 16px;
+  min-height: 84vh;
+  padding: 36px 16px;
 }
 
 .hero-grid {
@@ -368,7 +368,7 @@ button {
 
 .signup-section {
   position: relative;
-  padding: 64px 16px 96px;
+  padding: 40px 16px 72px;
   scroll-margin-top: 88px;
 }
 
