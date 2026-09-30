@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import type { AuthSuccessHandler } from '@/components/landing/AuthUnified';
 import { supabase } from '@/lib/supabase';
 import { AuthUnified } from '@/components/landing';
 import { homeForRole, roleFromSupabaseUser } from '@/lib/roles';
@@ -24,15 +25,7 @@ function LoginPage() {
     };
   }, [navigate]);
 
-  async function handleAuthSuccess() {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-      return;
-    }
-
+  const handleAuthSuccess: AuthSuccessHandler = async (_mode, session) => {
     const home = homeForRole(roleFromSupabaseUser(session.user));
     const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     const currentLevel = aalData?.currentLevel ?? 'aal1';
@@ -43,7 +36,7 @@ function LoginPage() {
     } else {
       navigate(home, { replace: true });
     }
-  }
+  };
 
   if (checkingSession) {
     return <div className="route-guard">Verificando sesión...</div>;
