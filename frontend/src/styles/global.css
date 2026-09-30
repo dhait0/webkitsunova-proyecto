@@ -3632,3 +3632,764 @@ body::after {
     transition-duration: 0.001ms !important;
   }
 }
+/* ================================================================
+   PSYCHOLOGIST - Variables
+   ================================================================ */
+:root {
+  --psy-bg: #020410;
+  --psy-surface: #07145f;
+  --psy-surface-alt: #0d1837;
+  --psy-border: rgba(99, 220, 255, 0.15);
+  --psy-border-soft: rgba(255, 255, 255, 0.12);
+  --psy-accent: #63dcff;
+  --psy-accent-2: #7c6cff;
+  --psy-accent-dim: rgba(99, 220, 255, 0.10);
+  --psy-accent-soft: rgba(99, 220, 255, 0.16);
+  --psy-warn-dim: rgba(255, 179, 71, 0.12);
+  --psy-danger-dim: rgba(255, 77, 109, 0.12);
+  --psy-success-dim: rgba(34, 197, 94, 0.12);
+  --psy-danger: #ff4d6d;
+  --psy-warn: #ffb347;
+  --psy-success: #22c55e;
+  --psy-text: #e2e8f8;
+  --psy-text-muted: #6b7a99;
+}
+
+/* ================================================================
+   PSYCHOLOGIST - Layout
+   ================================================================ */
+
+.psy-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.psy-subnav-link {
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--psy-border);
+  background: var(--psy-accent-dim);
+  color: var(--psy-text-muted);
+  font-size: 13px;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.psy-subnav-link:hover {
+  color: var(--psy-accent);
+  border-color: var(--psy-accent);
+  background: var(--psy-accent-soft);
+}
+
+.psy-blocked {
+  margin-bottom: 25px;
+  padding: 20px 24px;
+  border-radius: 20px;
+  border: 1px solid var(--psy-warn-dim);
+  background: var(--psy-warn-dim);
+}
+
+.psy-blocked h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  color: var(--psy-text);
+}
+
+.psy-blocked p {
+  margin: 6px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--psy-text-muted);
+}
+
+.psy-blocked a {
+  color: var(--psy-accent);
+  text-decoration: underline;
+}
+
+/* ================================================================
+   PSYCHOLOGIST - Sidebar
+   ================================================================ */
+
+.sidebar-badge {
+  margin-left: auto;
+  min-width: 22px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--psy-accent);
+  color: var(--psy-bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.sidebar-footer-meta {
+  margin-top: auto;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--psy-text-muted);
+  word-break: break-all;
+}
+
+/* ================================================================
+   PSYCHOLOGIST - Feedback (loading, error, empty, success)
+   ================================================================ */
+
+.psy-loading,
+.psy-error,
+.psy-empty,
+.psy-success {
+  margin: 15px 0;
+  padding: 18px 22px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.psy-loading {
+  background: var(--psy-accent-dim);
+  border: 1px solid var(--psy-border);
+  color: var(--psy-text-muted);
+}
+
+.psy-error {
+  background: var(--psy-danger-dim);
+  border: 1px solid var(--psy-danger-dim);
+  color: var(--psy-danger);
+}
+
+.psy-success {
+  background: var(--psy-success-dim);
+  border: 1px solid var(--psy-success-dim);
+  color: var(--psy-success);
+}
+
+.psy-empty {
+  background: var(--psy-accent-dim);
+  border: 1px dashed var(--psy-border);
+  text-align: center;
+  color: var(--psy-text-muted);
+}
+
+.psy-empty p {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.psy-hint {
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--psy-text-muted);
+}
+
+.psy-bio {
+  margin: 16px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--psy-text);
+}
+
+/* ================================================================
+   PSYCHOLOGIST - Badges
+   ================================================================ */
+
+.psy-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.psy-badge-ok {
+  background: var(--psy-success-dim);
+  color: var(--psy-success);
+  border-color: var(--psy-success-dim);
+}
+
+.psy-badge-warn {
+  background: var(--psy-warn-dim);
+  color: var(--psy-warn);
+  border-color: var(--psy-warn-dim);
+}
+
+.psy-badge-danger {
+  background: var(--psy-danger-dim);
+  color: var(--psy-danger);
+  border-color: var(--psy-danger-dim);
+}
+
+.psy-badge-neutral {
+  background: var(--psy-accent-dim);
+  color: var(--psy-text-muted);
+  border-color: var(--psy-border-soft);
+}
+
+.psy-tag {
+  display: inline-block;
+  margin: 4px 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--psy-accent-dim);
+  border: 1px solid var(--psy-border);
+  font-size: 12px;
+  color: var(--psy-text-muted);
+}
+
+/* ================================================================
+   PSYCHOLOGIST - Stats
+   ================================================================ */
+
+.psy-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.psy-stats-grid .stat-card {
+  text-align: center;
+  border-radius: 16px;
+}
+
+.psy-stats-grid .stat-card h3 {
+  margin: 5px 0;
+  font-size: 20px;
+}
+
+.psy-stats-grid .stat-card p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted-2);
+}
+
+.psy-stats-grid .stat-card span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.psy-dashboard-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+/* ================================================================
+   PSYCHOLOGIST - Tables
+   ================================================================ */
+
+.psy-table-wrapper {
+  overflow-x: auto;
+  margin-top: 18px;
+}
+
+.psy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.psy-table thead tr {
+  background: var(--psy-accent-dim);
+}
+
+.psy-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--psy-text-muted);
+  white-space: nowrap;
+}
+
+.psy-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--psy-border);
+  color: var(--psy-text);
+  vertical-align: top;
+}
+
+.psy-table tbody tr:hover {
+  background: var(--psy-accent-dim);
+}
+
+.psy-table td small {
+  color: var(--psy-text-muted);
+  font-size: 12px;
+}
+
+.psy-table-link {
+  color: var(--psy-accent);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.psy-table-link:hover {
+  text-decoration: underline;
+}
+
+/* ================================================================
+   PSYCHOLOGIST - Lists
+   ================================================================ */
+
+.psy-list,
+.psy-session-list,
+.psy-availability-list,
+.psy-preference-list,
+.psy-conversation-list,
+.psy-notification-list,
+.psy-message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.psy-list li,
+.psy-preference-list li,
+.psy-notification-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--psy-accent-dim);
+  border: 1px solid var(--psy-border);
+}
+
+.psy-preference-list li,
+.psy-notification-list li {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.psy-preference-list small,
+.psy-notification-list small {
+  font-size: 12px;
+  color: var(--psy-text-muted);
+}
+
+.psy-notification-list li.is-read {
+  opacity: 0.6;
+}
+
+.psy-notification-list p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--psy-text-muted);
+}
+
+.psy-session-item {
+  display: grid;
+  grid-template-columns: 180px 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--psy-accent-dim);
+  border: 1px solid var(--psy-border);
+}
+
+.psy-session-item span {
+  display: block;
+  font-size: 13px;
+  color: var(--psy-text-muted);
+}
+
+.psy-session-when strong,
+.psy-session-who strong {
+  display: block;
+  font-size: 14px;
+  color: var(--psy-text);
+}
+
+.psy-session-when span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--psy-text-muted);
+}
+
+.psy-session-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.psy-availability-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.psy-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--psy-text);
+  cursor: pointer;
+}
+
+/* ================================================================
+   PSYCHOLOGIST - Forms
+   ================================================================ */
+
+.psy-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.psy-filters .field {
+  flex: 1 1 240px;
+  gap: 0;
+}
+
+.psy-filters .field input,
+.psy-filters .field select,
+.psy-filters select {
+  min-height: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.psy-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 18px 0 0;
+}
+
+.psy-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 0;
+}
+
+.psy-form .field input,
+.psy-form .field select,
+.psy-form .field textarea {
+  min-height: 46px;
+  font-size: 14px;
+}
+
+.psy-form .field small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--psy-text-muted);
+}
+
+.psy-form .primary-btn,
+.psy-form .secondary-btn {
+  align-self: flex-start;
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.psy-form .primary-btn {
+  min-width: 180px;
+}
+
+.psy-checkbox-group,
+.psy-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--psy-border);
+  border-radius: 14px;
+  background: var(--psy-accent-dim);
+}
+
+.psy-checkbox-group legend,
+.psy-radio-group legend {
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--psy-text-muted);
+}
+
+.psy-checkbox-group label,
+.psy-radio-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--psy-text);
+  cursor: pointer;
+}
+
+.psy-inline-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.psy-inline-form .field {
+  flex: 1 1 160px;
+}
+
+.psy-inline-form input[type='time'] {
+  min-width: 120px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--psy-border);
+  border-radius: 12px;
+  background: var(--psy-accent-dim);
+  color: var(--psy-text);
+  font-size: 14px;
+}
+
+/* ================================================================
+   PSYCHOLOGIST - Cards and detail grids
+   ================================================================ */
+
+.psy-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.psy-content-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 18px;
+  background: var(--psy-surface-alt);
+  border: 1px solid var(--psy-border);
+}
+
+.psy-content-card h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--psy-text);
+}
+
+.psy-content-card > p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--psy-text-muted);
+}
+
+.psy-content-card .secondary-btn {
+  margin-top: auto;
+  min-height: 40px;
+  font-size: 13px;
+}
+
+.psy-detail-list,
+.psy-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 18px 0 0;
+}
+
+.psy-detail-list dt,
+.psy-meta dt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--psy-text-muted);
+}
+
+.psy-detail-list dd,
+.psy-meta dd {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--psy-text);
+}
+
+.psy-content-card .psy-meta {
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.psy-next-appointment {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--psy-accent-dim);
+  border: 1px solid var(--psy-border);
+}
+
+.psy-next-appointment p {
+  margin: 6px 0;
+  font-size: 14px;
+  color: var(--psy-text);
+}
+
+.psy-next-appointment small,
+.psy-profile-summary small {
+  font-size: 12px;
+  color: var(--psy-text-muted);
+}
+
+.psy-profile-summary p {
+  margin: 6px 0;
+  font-size: 14px;
+  color: var(--psy-text-muted);
+}
+
+.psy-profile-summary strong {
+  color: var(--psy-text);
+  font-size: 16px;
+}
+
+.psy-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.psy-panel-actions .primary-btn,
+.psy-panel-actions .secondary-btn {
+  min-height: 42px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+/* ================================================================
+   PSYCHOLOGIST - Messaging
+   ================================================================ */
+
+.psy-conversation-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--psy-accent-dim);
+  border: 1px solid var(--psy-border);
+  transition: border-color 0.2s ease;
+}
+
+.psy-conversation-item:hover {
+  border-color: var(--psy-accent);
+}
+
+.psy-conversation-item strong {
+  font-size: 14px;
+  color: var(--psy-text);
+}
+
+.psy-conversation-item span {
+  display: block;
+  font-size: 13px;
+  color: var(--psy-text-muted);
+}
+
+.psy-conversation-item small {
+  font-size: 11px;
+  color: var(--psy-text-muted);
+  white-space: nowrap;
+}
+
+.psy-conversation-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--psy-accent-dim);
+  border: 1px solid var(--psy-accent);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--psy-accent);
+}
+
+.psy-message-list {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.psy-message {
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--psy-accent-dim);
+  border: 1px solid var(--psy-border);
+}
+
+.psy-message p {
+  margin: 6px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--psy-text);
+}
+
+.psy-message small {
+  font-size: 11px;
+  color: var(--psy-text-muted);
+}
+
+.psy-message-author {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--psy-accent);
+}
+
+.psy-filter-chip {
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--psy-border);
+  background: transparent;
+  color: var(--psy-text-muted);
+  font-size: 13px;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.psy-filter-chip:hover {
+  color: var(--psy-accent);
+  border-color: var(--psy-accent);
+}
+
+.psy-filter-chip.is-active {
+  background: var(--psy-accent);
+  border-color: var(--psy-accent);
+  color: var(--psy-bg);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .psy-session-item {
+    grid-template-columns: 1fr;
+  }
+}

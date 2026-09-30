@@ -1,9 +1,11 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { homeForRole, roleFromSupabaseUser } from '@/lib/roles';
 
 function MfaVerifyPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get('mode') ?? 'login';
   const [code, setCode] = useState('');
@@ -12,6 +14,9 @@ function MfaVerifyPage() {
   const [info, setInfo] = useState('');
   const [checking, setChecking] = useState(true);
   const [factorId, setFactorId] = useState<string | null>(null);
+  const [sessionHome, setSessionHome] = useState<string | null>(null);
+
+  const requestedHome = (location.state as { from?: string } | null)?.from;
 
   useEffect(() => {
     let active = true;
@@ -23,6 +28,8 @@ function MfaVerifyPage() {
         navigate('/login', { replace: true });
         return;
       }
+
+      setSessionHome(homeForRole(roleFromSupabaseUser(session.user)));
 
       supabase.auth.mfa.getAuthenticatorAssuranceLevel().then(({ data: aalData }) => {
         if (!active) return;
@@ -39,10 +46,8 @@ function MfaVerifyPage() {
             }
             setChecking(false);
           });
-        } else if (currentLevel === 'aal2') {
-          navigate('/dashboard', { replace: true });
         } else {
-          navigate('/dashboard', { replace: true });
+          navigate(homeForRole(roleFromSupabaseUser(session.user)), { replace: true });
         }
       });
     });
@@ -76,7 +81,7 @@ function MfaVerifyPage() {
 
     setCode('');
     setLoading(false);
-    navigate('/dashboard', { replace: true });
+    navigate(requestedHome ?? sessionHome ?? '/dashboard', { replace: true });
   }
 
   async function handleRecovery(e: FormEvent) {
