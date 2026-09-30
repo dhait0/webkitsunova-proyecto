@@ -9,6 +9,7 @@ const schema = z.object({
   FRONTEND_URL: z.string().url().default('http://localhost:5174'),
   CORS_ORIGIN: z.string().default('http://localhost:5174'),
   DATABASE_URL: z.string().optional(),
+  DIRECT_URL: z.string().optional(),
 });
 
 export const env = schema.parse(process.env);

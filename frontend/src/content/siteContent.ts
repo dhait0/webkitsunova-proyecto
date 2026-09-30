@@ -79,6 +79,73 @@ export const dashboardSidebarItems = [
   { label: 'Psicólogos', code: 'PS', to: '/dashboard/psicologos' }
 ] as const;
 
+/** Sidebar of the psychologist area (Mockups Psy 0/15/18). */
+export const psySidebarItems = [
+  { label: 'Inicio', code: 'IN', to: '/psy', end: true },
+  { label: 'Talleres', code: 'TA', to: '/psy/talleres' },
+  { label: 'Recursos', code: 'RE', to: '/psy/recursos' },
+  { label: 'Mensajes', code: 'ME', to: '/psy/mensajes' },
+  { label: 'Configuración', code: 'CO', to: '/psy/configuracion' }
+] as const;
+
+/** Secondary links reachable from the psychologist dashboard (Mockups Psy 0/1). */
+export const psySecondaryItems = [
+  { label: 'Pacientes', code: 'PA', to: '/psy/pacientes' },
+  { label: 'Sesiones de hoy', code: 'HO', to: '/psy/sesiones/hoy' },
+  { label: 'Próximas sesiones', code: 'PR', to: '/psy/sesiones' },
+  { label: 'Derivaciones', code: 'DE', to: '/psy/derivaciones' },
+  { label: 'Notificaciones', code: 'NO', to: '/psy/notificaciones' },
+  { label: 'Mi perfil profesional', code: 'MF', to: '/psy/perfil' }
+] as const;
+
+export const psyFocusAreaLabels: Record<string, string> = {
+  ANXIETY: 'Ansiedad',
+  DEPRESSION: 'Depresión',
+  STRESS: 'Estrés',
+  PRODUCTIVITY: 'Productividad',
+  MINDFULNESS: 'Mindfulness',
+  SELF_ESTEEM: 'Autoestima',
+  TRAUMA_PTSD: 'Trauma y PTSD',
+  COUPLES: 'Terapia de pareja',
+  FAMILY: 'Terapia familiar',
+  EATING_DISORDERS: 'Trastornos alimentarios',
+  ADDICTION: 'Adicciones',
+  SLEEP: 'Sueño',
+  OTHER: 'Otra'
+};
+
+export const psyResourceTypeLabels: Record<string, string> = {
+  ARTICLE: 'Artículo',
+  PDF: 'PDF',
+  EXERCISE: 'Ejercicio',
+  VIDEO: 'Video'
+};
+
+export const psyAppointmentStatusLabels: Record<string, string> = {
+  PENDING: 'Pendiente',
+  CONFIRMED: 'Confirmada',
+  COMPLETED: 'Realizada',
+  CANCELLED: 'Cancelada',
+  NO_SHOW: 'No asistió'
+};
+
+export const psyContentStatusLabels: Record<string, string> = {
+  DRAFT: 'Borrador',
+  PENDING: 'Pendiente de aprobación',
+  APPROVED: 'Aprobado',
+  REJECTED: 'Rechazado'
+};
+
+export const psyWeekdayLabels: Record<number, string> = {
+  1: 'Lunes',
+  2: 'Martes',
+  3: 'Miércoles',
+  4: 'Jueves',
+  5: 'Viernes',
+  6: 'Sábado',
+  7: 'Domingo'
+};
+
 export const dashboardQuickActions = [
   {
     title: 'Revisar hábitos',

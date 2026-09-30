@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import adminRouter from './routes/admin.js';
+import psyRouter from './routes/psy.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -31,6 +32,7 @@ app.get('/api', (_req, res) => {
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/psy', psyRouter);
 
 app.use(errorHandler);
 

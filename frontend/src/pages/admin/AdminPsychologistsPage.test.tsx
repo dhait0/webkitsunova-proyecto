@@ -169,7 +169,7 @@ describe('AdminPsychologistsPage', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Perfil del psicólogo' });
     expect(within(dialog).getByText('España')).toBeInTheDocument();
     expect(within(dialog).getByText('+34 600 000 000')).toBeInTheDocument();
-    expect(within(dialog).getByText('60 €')).toBeInTheDocument();
+    expect(within(dialog).getByText('60 COP')).toBeInTheDocument();
     expect(within(dialog).getByText('Ansiedad')).toBeInTheDocument();
     expect(within(dialog).getByText('Psicóloga con diez años de experiencia clínica.')).toBeInTheDocument();
 

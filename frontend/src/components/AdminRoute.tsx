@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { type ReactNode } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { homeForRole } from '@/lib/roles';
 import type { SessionUser } from '@/types/session';
 
 type AdminRouteProps = {
@@ -12,7 +13,7 @@ function AdminRoute({ children }: AdminRouteProps) {
     <ProtectedRoute>
       {(session) => {
         if (session.role !== 'ADMIN') {
-          return <Navigate to="/dashboard" replace />;
+          return <Navigate to={homeForRole(session.role)} replace />;
         }
         return children(session);
       }}

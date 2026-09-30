@@ -32,11 +32,6 @@ function fullName(psy: AdminPsychologist) {
   return psy.name?.trim() || psy.email;
 }
 
-function deriveStatus(psy: AdminPsychologist, isApproved: boolean): string {
-  if (psy.status === 'suspendido') return 'suspendido';
-  return isApproved ? 'activo' : 'revision';
-}
-
 function AdminPsychologistsPage() {
   const toasts = useToasts();
   const { heading, subtitle } = getAdminPageHeading('/admin/psychologists');
@@ -83,10 +78,7 @@ function AdminPsychologistsPage() {
     try {
       const res = await approvePsychologist(psy.id);
       if (res.success) {
-        updateRow(psy.id, {
-          verified: true,
-          status: deriveStatus(psy, true),
-        });
+        updateRow(psy.id, { verified: true, status: 'activo' });
         toasts.success(psy.verified ? 'Verificación renovada' : 'Psicólogo aprobado correctamente');
       }
     } catch (err) {
@@ -269,7 +261,7 @@ function AdminPsychologistsPage() {
                 <span className="admin-detail-label">Tarifa por sesión</span>
                 <span className="admin-detail-value">
                   {detailTarget.sessionPrice != null
-                    ? `${detailTarget.sessionPrice.toLocaleString('es-ES')} €`
+                    ? `${detailTarget.sessionPrice.toLocaleString('es-ES')} COP`
                     : '—'}
                 </span>
               </div>
