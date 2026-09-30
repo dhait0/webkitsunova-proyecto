@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { getMfaStatus } from '@/lib/api';
+import { homeForRole, roleFromSupabaseUser } from '@/lib/roles';
 
 function MfaSettingsPage() {
   const navigate = useNavigate();
@@ -9,6 +10,7 @@ function MfaSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [confirmDisable, setConfirmDisable] = useState(false);
+  const [roleHome, setRoleHome] = useState('/dashboard');
 
   useEffect(() => {
     loadStatus();
@@ -23,7 +25,7 @@ function MfaSettingsPage() {
         navigate('/login', { replace: true });
         return;
       }
-
+      setRoleHome(homeForRole(roleFromSupabaseUser(session.user)));
       const status = await getMfaStatus();
       setMfaEnabled(status.mfaEnabled);
     } catch {
@@ -128,7 +130,7 @@ function MfaSettingsPage() {
       </div>
 
       <p>
-        <Link to="/dashboard">← Volver al dashboard</Link>
+        <Link to={roleHome}>← Volver a mi panel</Link>
       </p>
     </div>
   );
