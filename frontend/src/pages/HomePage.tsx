@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import PublicFooter from '@/components/PublicFooter';
 import PublicHeader from '@/components/PublicHeader';
 import { AuthUnified, StatsStrip, JourneySection, FeatureCards, SupportCTA, MobileAppSection } from '@/components/landing';
+import { Container, PictureImage } from '@/components/ui';
 import { landingSupportCards } from '@/content/siteContent';
 
 function HomePage() {
@@ -12,7 +13,7 @@ function HomePage() {
       <main>
         {/* Hero Section con AuthUnified */}
         <section id="inicio" className="relative min-h-[90vh] flex items-center justify-center px-4 sm:px-6 lg:px-8">
-          <div className="container max-w-7xl">
+          <Container size="xl" fluid>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -20,7 +21,7 @@ function HomePage() {
               className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center"
             >
               {/* Left: Copy */}
-              <div className="text-center lg:text-left order-2 lg:order-1">
+              <div className="text-center lg:text-left order-2 lg:order-1 min-w-0">
                 <span className="eyebrow inline-block mb-4">Acompañamiento especializado</span>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6">
                   Crea tu cuenta y empieza un proceso de hábitos con apoyo profesional.
@@ -39,17 +40,21 @@ function HomePage() {
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-                className="order-1 lg:order-2 relative"
+                className="order-1 lg:order-2 relative min-w-0"
               >
                 <motion.div
                   animate={{ y: [0, -12, 0] }}
                   transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
                   className="relative max-w-lg mx-auto"
                 >
-                  <img
+                  <PictureImage
                     src="/brand/zorro-r.png"
                     alt="Zorro Kitsunova"
-                    className="w-full drop-shadow-[0_0_30px_rgba(78,122,255,0.45)]"
+                    width={1024}
+                    height={1024}
+                    loading="eager"
+                    fetchPriority="high"
+                    className="w-full h-auto drop-shadow-[0_0_30px_rgba(78,122,255,0.45)]"
                   />
                 </motion.div>
 
@@ -102,7 +107,7 @@ function HomePage() {
                 </motion.div>
               </motion.div>
             </motion.div>
-          </div>
+          </Container>
         </section>
 
         {/* Stats Strip */}

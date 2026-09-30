@@ -1,5 +1,6 @@
 import { forwardRef, type HTMLAttributes } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
+import { PictureImage } from './PictureImage';
 
 const cardVariants = cva(
   'neu-card relative overflow-hidden transition-all duration-300 ease-out',
@@ -94,6 +95,8 @@ interface CardImageProps extends HTMLAttributes<HTMLDivElement>, VariantProps<ty
   alt: string;
   fallback?: React.ReactNode;
   priority?: boolean;
+  width?: number;
+  height?: number;
 }
 
 export const CardImage = forwardRef<HTMLDivElement, CardImageProps>(
@@ -103,9 +106,11 @@ export const CardImage = forwardRef<HTMLDivElement, CardImageProps>(
       src,
       alt,
       fallback,
+      priority = false,
+      width,
+      height,
       ratio = '4/3',
       radius = 'lg',
-      priority = false,
       ...props
     },
     ref
@@ -115,12 +120,14 @@ export const CardImage = forwardRef<HTMLDivElement, CardImageProps>(
 
     return (
       <div ref={ref} className={combinedClass} {...props}>
-        <img
+        <PictureImage
           src={src}
           alt={alt}
+          width={width}
+          height={height}
           loading={priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : undefined}
           className="w-full h-full object-cover transition-transform duration-700 ease-out hover:scale-105"
-          style={{ filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.3))' }}
         />
         {fallback && (
           <div className="absolute inset-0 flex items-center justify-center bg-neu-bg/50 backdrop-blur-sm">

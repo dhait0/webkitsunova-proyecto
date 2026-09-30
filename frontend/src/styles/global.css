@@ -416,6 +416,7 @@ button {
 
 .left-section h1,
 .login-box h1,
+.login-intro h1,
 .hero-text h1,
 .info-box h2,
 .benefits-title h2,
@@ -429,7 +430,8 @@ button {
 }
 
 .left-section h1,
-.login-box h1 {
+.login-box h1,
+.login-intro h1 {
   font-size: clamp(28px, 5vw, 52px);
   margin-top: 12px;
 }
@@ -441,6 +443,7 @@ button {
 .feature-card p,
 .mobile-app-text p,
 .login-box p,
+.login-intro p,
 .dashboard-banner p,
 .perfil-content p,
 .mascota-right small,
@@ -505,6 +508,10 @@ button {
 
 .login-intro h1 {
   margin-top: 12px;
+}
+
+.login-intro .login-highlights {
+  margin-top: 24px;
 }
 
 .field {
@@ -5890,11 +5897,18 @@ button.admin-stat-card:focus-visible {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Scroll reveal */
+/* Scroll reveal: progressive enhancement. Content stays visible unless JS
+   explicitly marks it as pending, so a missing observer can never hide a
+   section permanently. */
 .reveal-section {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.reveal-section.reveal-pending {
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
 .reveal-section.visible {
@@ -5960,7 +5974,8 @@ button.admin-stat-card:focus-visible {
     animation: none !important;
   }
 
-  .reveal-section {
+  .reveal-section,
+  .reveal-section.reveal-pending {
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;

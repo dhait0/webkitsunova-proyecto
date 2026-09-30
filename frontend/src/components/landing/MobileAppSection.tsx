@@ -35,6 +35,8 @@ export function MobileAppSection() {
                 alt="App Kitsunova en móviles"
                 ratio="16/9"
                 radius="2xl"
+                width={1600}
+                height={1493}
                 className="w-full shadow-2xl"
               />
             </motion.div>

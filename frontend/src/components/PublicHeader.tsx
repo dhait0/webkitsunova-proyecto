@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PictureImage } from '@/components/ui';
 
 function PublicHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -11,7 +12,14 @@ function PublicHeader() {
     <header className="main-navbar">
       <div className="navbar-container">
         <Link to="/" className="logo-container" aria-label="Inicio de Kitsunova" onClick={closeMenu}>
-          <img src="/brand/imagotipo.png" alt="Kitsunova" className="logo" />
+          <PictureImage
+            src="/brand/imagotipo.png"
+            alt="Kitsunova"
+            width={400}
+            height={160}
+            loading="eager"
+            className="logo"
+          />
         </Link>
 
         <button

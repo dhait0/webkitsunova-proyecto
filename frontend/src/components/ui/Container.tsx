@@ -1,5 +1,6 @@
 import { type HTMLAttributes, forwardRef } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 const containerVariants = cva(
   'mx-auto px-4 sm:px-6 lg:px-8',
@@ -105,11 +106,19 @@ export const Section = forwardRef<HTMLDivElement, SectionProps>(
     },
     ref
   ) => {
+    const { ref: revealRef, isVisible } = useScrollReveal();
     const baseClass = sectionVariants({ padding, background, divider, reveal });
-    const combinedClass = `${baseClass} ${className}`;
+    const revealClass = reveal ? (isVisible ? ' visible' : ' reveal-pending') : '';
+    const combinedClass = `${baseClass}${revealClass} ${className}`;
+
+    const setRef = (node: HTMLDivElement | null) => {
+      (revealRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      if (typeof ref === 'function') ref(node);
+      else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    };
 
     return (
-      <Component ref={ref} className={combinedClass} {...props}>
+      <Component ref={setRef} className={combinedClass} {...props}>
         <Container size={containerSize} fluid={containerFluid}>
           {children}
         </Container>
