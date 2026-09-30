@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useState } from 'react';
 import {
   getAdminUsers,
   updateUserStatus,
@@ -7,258 +6,241 @@ import {
   type AdminUser,
   type AdminUsersResponse,
 } from '@/lib/api';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTable from '@/components/admin/AdminTable';
+import type { AdminColumn } from '@/components/admin/AdminTable';
+import AdminToolbar from '@/components/admin/AdminToolbar';
+import AdminPagination from '@/components/admin/AdminPagination';
+import AdminEntityCell from '@/components/admin/AdminEntityCell';
+import StatusBadge, { USER_STATUS_LABELS, userStatusTone } from '@/components/admin/StatusBadge';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import AdminToaster from '@/components/admin/AdminToaster';
+import Icon from '@/components/admin/Icon';
+import { AdminLoading, AdminEmptyState, AdminErrorState } from '@/components/admin/AdminStates';
+import { getAdminPageHeading } from '@/components/admin/adminNav';
+import type { FilterOption } from '@/components/admin/types';
+import { useAdminList } from '@/hooks/useAdminList';
+import { useToasts } from '@/hooks/useToasts';
 
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: 'Activo',
-  SUSPENDED: 'Suspendido',
-};
-
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'Todos' },
+const STATUS_OPTIONS: FilterOption[] = [
+  { value: 'all', label: 'Todos los estados' },
   { value: 'ACTIVE', label: 'Activo' },
   { value: 'SUSPENDED', label: 'Suspendido' },
 ];
 
+function formatDate(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function fullName(user: AdminUser) {
+  if (user.firstName) return `${user.firstName} ${user.lastName ?? ''}`.trim();
+  return user.username ?? '—';
+}
+
 function AdminUserPage() {
-  const navigate = useNavigate();
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [pagination, setPagination] = useState<AdminUsersResponse['pagination'] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
-  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const toasts = useToasts();
+  const { heading, subtitle } = getAdminPageHeading('/admin/users');
 
-  const limit = 10;
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(
+    (query: { search: string; status: string; page: number; limit: number }) =>
+      getAdminUsers({
+        page: query.page,
+        limit: query.limit,
+        search: query.search || undefined,
+        status: query.status !== 'all' ? query.status : undefined,
+      }),
+    []
+  );
+
+  const selectRows = useCallback((payload: AdminUsersResponse) => payload.users, []);
+
+  const {
+    rows,
+    pagination,
+    loading,
+    error,
+    searchInput,
+    statusFilter,
+    setSearchInput,
+    setStatusFilter,
+    setPage,
+    reload,
+    updateRow,
+    removeRow,
+    clearFilters,
+  } = useAdminList<AdminUser, AdminUsersResponse>({
+    fetcher: fetchUsers,
+    selectRows,
+    idOf: (user) => user.id,
+    limit: 10,
+    errorMessage: 'Error al cargar usuarios',
+  });
+
+  async function handleStatusChange(userId: string, status: 'ACTIVE' | 'SUSPENDED') {
+    setPendingUserId(userId);
     try {
-      setLoading(true);
-      setError(null);
-      const params: { search?: string; status?: string; page: number; limit: number } = {
-        page: currentPage,
-        limit,
-      };
-      if (searchTerm.trim()) params.search = searchTerm.trim();
-      if (statusFilter !== 'all') params.status = statusFilter;
-
-      const res = await getAdminUsers(params);
-      setUsers(res.users);
-      setPagination(res.pagination);
-    } catch (err) {
-      setError((err as Error).message || 'Error al cargar usuarios');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, searchTerm, statusFilter]);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleStatusFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setStatusFilter(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  async function handleStatusChange(userId: string, newStatus: 'ACTIVE' | 'SUSPENDED') {
-    setUpdatingUserId(userId);
-    try {
-      const res = await updateUserStatus(userId, newStatus, 'Acción de administrador');
+      const res = await updateUserStatus(userId, status, 'Acción de administrador');
       if (res.success) {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
-        );
+        updateRow(userId, { status });
+        toasts.success(status === 'ACTIVE' ? 'Usuario reactivado' : 'Usuario suspendido');
       }
     } catch (err) {
-      setError((err as Error).message || 'Error al actualizar estado');
+      toasts.error((err as Error).message || 'Error al actualizar estado');
     } finally {
-      setUpdatingUserId(null);
+      setPendingUserId(null);
     }
   }
 
-  async function handleDelete(userId: string) {
-    if (!confirm('¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer.')) {
-      return;
-    }
-    setDeletingUserId(userId);
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const userId = deleteTarget.id;
+    setPendingUserId(userId);
     try {
       const res = await deleteUser(userId);
       if (res.success) {
-        setUsers((prev) => prev.filter((u) => u.id !== userId));
+        removeRow(userId);
+        toasts.success('Usuario eliminado');
+        setDeleteTarget(null);
       }
     } catch (err) {
-      setError((err as Error).message || 'Error al eliminar usuario');
+      toasts.error((err as Error).message || 'Error al eliminar usuario');
     } finally {
-      setDeletingUserId(null);
+      setPendingUserId(null);
     }
   }
 
-  const totalPages = pagination?.totalPages ?? 0;
+  const columns: AdminColumn<AdminUser>[] = [
+    {
+      key: 'user',
+      header: 'Usuario',
+      render: (user) => (
+        <AdminEntityCell
+          initials={(user.firstName?.[0] ?? user.email?.[0] ?? '?').toUpperCase()}
+          name={fullName(user)}
+        />
+      ),
+    },
+    { key: 'email', header: 'Email', render: (user) => user.email },
+    {
+      key: 'status',
+      header: 'Estado',
+      render: (user) => (
+        <StatusBadge tone={userStatusTone(user.status)}>
+          {USER_STATUS_LABELS[user.status] ?? user.status}
+        </StatusBadge>
+      ),
+    },
+    {
+      key: 'mfa',
+      header: 'MFA',
+      render: (user) =>
+        user.twoFactorEnabled ? (
+          <span className="verified-badge verificado">
+            <Icon name="shieldCheck" size={12} />
+            Activado
+          </span>
+        ) : (
+          <span className="verified-badge pendiente">Sin MFA</span>
+        ),
+    },
+    { key: 'createdAt', header: 'Creado', render: (user) => formatDate(user.createdAt) },
+    {
+      key: 'actions',
+      header: 'Acciones',
+      className: 'admin-table-actions-cell',
+      render: (user) => {
+        const busy = pendingUserId === user.id;
+        const isActive = user.status === 'ACTIVE';
+        return (
+          <div className="admin-actions">
+            <button
+              type="button"
+              className="admin-btn admin-btn-ghost"
+              onClick={() => handleStatusChange(user.id, isActive ? 'SUSPENDED' : 'ACTIVE')}
+              disabled={busy}
+            >
+              {busy ? <span className="admin-btn-spinner" /> : <Icon name={isActive ? 'ban' : 'check'} size={12} />}
+              {isActive ? 'Suspender' : 'Activar'}
+            </button>
+            <button
+              type="button"
+              className="admin-btn admin-btn-danger"
+              onClick={() => setDeleteTarget(user)}
+              disabled={busy}
+              aria-label={`Eliminar a ${fullName(user)}`}
+            >
+              <Icon name="trash" size={12} />
+              Eliminar
+            </button>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
-    <div className="admin-content-block">
-      <div className="admin-page-header">
-        <h1>Usuarios</h1>
-        <p>Gestiona los usuarios registrados en la plataforma.</p>
-      </div>
+    <div className="admin-page">
+      <AdminPageHeader title={heading} subtitle={subtitle} />
 
-      <div className="admin-filters-bar">
-        <div className="admin-search-box">
-          <i className="fa-solid fa-magnifying-glass" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, email o username..."
-            value={searchTerm}
-            onChange={handleSearch}
-          />
-        </div>
-        <select value={statusFilter} onChange={handleStatusFilter} className="admin-select">
-          {STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <AdminToolbar
+        searchValue={searchInput}
+        onSearchChange={setSearchInput}
+        searchLabel="Buscar usuarios"
+        searchPlaceholder="Buscar por nombre, email o username..."
+        filterValue={statusFilter}
+        onFilterChange={setStatusFilter}
+        filterLabel="Estado"
+        filterOptions={STATUS_OPTIONS}
+        onClear={clearFilters}
+        resultCount={loading ? undefined : pagination?.total}
+        resultNoun="usuarios"
+      />
 
-      {error && <div className="admin-error">{error}</div>}
+      {error ? <AdminErrorState message={error} onRetry={reload} /> : null}
 
       {loading ? (
-        <div className="admin-loading">
-          <div className="admin-spinner" />
-          <p>Cargando usuarios...</p>
-        </div>
+        <AdminLoading label="Cargando usuarios..." />
       ) : (
-        <div className="admin-table-container">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Email</th>
-                <th>Estado</th>
-                <th>MFA</th>
-                <th>Creado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="admin-empty-state">
-                    No se encontraron usuarios
-                  </td>
-                </tr>
-              ) : (
-                users.map((user) => (
-                  <tr key={user.id}>
-                    <td>
-                      <div className="admin-user-cell">
-                        <span className="admin-user-avatar">
-                          {(user.firstName?.[0] ?? user.email?.[0] ?? '?').toUpperCase()}
-                        </span>
-                        <span className="admin-user-name">
-                          {user.firstName
-                            ? `${user.firstName} ${user.lastName ?? ''}`.trim()
-                            : user.username ?? '-'}
-                        </span>
-                      </div>
-                    </td>
-                    <td>{user.email}</td>
-                    <td>
-                      <span className={`status-badge status-${user.status.toLowerCase()}`}>
-                        {STATUS_LABELS[user.status] ?? user.status}
-                      </span>
-                    </td>
-                    <td>
-                      {user.twoFactorEnabled ? (
-                        <span className="verified-badge verified">
-                          <i className="fa-solid fa-shield-check" /> Activado
-                        </span>
-                      ) : (
-                        <span className="verified-badge">Sin MFA</span>
-                      )}
-                    </td>
-                    <td>{new Date(user.createdAt).toLocaleDateString('es-ES')}</td>
-                    <td>
-                      <div className="admin-actions">
-                        {user.status === 'ACTIVE' ? (
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn-sm admin-btn-outline"
-                            onClick={() => handleStatusChange(user.id, 'SUSPENDED')}
-                            disabled={updatingUserId === user.id}
-                          >
-                            {updatingUserId === user.id ? '...' : 'Suspender'}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn-sm admin-btn-outline"
-                            onClick={() => handleStatusChange(user.id, 'ACTIVE')}
-                            disabled={updatingUserId === user.id}
-                          >
-                            {updatingUserId === user.id ? '...' : 'Activar'}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="admin-btn admin-btn-sm admin-btn-danger"
-                          onClick={() => handleDelete(user.id)}
-                          disabled={deletingUserId === user.id}
-                        >
-                          {deletingUserId === user.id ? '...' : 'Eliminar'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <AdminTable
+          columns={columns}
+          rows={rows}
+          rowKey={(user) => user.id}
+          empty={
+            <AdminEmptyState
+              icon="👤"
+              message="No se encontraron usuarios"
+              hint={searchInput || statusFilter !== 'all' ? 'Prueba a cambiar los filtros.' : undefined}
+            />
+          }
+        />
       )}
 
-      {pagination && totalPages > 1 && (
-        <div className="admin-pagination">
-          <button
-            type="button"
-            className="admin-btn admin-btn-sm admin-btn-outline"
-            onClick={() => handlePageChange(pagination.page - 1)}
-            disabled={pagination.page <= 1}
-          >
-            Anterior
-          </button>
-          <span className="admin-pagination-info">
-            Página {pagination.page} de {pagination.totalPages}
-          </span>
-          <button
-            type="button"
-            className="admin-btn admin-btn-sm admin-btn-outline"
-            onClick={() => handlePageChange(pagination.page + 1)}
-            disabled={pagination.page >= totalPages}
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
+      <AdminPagination pagination={pagination} onPageChange={setPage} noun="usuarios" />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Eliminar usuario"
+        danger
+        busy={pendingUserId === deleteTarget?.id}
+        message={
+          <>
+            Vas a eliminar a <strong>{deleteTarget ? fullName(deleteTarget) : ''}</strong> (
+            {deleteTarget?.email}). Esta acción no se puede deshacer y eliminará también su perfil.
+          </>
+        }
+        confirmLabel="Eliminar definitivamente"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
+
+      <AdminToaster {...toasts} />
     </div>
   );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  return <span className={`status-badge status-${status}`}>{status}</span>;
 }
 
 export default AdminUserPage;

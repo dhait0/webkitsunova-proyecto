@@ -91,6 +91,27 @@ La plataforma contempla inicialmente estos módulos:
 - El sistema debe permitir administrar contenidos y publicaciones.
 - El sistema debe permitir consultar estadísticas del sistema.
 
+#### Estado de implementación
+
+Rutas disponibles bajo `/admin` (protegidas por `AdminRoute`, rol `ADMIN`):
+
+| Ruta | Estado | Endpoint |
+| --- | --- | --- |
+| `/admin` | Operativa | `GET /api/admin/stats/*` |
+| `/admin/users` | Operativa | `GET /api/admin/users`, `PATCH /api/admin/users/:id/status`, `DELETE /api/admin/users/:id` |
+| `/admin/psychologists` | Operativa | `GET /api/admin/psychologists`, `PATCH /api/admin/psychologists/:id/approve` |
+| `/admin/forum`, `/admin/messages`, `/admin/workshops`, `/admin/resources`, `/admin/reports`, `/admin/settings` | Pendiente | Sin modelo en Prisma |
+
+Los módulos pendientes se muestran en el menú lateral como deshabilitados y marcados
+"Pronto"; no son navegables. Cualquier ruta desconocida dentro de `/admin` muestra la
+página 404 del panel.
+
+La interfaz reutiliza un kit de componentes en `frontend/src/components/admin/`
+(cabecera, tarjeta de estadística, badge de estado, barra de filtros, tabla,
+paginación, estados de carga/vacío/error, modal, diálogo de confirmación y toasts)
+y dos hooks en `frontend/src/hooks/` (`useDebouncedValue` para la búsqueda y
+`useAdminList` para el ciclo de carga de listados paginados).
+
 ### 5.6 Comunidad y contenido
 
 - El sistema debe permitir foros o publicaciones de comunidad.

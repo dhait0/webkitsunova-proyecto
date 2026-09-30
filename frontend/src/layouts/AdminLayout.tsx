@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { signOut, getMe } from '@/lib/api';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { signOut } from '@/lib/api';
 import type { SessionUser } from '@/types/session';
+import { ADMIN_NAV_SECTIONS, getAdminPageMeta } from '@/components/admin/adminNav';
+import Icon from '@/components/admin/Icon';
 
 export type AdminOutletContext = {
   session: SessionUser;
@@ -19,8 +21,11 @@ type AdminLayoutProps = {
 
 function AdminLayout({ session }: AdminLayoutProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loggingOut, setLoggingOut] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const pageMeta = getAdminPageMeta(location.pathname);
 
   const displayName =
     session.profile?.firstName?.trim() ||
@@ -67,107 +72,43 @@ function AdminLayout({ session }: AdminLayoutProps) {
             aria-label={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}
             title={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              {sidebarCollapsed ? (
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              ) : (
-                <path d="M6 18L18 6M18 18L6 6" />
-              )}
-            </svg>
+            <Icon name={sidebarCollapsed ? 'menu' : 'close'} size={14} />
           </button>
         </div>
 
         <nav className="admin-nav" aria-label="Navegación de administrador">
-          <div className="admin-nav-section">
-            <span className="admin-nav-label">General</span>
-            <ul className="admin-nav-list">
-              <li>
-                <NavLink to="/admin" end className="admin-nav-item">
-                  <i className="fa-solid fa-house" />
-                  <span>Inicio</span>
-                </NavLink>
-              </li>
-            </ul>
-          </div>
-
-          <div className="admin-nav-divider" />
-
-          <div className="admin-nav-section">
-            <span className="admin-nav-label">Personas</span>
-            <ul className="admin-nav-list">
-              <li>
-                <NavLink to="/admin/users" className="admin-nav-item">
-                  <i className="fa-solid fa-user" />
-                  <span>Usuarios</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/admin/psychologists" className="admin-nav-item">
-                  <i className="fa-solid fa-brain" />
-                  <span>Psicólogos</span>
-                </NavLink>
-              </li>
-            </ul>
-          </div>
-
-          <div className="admin-nav-divider" />
-
-          <div className="admin-nav-section">
-            <span className="admin-nav-label">Comunidad</span>
-            <ul className="admin-nav-list">
-              <li>
-                <NavLink to="/admin/forum" className="admin-nav-item">
-                  <i className="fa-solid fa-people-group" />
-                  <span>Foro</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/admin/messages" className="admin-nav-item">
-                  <i className="fa-solid fa-envelope" />
-                  <span>Mensajes</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/admin/workshops" className="admin-nav-item">
-                  <i className="fa-solid fa-chalkboard-user" />
-                  <span>Talleres</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/admin/resources" className="admin-nav-item">
-                  <i className="fa-solid fa-book-open" />
-                  <span>Recursos</span>
-                </NavLink>
-              </li>
-            </ul>
-          </div>
-
-          <div className="admin-nav-divider" />
-
-          <div className="admin-nav-section">
-            <span className="admin-nav-label">Sistema</span>
-            <ul className="admin-nav-list">
-              <li>
-                <NavLink to="/admin/reports" className="admin-nav-item">
-                  <i className="fa-solid fa-flag" />
-                  <span>Reportes</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/admin/settings" className="admin-nav-item">
-                  <i className="fa-solid fa-sliders" />
-                  <span>Configuración</span>
-                </NavLink>
-              </li>
-            </ul>
-          </div>
+          {ADMIN_NAV_SECTIONS.map((section, index) => (
+            <div className="admin-nav-group" key={section.label}>
+              {index > 0 ? <div className="admin-nav-divider" /> : null}
+              <div className="admin-nav-section">
+                <span className="admin-nav-label">{section.label}</span>
+                <ul className="admin-nav-list">
+                  {section.items.map((item) =>
+                    item.comingSoon ? (
+                      <li key={item.to}>
+                        <span
+                          className="admin-nav-item admin-nav-item--disabled"
+                          aria-disabled="true"
+                          title={`${item.label}: módulo en construcción`}
+                        >
+                          <Icon name={item.icon} className="admin-nav-icon" />
+                          <span>{item.label}</span>
+                          <em className="admin-nav-soon">Pronto</em>
+                        </span>
+                      </li>
+                    ) : (
+                      <li key={item.to}>
+                        <NavLink to={item.to} end={item.end} className="admin-nav-item">
+                          <Icon name={item.icon} className="admin-nav-icon" />
+                          <span>{item.label}</span>
+                        </NavLink>
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="admin-sidebar-footer">
@@ -183,18 +124,7 @@ function AdminLayout({ session }: AdminLayoutProps) {
             disabled={loggingOut}
             aria-label={loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="15 11L9 15L9 7" />
-              <line x1="19" y1="12" x2="5" y2="12" />
-            </svg>
+            <Icon name="logout" size={15} />
           </button>
         </div>
       </aside>
@@ -206,12 +136,24 @@ function AdminLayout({ session }: AdminLayoutProps) {
               <span>Admin</span> / <span>{roleLabel}</span>
             </span>
             <span className="admin-topbar-sep" />
-            <span className="admin-page-title">{roleLabel} Dashboard</span>
+            <span className="admin-page-title">
+              <Icon name={pageMeta.icon} size={13} />
+              {pageMeta.title}
+            </span>
           </div>
 
           <div className="admin-topbar-right">
+            <button
+              type="button"
+              className="admin-topbar-toggle"
+              onClick={toggleSidebar}
+              aria-label={sidebarCollapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
+              title={sidebarCollapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
+            >
+              <Icon name="menu" size={15} />
+            </button>
             <div className="system-status">
-              <span className="system-status-dot" />
+              <span className="system-status-dot" aria-hidden="true" />
               Sistema activo
             </div>
           </div>

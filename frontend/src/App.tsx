@@ -16,6 +16,7 @@ import MfaSettingsPage from './pages/MfaSettingsPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminUserPage from './pages/admin/AdminUserPage';
 import AdminPsychologistsPage from './pages/admin/AdminPsychologistsPage';
+import AdminNotFoundPage from './pages/admin/AdminNotFoundPage';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
         <Route index element={<AdminDashboardPage />} />
         <Route path="users" element={<AdminUserPage />} />
         <Route path="psychologists" element={<AdminPsychologistsPage />} />
+        <Route path="*" element={<AdminNotFoundPage />} />
       </Route>
       <Route
         path="/mfa/enroll"

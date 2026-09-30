@@ -167,11 +167,11 @@ export async function getAdminUsers(params?: {
 export async function updateUserStatus(
   userId: string,
   status: 'ACTIVE' | 'SUSPENDED',
-  reason?: string
+  suspendedReason?: string
 ): Promise<{ success: boolean; message: string }> {
   return apiFetch<{ success: boolean; message: string }>(`/api/admin/users/${userId}/status`, {
     method: 'PATCH',
-    body: { status, reason },
+    body: { status, suspendedReason },
   });
 }
 
