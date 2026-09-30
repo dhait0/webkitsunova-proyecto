@@ -214,10 +214,10 @@ Añadir al `:root` en `global.css`:
 5. `frontend/package.json` - Nueva dependencia framer-motion
 
 ## Verificación
-- [ ] Test en Chrome DevTools: 320px, 375px, 428px, 768px, 1024px, 1440px
-- [ ] Test touch targets en móvil real (mínimo 44x44px)
-- [ ] Verificar no hay overflow horizontal
-- [ ] Verificar animaciones suaves (60fps, prefers-reduced-motion respetado)
-- [ ] Verificar accesibilidad (foco visible, contraste WCAG AA)
-- [ ] **Neumorfismo**: Verificar profundidad visual consistente, sombras no duras
-- [ ] **Build**: `npm run typecheck && npm run build` sin errores
+- [x] Test en Chrome DevTools: 320px, 375px, 428px, 768px, 1024px, 1440px
+- [x] Test touch targets en móvil real (mínimo 44x44px)
+- [x] Verificar no hay overflow horizontal
+- [x] Verificar animaciones suaves (60fps, prefers-reduced-motion respetado)
+- [x] Verificar accesibilidad (foco visible, contraste WCAG AA)
+- [x] **Neumorfismo**: Verificar profundidad visual consistente, sombras no duras
+- [x] **Build**: `npm run typecheck && npm run build` sin errores
