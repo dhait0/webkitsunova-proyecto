@@ -127,11 +127,12 @@ Añadir al `:root` en `global.css`:
 - [x] **Animación**: Stagger reveal on scroll (clase .reveal ya existe)
 
 ### Fase 5: Journey Section
-- [ ] Quitar min-height fijo, usar min-height auto
-- [ ] Número de paso responsive (clamp 40-52px)
-- [ ] Gap responsive (12px móvil, 18px desktop)
-- [ ] **Neumorfismo**: Journey cards con outset shadow
-- [ ] **Animación**: Stagger reveal + hover scale
+- [x] Quitar min-height fijo, usar min-height auto (flex column)
+- [x] Número de paso responsive (clamp 40-52px min-width/height, font-size 18-24px)
+- [x] Grid responsive: 1col <640px, 2col 640-900px, 3col >900px
+- [x] Gap responsive (12px→14px→18px)
+- [x] **Neumorfismo**: Journey cards con outset shadow, hover translateY(-6px) + deepened shadow
+- [x] **Animación**: Stagger reveal + hover scale (preparado con .reveal)
 
 ### Fase 6: Feature/Benefit Cards
 - [ ] Quitar ancho fijo 340px, usar flex: 1 1 280px

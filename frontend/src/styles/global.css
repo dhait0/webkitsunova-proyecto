@@ -2428,62 +2428,90 @@ body::after {
 }
 
 .journey-section {
-  width: min(1400px, calc(100% - 40px));
-  margin: 0 auto 50px;
+  width: min(1400px, calc(100% - 24px));
+  margin: 0 auto 48px;
 }
 
 .journey-intro {
   max-width: 720px;
-  margin-bottom: 26px;
+  margin-bottom: 24px;
+  text-align: center;
 }
 
 .journey-intro h2 {
-  font-size: clamp(26px, 4vw, 44px);
-  margin: 12px 0 12px;
+  font-size: clamp(24px, 4vw, 40px);
+  margin: 12px 0 10px;
 }
 
 .journey-intro p {
   margin: 0;
   color: var(--muted);
   line-height: 1.8;
+  font-size: clamp(14px, 2.2vw, 17px);
 }
 
 .journey-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .journey-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (min-width: 900px) {
+  .journey-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
 }
 
 .journey-card {
-  padding: 22px;
+  padding: 24px 20px;
   border-radius: 24px;
-  background: var(--card);
-  border: 1px solid rgba(124, 108, 255, 0.18);
-  min-height: 220px;
+  background: var(--neumorphic-bg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-neu-outset);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.journey-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 12px 12px 24px var(--neumorphic-shadow-dark), -12px -12px 24px var(--neumorphic-shadow-light);
 }
 
 .journey-card span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 52px;
-  min-height: 52px;
-  border-radius: 16px;
-  background: rgba(124, 108, 255, 0.18);
-  color: #fff;
+  min-width: clamp(40px, 6vw, 52px);
+  min-height: clamp(40px, 6vw, 52px);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(124, 108, 255, 0.2), rgba(93, 220, 255, 0.15));
+  color: var(--accent-2);
   font-weight: 800;
-  margin-bottom: 18px;
+  font-size: clamp(18px, 2.5vw, 24px);
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-neu-inset);
 }
 
 .journey-card h3 {
-  margin: 0 0 12px;
-  font-size: 22px;
+  margin: 0 0 10px;
+  font-size: clamp(18px, 2.5vw, 24px);
+  font-weight: 700;
 }
 
 .journey-card p {
   margin: 0;
   color: var(--muted);
   line-height: 1.7;
+  font-size: clamp(13px, 2vw, 15px);
 }
 
 .support-cta {
