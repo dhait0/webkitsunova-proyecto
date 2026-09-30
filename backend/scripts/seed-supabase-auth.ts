@@ -67,44 +67,50 @@ async function main() {
     throw err;
   }
 
-  await prisma.user.upsert({
-    where: { email: ADMIN_EMAIL },
-    create: {
-      id: supabaseUserId,
-      email: ADMIN_EMAIL,
-      passwordHash: '',
-      role: Role.ADMIN,
-      status: AccountStatus.ACTIVE,
-      profile: {
-        create: {
-          username: ADMIN_USERNAME,
-          firstName: ADMIN_FIRST_NAME,
-          lastName: ADMIN_LAST_NAME,
-        },
-      },
-    },
-    update: {
-      passwordHash: '',
-      role: Role.ADMIN,
-      status: AccountStatus.ACTIVE,
-      profile: {
-        upsert: {
+  try {
+    await prisma.user.upsert({
+      where: { email: ADMIN_EMAIL },
+      create: {
+        id: supabaseUserId,
+        email: ADMIN_EMAIL,
+        passwordHash: '',
+        role: Role.ADMIN,
+        status: AccountStatus.ACTIVE,
+        profile: {
           create: {
             username: ADMIN_USERNAME,
             firstName: ADMIN_FIRST_NAME,
             lastName: ADMIN_LAST_NAME,
           },
-          update: {
-            username: ADMIN_USERNAME,
-            firstName: ADMIN_FIRST_NAME,
-            lastName: ADMIN_LAST_NAME,
+        },
+      },
+      update: {
+        passwordHash: '',
+        role: Role.ADMIN,
+        status: AccountStatus.ACTIVE,
+        profile: {
+          upsert: {
+            create: {
+              username: ADMIN_USERNAME,
+              firstName: ADMIN_FIRST_NAME,
+              lastName: ADMIN_LAST_NAME,
+            },
+            update: {
+              username: ADMIN_USERNAME,
+              firstName: ADMIN_FIRST_NAME,
+              lastName: ADMIN_LAST_NAME,
+            },
           },
         },
       },
-    },
-  });
+    });
+    console.log('✓ Registro Prisma sincronizado');
+  } catch (prismaErr) {
+    console.warn('⚠ No se pudo sincronizar Prisma (base de datos no disponible):', prismaErr);
+    console.warn('  El usuario admin está listo en Supabase Auth. ' +
+      'Ejecuta "npm run db:push && npm run seed" cuando la base de datos esté disponible.');
+  }
 
-  console.log('✓ Registro Prisma sincronizado');
   console.log('');
   console.log('Admin seed completed (Supabase Auth)');
   console.log(`Email: ${ADMIN_EMAIL}`);
