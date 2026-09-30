@@ -80,4 +80,19 @@ Reconstruir Kitsunova como una plataforma web moderna con:
 - Eliminar `passwordHash` del modelo User en schema.prisma (legacy).
 - Definir modelos de hábitos, mensajes, talleres, foro y psicólogos.
 - Crear layout base para `admin`, `user` y `psy`.
-- Añadir pruebas y seed inicial para Prisma.
+- Añadir pruebas y seed inicial para Prisma.** (parcialmente hecho)
+
+## Seed de admin en Supabase Auth
+
+El login se realiza vía `supabase.auth.signInWithPassword` (cliente). El usuario
+admin debe existir en **Supabase Auth** con `app_metadata.role = 'ADMIN'`.
+
+El seed de Prisma (`prisma/seed.ts`) solo crea el registro en PostgreSQL. Para
+crear el usuario en Supabase Auth y sincronizar Prisma, ejecutar:
+
+```sh
+cd backend && npm run seed:auth
+```
+
+Lee las credenciales de `SEED_ADMIN_*` en `.env` y usa `supabaseAdmin.auth.admin`
+para crear/actualizar el usuario con el rol correcto.
