@@ -135,12 +135,14 @@ Añadir al `:root` en `global.css`:
 - [x] **Animación**: Stagger reveal + hover scale (preparado con .reveal)
 
 ### Fase 6: Feature/Benefit Cards
-- [ ] Quitar ancho fijo 340px, usar flex: 1 1 280px
-- [ ] Gap responsive (16px móvil, 24px tablet, 48px desktop)
-- [ ] Imágenes: aspect-ratio en lugar de altura fija
-- [ ] Padding responsive en cards
-- [ ] **Neumorfismo**: Cards con outset shadow, hover pressed effect
-- [ ] **Animación**: Hover scale 1.02 + shadow depth increase
+- [x] Quitar ancho fijo 340px → flex: 1 1 280px
+- [x] Gap responsive: 16px móvil, 24px tablet (640px), 48px desktop (1024px)
+- [x] Imágenes: aspect-ratio 4/3 en lugar de altura fija 220px
+- [x] Padding responsive: 20px base
+- [x] Border-radius: 24px (era 28px)
+- [x] **Neumorfismo**: Cards con outset shadow, hover translateY(-6px) scale(1.01) + deepened shadow
+- [x] **Animación**: Hover scale + shadow depth transition 0.3s
+- [x] Imagen container: gradient background sutil + radial glow, drop-shadow en img
 
 ### Fase 7: Support CTA
 - [ ] Padding responsive (20px móvil, 28px desktop)

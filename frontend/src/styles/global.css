@@ -821,62 +821,81 @@ button {
 .benefits-cards {
   display: flex;
   justify-content: center;
-  gap: 48px;
+  gap: 16px;
   flex-wrap: wrap;
+}
+
+@media (min-width: 640px) {
+  .cards-container,
+  .benefits-cards {
+    gap: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cards-container,
+  .benefits-cards {
+    gap: 48px;
+  }
 }
 
 .feature-card,
 .benefit-card {
-  width: 340px;
+  flex: 1 1 280px;
   max-width: 100%;
-  border-radius: 28px;
-  padding: 23px;
-  background: var(--card-purple);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  transition: transform 0.25s ease;
-}
-
-@media (max-width: 480px) {
-  .feature-card,
-  .benefit-card {
-    width: 100%;
-  }
+  min-width: 0;
+  border-radius: 24px;
+  padding: 20px;
+  background: var(--neumorphic-bg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-neu-outset);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .feature-card:hover,
-.benefit-card:hover,
-.stat-card:hover,
-.perfil-card:hover,
-.mascota-card:hover,
-.status:hover {
-  transform: translateY(-6px);
+.benefit-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 12px 12px 24px var(--neumorphic-shadow-dark), -12px -12px 24px var(--neumorphic-shadow-light);
 }
 
 .card-image,
 .benefit-image {
   width: 100%;
-  height: 220px;
-  background: white;
-  border-radius: 24px;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(135deg, rgba(124, 108, 255, 0.1), rgba(93, 220, 255, 0.05));
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   overflow: hidden;
+  position: relative;
+}
+
+.card-image::before,
+.benefit-image::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(124, 108, 255, 0.15), transparent 60%);
+  pointer-events: none;
 }
 
 .card-image img,
 .benefit-image img {
-  width: 88%;
+  width: 80%;
   height: auto;
   object-fit: contain;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.3));
 }
 
 .feature-card h3,
 .benefit-card h3 {
-  margin: 0 0 15px;
+  margin: 0 0 12px;
   text-align: center;
-  font-size: clamp(20px, 3vw, 28px);
+  font-size: clamp(18px, 2.5vw, 24px);
   font-weight: 800;
 }
 
@@ -884,7 +903,9 @@ button {
 .benefit-card p {
   margin: 0;
   text-align: center;
-  line-height: 1.6;
+  line-height: 1.7;
+  color: var(--muted);
+  font-size: clamp(13px, 2vw, 15px);
 }
 
 .benefits-section {
