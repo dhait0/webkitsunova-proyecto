@@ -28,6 +28,7 @@ Reconstruir Kitsunova como una plataforma web moderna con:
 - Mantener el estado de sesión en localStorage vía Supabase Auth (httpOnly cookies no aplican con esta arquitectura).
 - Priorizar componentes reutilizables y rutas por dominio.
 - Evitar mezclar lógica de negocio dentro de componentes de UI.
+- **Seguir el Design System definido en `DESIGN_SYSTEM.md` (neumorfismo, variables CSS, breakpoints, animaciones Framer Motion).**
 
 ## Reglas de desarrollo
 
