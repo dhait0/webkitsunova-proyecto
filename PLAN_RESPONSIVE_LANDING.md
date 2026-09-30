@@ -153,11 +153,14 @@ Añadir al `:root` en `global.css`:
 - [x] **Animación**: Scroll reveal, hover translateX(4px) + shadow swap
 
 ### Fase 8: Mobile App Section
-- [ ] Imagen: max-width 100%, height auto
-- [ ] Texto: padding responsive, border width responsive
-- [ ] Store buttons: flex-wrap, gap responsive
-- [ ] **Neumorfismo**: Texto container con inset shadow
-- [ ] **Animación**: Phones float animation, buttons hover
+- [x] Imagen: max-width 100%, height auto, drop-shadow + float animation
+- [x] Texto container: inset shadow neumórfico, padding responsive (20→24→28px)
+- [x] Border: 1px rgba(255,255,255,0.1) (era 2px white sólido)
+- [x] Store buttons: gap responsive (16→20→25px), flex-wrap
+- [x] **Neumorfismo**: Texto container inset shadow, store-btns outset gradient + shadow
+- [x] **Animación**: Phones float 6s, buttons hover translateY(-3px) + deepened shadow, active pressed
+- [x] Disabled state: opacity 0.5, subtle shadow
+- [x] Focus-visible: accent outline
 
 ### Fase 9: Footer
 - [ ] Gap responsive
