@@ -1,14 +1,10 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { AuthUnified } from '@/components/landing';
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [status, setStatus] = useState('');
-  const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
@@ -27,68 +23,16 @@ function LoginPage() {
     };
   }, [navigate]);
 
-  async function handleGoogleLogin() {
-    setLoading(true);
-    setStatus('');
+  async function handleAuthSuccess() {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const currentLevel = data?.currentLevel ?? 'aal1';
+    const nextLevel = data?.nextLevel ?? null;
 
-    const redirectTo = `${window.location.origin}/dashboard`;
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-      },
-    });
-
-    if (error) {
-      setStatus(error.message);
-      setLoading(false);
-      return;
+    if (currentLevel === 'aal1' && nextLevel === 'aal2') {
+      navigate('/mfa/verify', { replace: true });
+    } else {
+      navigate('/dashboard', { replace: true });
     }
-
-    if (data?.url) {
-      window.location.href = data.url;
-    }
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-    setStatus('');
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-      if (error) {
-        setStatus(error.message);
-        setLoading(false);
-        return;
-      }
-
-      if (!data.session || !data.user) {
-        setStatus('No hay sesión activa');
-        setLoading(false);
-        return;
-      }
-
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      const currentLevel = aalData?.currentLevel ?? 'aal1';
-      const nextLevel = aalData?.nextLevel ?? null;
-
-      if (currentLevel === 'aal1' && nextLevel === 'aal2') {
-        navigate('/mfa/verify', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Error inesperado');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleLogout() {
-    await supabase.auth.signOut();
   }
 
   if (checkingSession) {
@@ -107,7 +51,7 @@ function LoginPage() {
             <img src="/brand/imagotipo.png" alt="Kitsunova" />
           </div>
 
-          <form className="login-box" onSubmit={handleSubmit}>
+          <div className="login-intro">
             <span className="eyebrow">Acceso</span>
             <h1>Accede a tus hábitos y a tu red de apoyo</h1>
             <p className="section-copy">
@@ -129,68 +73,11 @@ function LoginPage() {
                 <span>Escala cuando sea necesario</span>
               </div>
             </div>
+          </div>
 
-            <label className="field">
-              <span>Correo electrónico</span>
-              <input
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                type="email"
-                autoComplete="email"
-                placeholder="correo@ejemplo.com"
-                required
-              />
-            </label>
-
-            <label className="field">
-              <span>Contraseña</span>
-              <div className="password-box">
-                <input
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder="Tu contraseña"
-                  required
-                />
-                <button
-                  type="button"
-                  className="toggle-password-btn"
-                  onClick={() => setShowPassword((current) => !current)}
-                >
-                  {showPassword ? 'Ocultar' : 'Mostrar'}
-                </button>
-              </div>
-            </label>
-
-            <Link to="/#registro" className="forgot-password">
-              Crear una cuenta nueva
-            </Link>
-
-            <button className="login-submit" type="submit" disabled={loading}>
-              {loading ? 'Validando...' : 'Entrar'}
-            </button>
-
-            {status ? <p className="feedback">{status}</p> : null}
-
-            <div className="divider">
-              <span />
-              <p>O</p>
-              <span />
-            </div>
-
-            <button
-              className="social-btn"
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-            >
-              Google
-            </button>
-            <button className="social-btn" type="button" disabled title="Próximamente">
-              Apple (próximamente)
-            </button>
-          </form>
+          <div className="login-auth">
+            <AuthUnified mode="login" showModeToggle onSuccess={handleAuthSuccess} />
+          </div>
         </section>
 
         <aside className="right-section login-hero">
