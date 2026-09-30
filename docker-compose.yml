@@ -23,6 +23,9 @@ services:
       NODE_ENV: development
       PORT: ${BACKEND_PORT:-3002}
       DATABASE_URL: ${DATABASE_URL:-postgresql://webkitsunova:webkitsunova_dev@postgres:5432/webkitsunova?schema=public}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://webkitsunova:webkitsunova_dev@postgres:5432/webkitsunova?schema=public}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY}
       JWT_SECRET: ${JWT_SECRET:-change-me-now-123}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5174}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5174}

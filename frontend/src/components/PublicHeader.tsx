@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function PublicHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,29 +27,43 @@ function PublicHeader() {
           <span />
         </button>
 
-        <nav
-          id="main-nav"
-          className={`main-nav-links${menuOpen ? ' open' : ''}`}
-          aria-label="Navegación principal"
-        >
-          <a href="#como-funciona" className="active" onClick={closeMenu}>
-            Cómo funciona
-          </a>
-          <a href="#solucion" onClick={closeMenu}>
-            Solución
-          </a>
-          <a href="#beneficios" onClick={closeMenu}>
-            Beneficios
-          </a>
-          <a href="#app" onClick={closeMenu}>
-            App
-          </a>
-          <a href="#registro" onClick={closeMenu}>
-            Registro
-          </a>
-        </nav>
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.nav
+              id="main-nav"
+              className="main-nav-links open"
+              aria-label="Navegación principal"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <a href="#como-funciona" className="active" onClick={closeMenu}>
+                Cómo funciona
+              </a>
+              <a href="#solucion" onClick={closeMenu}>
+                Solución
+              </a>
+              <a href="#beneficios" onClick={closeMenu}>
+                Beneficios
+              </a>
+              <a href="#app" onClick={closeMenu}>
+                App
+              </a>
+              <a href="#registro" onClick={closeMenu}>
+                Registro
+              </a>
 
-        <div className="auth-buttons">
+              <div className="auth-buttons mobile-auth">
+                <Link to="/login" className="login-btn" onClick={closeMenu}>
+                  Iniciar sesión
+                </Link>
+              </div>
+            </motion.nav>
+          )}
+        </AnimatePresence>
+
+        <div className="auth-buttons desktop-auth">
           <Link to="/login" className="login-btn" onClick={closeMenu}>
             Iniciar sesión
           </Link>

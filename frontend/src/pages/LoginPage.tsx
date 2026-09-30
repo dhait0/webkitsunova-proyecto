@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { homeForRole, roleFromSupabaseUser } from '@/lib/roles';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ function LoginPage() {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (active && session) {
-        navigate('/dashboard', { replace: true });
+        navigate(homeForRole(roleFromSupabaseUser(session.user)), { replace: true });
       } else if (active) {
         setCheckingSession(false);
       }
@@ -76,9 +77,9 @@ function LoginPage() {
       const nextLevel = aalData?.nextLevel ?? null;
 
       if (currentLevel === 'aal1' && nextLevel === 'aal2') {
-        navigate('/mfa/verify', { replace: true });
+        navigate('/mfa/verify', { replace: true, state: { from: homeForRole(roleFromSupabaseUser(data.user)) } });
       } else {
-        navigate('/dashboard', { replace: true });
+        navigate(homeForRole(roleFromSupabaseUser(data.user)), { replace: true });
       }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Error inesperado');

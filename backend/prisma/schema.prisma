@@ -20,18 +20,106 @@ enum AccountStatus {
   PENDING
 }
 
+// ---------------------------------------------------------------------------
+// Aggregation of well-being programs. Shared by the psychologist area
+// (workshops) and the content area (resources).
+// ---------------------------------------------------------------------------
+
+enum FocusArea {
+  ANXIETY
+  DEPRESSION
+  STRESS
+  PRODUCTIVITY
+  MINDFULNESS
+  SELF_ESTEEM
+  TRAUMA_PTSD
+  COUPLES
+  FAMILY
+  EATING_DISORDERS
+  ADDICTION
+  SLEEP
+  OTHER
+}
+
+enum ContentStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ResourceType {
+  ARTICLE
+  PDF
+  EXERCISE
+  VIDEO
+}
+
+// ---------------------------------------------------------------------------
+// Therapist agenda
+// ---------------------------------------------------------------------------
+
+enum AppointmentType {
+  FIRST_SESSION
+  FOLLOW_UP
+  URGENT
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PatientLinkStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+// ---------------------------------------------------------------------------
+// Psychologist-to-psychologist referral (requires patient consent)
+// ---------------------------------------------------------------------------
+
+enum ReferralStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
 model User {
-  id               String        @id @default(cuid())
-  email            String        @unique
-  passwordHash     String
-  role             Role          @default(USER)
-  status           AccountStatus @default(ACTIVE)
-  twoFactorEnabled Boolean       @default(false)
-  twoFactorSecret  String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  profile          Profile?
-  sessions         Session[]
+  id                      String                 @id @default(cuid())
+  email                   String                 @unique
+  passwordHash            String
+  role                    Role                   @default(USER)
+  status                  AccountStatus          @default(ACTIVE)
+  twoFactorEnabled        Boolean                @default(false)
+  twoFactorSecret         String?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  profile                 Profile?
+  sessions                Session[]
+  patientsAsPsychologist  PsyPatient[]           @relation("PsyPatientPsychologist")
+  patientsAsUser          PsyPatient[]           @relation("PsyPatientUser")
+  appointmentsAsPsychologist Appointment[]      @relation("AppointmentPsychologist")
+  appointmentsAsUser      Appointment[]          @relation("AppointmentUser")
+  conversationMemberships ConversationMember[]
+  sentMessages            Message[]              @relation("MessageSender")
+  messageReads            MessageRead[]
+  authoredWorkshops       Workshop[]             @relation("WorkshopAuthor")
+  workshopEnrollments     WorkshopEnrollment[]
+  authoredResources       Resource[]             @relation("ResourceAuthor")
+  patientReportsAuthored  PatientReport[]        @relation("PatientReportPsychologist")
+  patientReportsReceived  PatientReport[]        @relation("PatientReportUser")
+  notifications           Notification[]
+  notificationPreference  NotificationPreference?
+  referralsSent           PsyReferral[]          @relation("PsyReferralSender")
+  referralsReceived       PsyReferral[]          @relation("PsyReferralReceiver")
+  reviewsReceived         Review[]               @relation("ReviewPsychologist")
+  reviewsWritten          Review[]               @relation("ReviewUser")
 }
 
 model Profile {
@@ -50,18 +138,24 @@ model Profile {
   updatedAt           DateTime             @updatedAt
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   psychologistProfile PsychologistProfile?
+  availabilitySlots   AvailabilitySlot[]
 }
 
 model PsychologistProfile {
-  id            String   @id @default(cuid())
-  profileId     String   @unique
-  specialties   String[] @default([])
-  sessionPrice  Int?
-  isApproved    Boolean  @default(false)
-  rating        Float    @default(0)
-  reviewsCount  Int      @default(0)
-  patientsCount Int      @default(0)
-  profile       Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  profileId      String   @unique
+  specialties    String[] @default([])
+  sessionPrice   Int?
+  currency       String   @default("COP")
+  isApproved     Boolean  @default(false)
+  isVerified     Boolean  @default(false)
+  isAcceptingNew Boolean  @default(true)
+  rating         Float    @default(0)
+  reviewsCount   Int      @default(0)
+  patientsCount  Int      @default(0)
+  approvedAt     DateTime?
+  approvedBy     String?
+  profile        Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Session {
@@ -71,4 +165,280 @@ model Session {
   expiresAt DateTime
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Availability: one block per weekday (weekday 1 = Monday ... 7 = Sunday)
+// ---------------------------------------------------------------------------
+
+model AvailabilitySlot {
+  id           String   @id @default(cuid())
+  profileId    String
+  weekday      Int
+  startMinutes Int
+  endMinutes   Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, weekday])
+}
+
+// ---------------------------------------------------------------------------
+// Therapist / patient link. Created when an appointment is confirmed
+// (decision D1). A user may only have one ACTIVE psychologist at a time
+// (decision D2), enforced in the service layer.
+// ---------------------------------------------------------------------------
+
+model PsyPatient {
+  id             String            @id @default(cuid())
+  psychologistId String
+  patientUserId  String
+  status         PatientLinkStatus @default(ACTIVE)
+  startedAt      DateTime          @default(now())
+  endedAt        DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  psychologist   User              @relation("PsyPatientPsychologist", fields: [psychologistId], references: [id], onDelete: Cascade)
+  patient        User              @relation("PsyPatientUser", fields: [patientUserId], references: [id], onDelete: Cascade)
+
+  @@unique([psychologistId, patientUserId])
+  @@index([patientUserId, status])
+  @@index([psychologistId, status])
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  psychologistId String
+  patientUserId  String
+  type           AppointmentType   @default(FOLLOW_UP)
+  status         AppointmentStatus @default(PENDING)
+  startsAt       DateTime
+  endsAt         DateTime
+  reason         String?
+  patientNote    String?
+  psyNote        String?
+  cancelReason   String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  psychologist   User              @relation("AppointmentPsychologist", fields: [psychologistId], references: [id], onDelete: Cascade)
+  patient        User              @relation("AppointmentUser", fields: [patientUserId], references: [id], onDelete: Cascade)
+
+  @@index([psychologistId, startsAt])
+  @@index([patientUserId, startsAt])
+  @@index([psychologistId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Messaging
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id              String               @id @default(cuid())
+  isGroup         Boolean              @default(false)
+  title           String?
+  isSystem        Boolean              @default(false)
+  createdById     String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  members         ConversationMember[]
+  messages        Message[]
+  blockedByUserId String?
+}
+
+model ConversationMember {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  role           Role         @default(USER)
+  lastReadAt     DateTime?
+  joinedAt       DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, lastReadAt])
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String
+  attachmentUrl  String?
+  attachmentName String?
+  createdAt      DateTime      @default(now())
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User          @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  reads          MessageRead[]
+
+  @@index([conversationId, createdAt])
+}
+
+model MessageRead {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+// ---------------------------------------------------------------------------
+// Workshops authored by psychologists. Created as PENDING and published
+// only after administrator approval.
+// ---------------------------------------------------------------------------
+
+model Workshop {
+  id            String               @id @default(cuid())
+  authorId      String
+  title         String
+  description   String
+  coverUrl      String?
+  focusArea     FocusArea
+  startsAt      DateTime
+  durationHours Float                @default(2)
+  capacity      Int                  @default(30)
+  priceCents    Int                  @default(0)
+  currency      String               @default("COP")
+  status        ContentStatus        @default(PENDING)
+  rejectReason  String?
+  reviewedAt    DateTime?
+  reviewedById  String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  author        User                 @relation("WorkshopAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  enrollments   WorkshopEnrollment[]
+
+  @@index([authorId, status])
+  @@index([status, startsAt])
+}
+
+model WorkshopEnrollment {
+  id         String   @id @default(cuid())
+  workshopId String
+  userId     String
+  createdAt  DateTime @default(now())
+  workshop   Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workshopId, userId])
+}
+
+// ---------------------------------------------------------------------------
+// Resources authored by psychologists. Same approval flow as Workshop.
+// ---------------------------------------------------------------------------
+
+model Resource {
+  id           String        @id @default(cuid())
+  authorId     String
+  type         ResourceType
+  title        String
+  description  String
+  coverUrl     String?
+  fileUrl      String?
+  fileName     String?
+  readingMins  Int?
+  focusArea    FocusArea?
+  status       ContentStatus @default(PENDING)
+  rejectReason String?
+  reviewedAt   DateTime?
+  reviewedById String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  author       User          @relation("ResourceAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, status])
+  @@index([status, type])
+}
+
+// ---------------------------------------------------------------------------
+// Patient follow-up reports (clinical notes, psychologist side only)
+// ---------------------------------------------------------------------------
+
+model PatientReport {
+  id             String   @id @default(cuid())
+  psychologistId String
+  patientUserId  String
+  appointmentId  String?
+  summary        String
+  moodScore      Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  psychologist   User     @relation("PatientReportPsychologist", fields: [psychologistId], references: [id], onDelete: Cascade)
+  patient        User     @relation("PatientReportUser", fields: [patientUserId], references: [id], onDelete: Cascade)
+
+  @@index([psychologistId, patientUserId])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications and preferences
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+model NotificationPreference {
+  userId          String   @id
+  newAppointments Boolean  @default(true)
+  newMessages     Boolean  @default(true)
+  patientReports  Boolean  @default(true)
+  moodAlerts      Boolean  @default(true)
+  platformNews    Boolean  @default(false)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Referral between psychologists. The patient must accept before any
+// psychologist-to-patient link is created (decision D3).
+// ---------------------------------------------------------------------------
+
+model PsyReferral {
+  id                 String         @id @default(cuid())
+  fromPsychologistId String
+  toPsychologistId   String
+  patientUserId      String
+  status             ReferralStatus @default(PENDING)
+  note               String?
+  createdAt          DateTime       @default(now())
+  respondedAt        DateTime?
+  fromPsychologist   User           @relation("PsyReferralSender", fields: [fromPsychologistId], references: [id], onDelete: Cascade)
+  toPsychologist     User           @relation("PsyReferralReceiver", fields: [toPsychologistId], references: [id], onDelete: Cascade)
+
+  @@index([fromPsychologistId, status])
+  @@index([toPsychologistId, status])
+  @@index([patientUserId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Reviews. Amounts are informational only (decision D4): no payment model.
+// ---------------------------------------------------------------------------
+
+model Review {
+  id        String   @id @default(cuid())
+  psyId     String
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  psy       User     @relation("ReviewPsychologist", fields: [psyId], references: [id], onDelete: Cascade)
+  user      User     @relation("ReviewUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([psyId, userId])
+  @@index([psyId, createdAt])
 }

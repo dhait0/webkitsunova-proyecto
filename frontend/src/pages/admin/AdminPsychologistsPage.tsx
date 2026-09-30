@@ -1,238 +1,308 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import {
   getPsychologists,
   approvePsychologist,
   type AdminPsychologist,
   type AdminPsychologistsResponse,
 } from '@/lib/api';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminTable from '@/components/admin/AdminTable';
+import type { AdminColumn } from '@/components/admin/AdminTable';
+import AdminToolbar from '@/components/admin/AdminToolbar';
+import AdminPagination from '@/components/admin/AdminPagination';
+import AdminEntityCell from '@/components/admin/AdminEntityCell';
+import StatusBadge, { PSY_STATUS_LABELS, psyStatusTone } from '@/components/admin/StatusBadge';
+import AdminModal from '@/components/admin/AdminModal';
+import AdminToaster from '@/components/admin/AdminToaster';
+import Icon from '@/components/admin/Icon';
+import { AdminLoading, AdminEmptyState, AdminErrorState } from '@/components/admin/AdminStates';
+import { getAdminPageHeading } from '@/components/admin/adminNav';
+import type { FilterOption } from '@/components/admin/types';
+import { useAdminList } from '@/hooks/useAdminList';
+import { useToasts } from '@/hooks/useToasts';
 
-const STATUS_MAP: Record<string, string> = {
-  activo: 'Activo',
-  revision: 'En revisión',
-  suspendido: 'Suspendido',
-};
-
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'Todos' },
+const STATUS_OPTIONS: FilterOption[] = [
+  { value: 'all', label: 'Todos los estados' },
   { value: 'active', label: 'Activo' },
   { value: 'revision', label: 'En revisión' },
   { value: 'suspendido', label: 'Suspendido' },
 ];
 
+function fullName(psy: AdminPsychologist) {
+  return psy.name?.trim() || psy.email;
+}
+
 function AdminPsychologistsPage() {
-  const [psychologists, setPsychologists] = useState<AdminPsychologist[]>([]);
-  const [pagination, setPagination] = useState<AdminPsychologistsResponse['pagination'] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const toasts = useToasts();
+  const { heading, subtitle } = getAdminPageHeading('/admin/psychologists');
 
-  const limit = 10;
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [detailTarget, setDetailTarget] = useState<AdminPsychologist | null>(null);
 
-  const fetchPsychologists = useCallback(async () => {
+  const fetchPsychologists = useCallback(
+    (query: { search: string; status: string; page: number; limit: number }) =>
+      getPsychologists({
+        page: query.page,
+        limit: query.limit,
+        search: query.search || undefined,
+        status: query.status !== 'all' ? query.status : undefined,
+      }),
+    []
+  );
+
+  const selectRows = useCallback((payload: AdminPsychologistsResponse) => payload.psychologists, []);
+
+  const {
+    rows,
+    pagination,
+    loading,
+    error,
+    searchInput,
+    statusFilter,
+    setSearchInput,
+    setStatusFilter,
+    setPage,
+    reload,
+    updateRow,
+    clearFilters,
+  } = useAdminList<AdminPsychologist, AdminPsychologistsResponse>({
+    fetcher: fetchPsychologists,
+    selectRows,
+    idOf: (psy) => psy.id,
+    limit: 10,
+    errorMessage: 'Error al cargar psicólogos',
+  });
+
+  async function handleApprove(psy: AdminPsychologist) {
+    setPendingId(psy.id);
     try {
-      setLoading(true);
-      setError(null);
-      const params: { search?: string; status?: string; page: number; limit: number } = {
-        page: currentPage,
-        limit,
-      };
-      if (searchTerm.trim()) params.search = searchTerm.trim();
-      if (statusFilter !== 'all') params.status = statusFilter;
-
-      const res = await getPsychologists(params);
-      setPsychologists(res.psychologists);
-      setPagination(res.pagination);
-    } catch (err) {
-      setError((err as Error).message || 'Error al cargar psicólogos');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, searchTerm, statusFilter]);
-
-  useEffect(() => {
-    fetchPsychologists();
-  }, [fetchPsychologists]);
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleStatusFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setStatusFilter(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  async function handleApprove(psyId: string) {
-    setApprovingId(psyId);
-    try {
-      const res = await approvePsychologist(psyId);
+      const res = await approvePsychologist(psy.id);
       if (res.success) {
-        setPsychologists((prev) =>
-          prev.map((p) =>
-            p.id === psyId ? { ...p, status: 'activo', verified: true } : p
-          )
-        );
+        updateRow(psy.id, { verified: true, status: 'activo' });
+        toasts.success(psy.verified ? 'Verificación renovada' : 'Psicólogo aprobado correctamente');
       }
     } catch (err) {
-      setError((err as Error).message || 'Error al aprobar psicólogo');
+      toasts.error((err as Error).message || 'Error al aprobar psicólogo');
     } finally {
-      setApprovingId(null);
+      setPendingId(null);
     }
   }
 
-  const totalPages = pagination?.totalPages ?? 0;
+  const columns: AdminColumn<AdminPsychologist>[] = [
+    {
+      key: 'psy',
+      header: 'Psicólogo',
+      render: (psy) => (
+        <AdminEntityCell
+          initials={(psy.name?.[0] ?? psy.email?.[0] ?? '?').toUpperCase()}
+          name={fullName(psy)}
+          meta={psy.email}
+        />
+      ),
+    },
+    {
+      key: 'specialty',
+      header: 'Especialidad',
+      render: (psy) => psy.specialty || psy.specialties?.[0] || '—',
+    },
+    {
+      key: 'status',
+      header: 'Estado',
+      render: (psy) => (
+        <StatusBadge tone={psyStatusTone(psy.status)}>
+          {PSY_STATUS_LABELS[psy.status] ?? psy.status}
+        </StatusBadge>
+      ),
+    },
+    {
+      key: 'verified',
+      header: 'Verificación',
+      render: (psy) =>
+        psy.verified ? (
+          <span className="verified-badge verificado">
+            <Icon name="shieldCheck" size={12} />
+            Verificado
+          </span>
+        ) : (
+          <span className="verified-badge pendiente">Pendiente</span>
+        ),
+    },
+    { key: 'patients', header: 'Pacientes', render: (psy) => psy.patients },
+    {
+      key: 'rating',
+      header: 'Rating',
+      render: (psy) =>
+        psy.rating > 0 ? (
+          <div className="rating">
+            <Icon name="star" size={12} className="rating-stars" />
+            <span className="rating-value">
+              {psy.rating.toFixed(1)} ({psy.reviews})
+            </span>
+          </div>
+        ) : (
+          <span className="admin-muted">—</span>
+        ),
+    },
+    {
+      key: 'actions',
+      header: 'Acciones',
+      className: 'admin-table-actions-cell',
+      render: (psy) => {
+        const busy = pendingId === psy.id;
+        return (
+          <div className="admin-actions">
+            <button
+              type="button"
+              className="admin-btn admin-btn-ghost"
+              onClick={() => setDetailTarget(psy)}
+            >
+              <Icon name="eye" size={12} />
+              Ver
+            </button>
+            {psy.status !== 'suspendido' ? (
+              <button
+                type="button"
+                className="admin-btn admin-btn-primary"
+                onClick={() => handleApprove(psy)}
+                disabled={busy}
+              >
+                {busy ? <span className="admin-btn-spinner" /> : <Icon name="check" size={12} />}
+                {psy.verified ? 'Re-verificar' : 'Aprobar'}
+              </button>
+            ) : null}
+          </div>
+        );
+      },
+    },
+  ];
+
+  const specialties = detailTarget?.specialties ?? [];
 
   return (
-    <div className="admin-content-block">
-      <div className="admin-page-header">
-        <h1>Psicólogos</h1>
-        <p>Administra las solicitudes y perfiles de psicólogos.</p>
-      </div>
+    <div className="admin-page">
+      <AdminPageHeader title={heading} subtitle={subtitle} />
 
-      <div className="admin-filters-bar">
-        <div className="admin-search-box">
-          <i className="fa-solid fa-magnifying-glass" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, especialidad o email..."
-            value={searchTerm}
-            onChange={handleSearch}
-          />
-        </div>
-        <select value={statusFilter} onChange={handleStatusFilter} className="admin-select">
-          {STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <AdminToolbar
+        searchValue={searchInput}
+        onSearchChange={setSearchInput}
+        searchLabel="Buscar psicólogos"
+        searchPlaceholder="Buscar por nombre, especialidad o email..."
+        filterValue={statusFilter}
+        onFilterChange={setStatusFilter}
+        filterLabel="Estado"
+        filterOptions={STATUS_OPTIONS}
+        onClear={clearFilters}
+        resultCount={loading ? undefined : pagination?.total}
+        resultNoun="psicólogos"
+      />
 
-      {error && <div className="admin-error">{error}</div>}
+      {error ? <AdminErrorState message={error} onRetry={reload} /> : null}
 
       {loading ? (
-        <div className="admin-loading">
-          <div className="admin-spinner" />
-          <p>Cargando psicólogos...</p>
-        </div>
+        <AdminLoading label="Cargando psicólogos..." />
       ) : (
-        <div className="admin-table-container">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Psicólogo</th>
-                <th>Especialidad</th>
-                <th>Estado</th>
-                <th>Pacientes</th>
-                <th>Rating</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {psychologists.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="admin-empty-state">
-                    No se encontraron psicólogos
-                  </td>
-                </tr>
-              ) : (
-                psychologists.map((psy) => (
-                  <tr key={psy.id}>
-                    <td>
-                      <div className="admin-user-cell">
-                        <span className="admin-user-avatar">
-                          {(psy.name?.[0] ?? psy.email?.[0] ?? '?').toUpperCase()}
-                        </span>
-                        <div className="admin-user-info">
-                          <span className="admin-user-name">{psy.name || '-'}</span>
-                          <span className="admin-user-email">{psy.email}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{psy.specialty || (psy.specialties?.[0] ?? '-')}</td>
-                    <td>
-                      <span className={`status-badge status-${psy.status}`}>
-                        {STATUS_MAP[psy.status] ?? psy.status}
-                      </span>
-                    </td>
-                    <td>{psy.patients}</td>
-                    <td>
-                      {psy.rating > 0 ? (
-                        <div className="rating">
-                          <span className="rating-value">{psy.rating.toFixed(1)}</span>
-                          <i className="fa-solid fa-star" />
-                          <span className="rating-reviews">({psy.reviews})</span>
-                        </div>
-                      ) : (
-                        <span className="muted">—</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="admin-actions">
-                        {psy.status === 'revision' && (
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn-sm admin-btn-primary"
-                            onClick={() => handleApprove(psy.id)}
-                            disabled={approvingId === psy.id}
-                          >
-                            {approvingId === psy.id ? '...' : 'Aprobar'}
-                          </button>
-                        )}
-                        {!psy.verified && psy.status === 'activo' && (
-                          <span className="verified-badge">Pendiente verificación</span>
-                        )}
-                        {psy.status === 'activo' && (
-                          <button
-                            type="button"
-                            className="admin-btn admin-btn-sm admin-btn-outline"
-                            onClick={() => handleApprove(psy.id)}
-                            disabled={approvingId === psy.id}
-                          >
-                            {approvingId === psy.id ? '...' : 'Re-verificar'}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <AdminTable
+          columns={columns}
+          rows={rows}
+          rowKey={(psy) => psy.id}
+          empty={
+            <AdminEmptyState
+              icon="🧠"
+              message="No se encontraron psicólogos"
+              hint={searchInput || statusFilter !== 'all' ? 'Prueba a cambiar los filtros.' : undefined}
+            />
+          }
+        />
       )}
 
-      {pagination && totalPages > 1 && (
-        <div className="admin-pagination">
-          <button
-            type="button"
-            className="admin-btn admin-btn-sm admin-btn-outline"
-            onClick={() => handlePageChange(pagination.page - 1)}
-            disabled={pagination.page <= 1}
-          >
-            Anterior
-          </button>
-          <span className="admin-pagination-info">
-            Página {pagination.page} de {pagination.totalPages}
-          </span>
-          <button
-            type="button"
-            className="admin-btn admin-btn-sm admin-btn-outline"
-            onClick={() => handlePageChange(pagination.page + 1)}
-            disabled={pagination.page >= totalPages}
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
+      <AdminPagination pagination={pagination} onPageChange={setPage} noun="psicólogos" />
+
+      <AdminModal
+        open={detailTarget !== null}
+        title="Perfil del psicólogo"
+        onClose={() => setDetailTarget(null)}
+      >
+        {detailTarget ? (
+          <>
+            <div className="admin-detail-identity">
+              <span className="admin-entity-avatar" aria-hidden="true">
+                {(detailTarget.name?.[0] ?? '?').toUpperCase()}
+              </span>
+              <div>
+                <strong>{fullName(detailTarget)}</strong>
+                <span>{detailTarget.email}</span>
+              </div>
+            </div>
+
+            <div className="admin-detail-grid">
+              <div className="admin-detail-item">
+                <span className="admin-detail-label">Estado</span>
+                <span className="admin-detail-value">
+                  <StatusBadge tone={psyStatusTone(detailTarget.status)}>
+                    {PSY_STATUS_LABELS[detailTarget.status] ?? detailTarget.status}
+                  </StatusBadge>
+                </span>
+              </div>
+              <div className="admin-detail-item">
+                <span className="admin-detail-label">Verificación</span>
+                <span className="admin-detail-value">
+                  {detailTarget.verified ? 'Verificado' : 'Pendiente'}
+                </span>
+              </div>
+              <div className="admin-detail-item">
+                <span className="admin-detail-label">País</span>
+                <span className="admin-detail-value">{detailTarget.country || '—'}</span>
+              </div>
+              <div className="admin-detail-item">
+                <span className="admin-detail-label">Teléfono</span>
+                <span className="admin-detail-value">{detailTarget.phone || '—'}</span>
+              </div>
+              <div className="admin-detail-item">
+                <span className="admin-detail-label">Tarifa por sesión</span>
+                <span className="admin-detail-value">
+                  {detailTarget.sessionPrice != null
+                    ? `${detailTarget.sessionPrice.toLocaleString('es-ES')} COP`
+                    : '—'}
+                </span>
+              </div>
+              <div className="admin-detail-item">
+                <span className="admin-detail-label">Rating</span>
+                <span className="admin-detail-value">
+                  {detailTarget.rating > 0
+                    ? `${detailTarget.rating.toFixed(1)} (${detailTarget.reviews} reseñas)`
+                    : 'Sin valoraciones'}
+                </span>
+              </div>
+            </div>
+
+            <div className="admin-detail-item admin-detail-item--full">
+              <span className="admin-detail-label">Especialidades</span>
+              <span className="admin-detail-value">
+                {specialties.length > 0 ? (
+                  <span className="admin-tag-list">
+                    {specialties.map((specialty) => (
+                      <span className="admin-tag" key={specialty}>
+                        {specialty}
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  detailTarget.specialty || '—'
+                )}
+              </span>
+            </div>
+
+            <div className="admin-detail-item admin-detail-item--full">
+              <span className="admin-detail-label">Biografía</span>
+              <span className="admin-detail-value admin-detail-value--multiline">
+                {detailTarget.bio || 'Sin biografía registrada.'}
+              </span>
+            </div>
+          </>
+        ) : null}
+      </AdminModal>
+
+      <AdminToaster {...toasts} />
     </div>
   );
 }

@@ -5,4 +5,5 @@ dist
 coverage
 *.log
 proyecto viejo/
-backend/api/index.js
+
+.kilo/

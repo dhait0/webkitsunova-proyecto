@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import App from './App';
 import { supabase } from './lib/supabase';
+import { homeForRole, roleFromSupabaseUser } from './lib/roles';
 import './styles/global.css';
 
 function AuthHandler() {
@@ -20,7 +21,7 @@ function AuthHandler() {
         if (window.location.hash.includes('access_token') || window.location.hash.includes('code')) {
           window.history.replaceState(null, '', window.location.pathname);
         }
-        navigate('/dashboard', { replace: true });
+        navigate(homeForRole(roleFromSupabaseUser(session.user)), { replace: true });
       }
     });
 
