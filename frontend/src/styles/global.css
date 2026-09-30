@@ -491,6 +491,22 @@ button {
   margin-top: 12px;
 }
 
+.login-auth {
+  width: 100%;
+  max-width: 470px;
+  margin: 28px auto 0;
+}
+
+.login-intro {
+  width: 100%;
+  max-width: 470px;
+  margin: 0 auto;
+}
+
+.login-intro h1 {
+  margin-top: 12px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -5826,6 +5842,150 @@ button.admin-stat-card:focus-visible {
 
 /* Focus visible utility */
 .focus-visible:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Touch target minimum */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Animation utilities */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.6s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.stagger-100 { animation-delay: 100ms; }
+.stagger-200 { animation-delay: 200ms; }
+.stagger-300 { animation-delay: 300ms; }
+.stagger-400 { animation-delay: 400ms; }
+.stagger-500 { animation-delay: 500ms; }
+
+/* Hover lift utility */
+.hover\:lift-hover:hover {
+  transform: translateY(-8px);
+  box-shadow: 12px 12px 24px var(--neumorphic-shadow-dark), -12px -12px 24px var(--neumorphic-shadow-light);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Scroll reveal */
+.reveal-section {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.reveal-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Prevent iOS zoom on input focus - 16px minimum font-size */
+@media (max-width: 768px) {
+  .field input,
+  .field select,
+  .field textarea,
+  .login-box input,
+  .login-box select,
+  .neu-input,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Responsive spacing utilities */
+:root {
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --space-md: 24px;
+    --space-lg: 32px;
+    --space-xl: 48px;
+    --space-2xl: 64px;
+    --space-3xl: 96px;
+  }
+}
+
+/* prefers-reduced-motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-float,
+  .animate-fade-up {
+    animation: none !important;
+  }
+
+  .reveal-section {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .reveal-section.visible {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .stagger-100,
+  .stagger-200,
+  .stagger-300,
+  .stagger-400,
+  .stagger-500 {
+    animation-delay: 0 !important;
+  }
+}
+
+/* Focus visible polyfill for keyboard navigation */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
