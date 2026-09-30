@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { signOut } from '@/lib/api';
 import type { SessionUser } from '@/types/session';
 import { ADMIN_NAV_SECTIONS, getAdminPageMeta } from '@/components/admin/adminNav';
+import RoleSwitcher from '@/components/RoleSwitcher';
 import Icon from '@/components/admin/Icon';
 
 export type AdminOutletContext = {
@@ -143,6 +144,7 @@ function AdminLayout({ session }: AdminLayoutProps) {
           </div>
 
           <div className="admin-topbar-right">
+            <RoleSwitcher session={session} />
             <button
               type="button"
               className="admin-topbar-toggle"

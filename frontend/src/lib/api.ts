@@ -194,6 +194,21 @@ export async function updateUserStatus(
   });
 }
 
+/**
+ * Changes a user's application role. The backend writes `app_metadata.role` in
+ * Supabase and `User.role` in Prisma, so the new permissions take effect on the
+ * target user's next request, not on the caller's.
+ */
+export async function updateUserRole(
+  userId: string,
+  role: 'USER' | 'PSYCHOLOGIST' | 'ADMIN'
+): Promise<{ success: boolean; message: string; user: { id: string; role: string } }> {
+  return apiFetch<{ success: boolean; message: string; user: { id: string; role: string } }>(
+    `/api/admin/users/${userId}/role`,
+    { method: 'PATCH', body: { role } }
+  );
+}
+
 export async function deleteUser(userId: string): Promise<{ success: boolean; message: string }> {
   return apiFetch<{ success: boolean; message: string }>(`/api/admin/users/${userId}`, {
     method: 'DELETE',

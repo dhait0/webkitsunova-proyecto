@@ -62,11 +62,21 @@ describe('PsyRoute', () => {
     });
   });
 
-  it('sends an ADMIN to the admin area', async () => {
+  it('lets an ADMIN inspect the psychologist area', async () => {
+    // The switcher sends administrators here, so the gate has to admit them.
+    // Access to the psy API is still enforced by the backend.
     renderAt('/psy', 'ADMIN');
 
     await waitFor(() => {
-      expect(screen.getByText('Panel admin')).toBeInTheDocument();
+      expect(screen.getByText('Panel del psicólogo')).toBeInTheDocument();
+    });
+  });
+
+  it('sends an unknown role to the user area', async () => {
+    renderAt('/psy', 'admin');
+
+    await waitFor(() => {
+      expect(screen.getByText('Panel de usuario')).toBeInTheDocument();
     });
   });
 

@@ -3,16 +3,22 @@ export type RegisterRole = 'USER' | 'PSYCHOLOGIST';
 export const landingFeatureCards = [
   {
     image: '/brand/lista.png',
+    imageWidth: 800,
+    imageHeight: 533,
     title: 'Hábitos guiados',
     text: 'Crea rutinas, recibe sugerencias automáticas y sigue tu avance diario con claridad.'
   },
   {
     image: '/brand/zorro-c.png',
+    imageWidth: 800,
+    imageHeight: 533,
     title: 'Chat con psicólogos',
     text: 'Cuando necesites apoyo humano, conversa con profesionales desde una misma plataforma.'
   },
   {
     image: '/brand/evolucion.png',
+    imageWidth: 800,
+    imageHeight: 533,
     title: 'Citas y seguimiento',
     text: 'Agenda sesiones, revisa tu progreso y continúa tu proceso con acompañamiento real.'
   }
@@ -21,16 +27,22 @@ export const landingFeatureCards = [
 export const landingBenefitCards = [
   {
     image: '/brand/isotipo.png',
+    imageWidth: 300,
+    imageHeight: 280,
     title: 'Acompañamiento emocional',
     text: 'Tu avance no depende solo de la automatización: también cuenta el apoyo humano cuando haga falta.'
   },
   {
     image: '/brand/zorro-r.png',
+    imageWidth: 1024,
+    imageHeight: 1024,
     title: 'Rutinas inteligentes',
     text: 'Recibe recordatorios, seguimiento y metas ajustadas a tu comportamiento y objetivos.'
   },
   {
     image: '/brand/zorro-c.png',
+    imageWidth: 800,
+    imageHeight: 533,
     title: 'Atención integral',
     text: 'Hábitos, chat y citas con psicólogos en un solo lugar, sin perder el foco del proceso.'
   }
