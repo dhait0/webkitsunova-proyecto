@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { roleFromSupabaseUser } from '@/lib/roles';
+import { sessionUserFromSupabaseUser } from '@/lib/roles';
 import type { SessionUser } from '@/types/session';
 
 type ProtectedRouteProps = {
@@ -22,20 +22,7 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
       if (!isMounted) return;
 
       if (supabaseSession) {
-        const user = supabaseSession.user;
-        const profile = (user.user_metadata as { first_name?: string; last_name?: string; username?: string }) ?? {};
-        const role = roleFromSupabaseUser(user);
-        setSession({
-          id: user.id,
-          email: user.email ?? '',
-          role,
-          status: 'ACTIVE',
-          profile: {
-            firstName: profile.first_name ?? null,
-            lastName: profile.last_name ?? null,
-            username: profile.username ?? null,
-          },
-        });
+        setSession(sessionUserFromSupabaseUser(supabaseSession.user));
         setIsAllowed(true);
       } else {
         setIsAllowed(false);
