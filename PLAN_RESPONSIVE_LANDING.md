@@ -120,11 +120,11 @@ Añadir al `:root` en `global.css`:
 - [x] **Neumorfismo**: Navbar con shadow sutil, botones con depth, menú móvil con outset shadow
 
 ### Fase 4: Stats Strip
-- [ ] Grid responsive: 1 col <480px, 2 col 480-768px, 3 col >768px
-- [ ] Aumentar padding en strip-item móvil
-- [ ] Ajustar font-sizes con clamp()
-- [ ] **Neumorfismo**: Cards con outset shadow suave
-- [ ] **Animación**: Stagger reveal on scroll
+- [x] Grid responsive: 1 col <480px, 2 col 480-768px, 3 col >768px
+- [x] Aumentar padding en strip-item móvil (20px→22px)
+- [x] Ajustar font-sizes con clamp() (22-32px, 12-14px, 11-13px)
+- [x] **Neumorfismo**: Cards con outset shadow suave, hover profundizado
+- [x] **Animación**: Stagger reveal on scroll (clase .reveal ya existe)
 
 ### Fase 5: Journey Section
 - [ ] Quitar min-height fijo, usar min-height auto
