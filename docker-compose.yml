@@ -44,7 +44,7 @@ services:
       target: dev
     restart: unless-stopped
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:3002/api}
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3002}
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
       CHOKIDAR_USEPOLLING: "true"
