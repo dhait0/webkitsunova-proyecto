@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import PsySidebar from '@/components/PsySidebar';
+import RoleSwitcher from '@/components/RoleSwitcher';
 import { ApiError, getPsyProfile, signOut } from '@/lib/api';
 import { psySecondaryItems } from '@/content/siteContent';
 import type { SessionUser } from '@/types/session';
@@ -89,6 +90,8 @@ function PsyLayout({ session }: PsyLayoutProps) {
           </div>
 
           <div className="dashboard-header-actions">
+            <RoleSwitcher session={session} />
+
             <Link to="/psy/notificaciones" className="notif-bell-wrapper" aria-label="Notificaciones">
               <svg
                 viewBox="0 0 24 24"

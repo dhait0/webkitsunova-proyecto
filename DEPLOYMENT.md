@@ -76,11 +76,33 @@ El seed de backend crea un usuario con `passwordHash` legacy para desarrollo loc
 cd backend
 npm run db:seed
 ```
-**IMPORTANTE**: Este seed es LEGACY. Los usuarios deben crearse via Supabase Auth en producción.
-Para crear el primer administrador en Supabase:
-1. Ve a Supabase Dashboard → Authentication → Add user
-2. Crea el usuario con email y contraseña
-3. Edita el usuario → app_metadata → establece `role: "ADMIN"`
+**IMPORTANTE**: Este seed es LEGACY y **no sirve para iniciar sesión como
+administrador**. Escribe `role: ADMIN` en la tabla `User` de Prisma, pero el
+login se valida contra Supabase Auth, que nunca consulta esa tabla. El propio
+seed lo avisa por consola. Úsalo solo para datos de desarrollo.
+
+### 6c. Crear el primer administrador
+
+El rol vive en `app_metadata.role` de Supabase. Ese es el único lugar del que
+leen tanto el frontend como el middleware del backend.
+
+Por SQL (Supabase → SQL Editor), sustituye el correo y el UUID del usuario:
+
+```sql
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || '{"role":"ADMIN"}'::jsonb
+where email = 'tu@correo.com';
+```
+
+El valor debe ser exactamente `ADMIN`, en mayúsculas. Cualquier otra variante
+(`admin`, `administrator`) se normaliza a `USER` y el panel no abrirá.
+
+Después **cierra sesión y vuelve a entrar**: el token de Supabase lleva una copia
+del `app_metadata` y no se refresca solo.
+
+Una vez exista un administrador, el resto de roles se gestionan desde el panel
+con `PATCH /api/admin/users/:id/role`, que escribe a la vez en Supabase y en
+Prisma. Un administrador no puede cambiar su propio rol.
 
 ### 7. Configurar Auth
 - URL de callback: `https://tu-frontend.vercel.app/` (o `http://localhost:5174` en dev)
