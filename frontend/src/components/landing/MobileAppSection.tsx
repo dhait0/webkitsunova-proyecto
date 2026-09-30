@@ -3,7 +3,7 @@ import { Card, CardImage, Button, Container, Section, Flex, Badge } from '@/comp
 
 export function MobileAppSection() {
   return (
-    <Section padding="xl" background="none" divider="none" className="relative">
+    <Section id="app" padding="xl" background="none" divider="none" className="relative">
       <Container size="lg">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

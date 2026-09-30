@@ -4,7 +4,7 @@ import { landingJourneySteps } from '@/content/siteContent';
 
 export function JourneySection() {
   return (
-    <Section padding="lg" background="none" divider="none" className="relative">
+    <Section id="como-funciona" padding="lg" background="none" divider="none" className="relative">
       <Container size="lg">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
