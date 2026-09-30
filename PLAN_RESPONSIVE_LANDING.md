@@ -145,10 +145,12 @@ Añadir al `:root` en `global.css`:
 - [x] Imagen container: gradient background sutil + radial glow, drop-shadow en img
 
 ### Fase 7: Support CTA
-- [ ] Padding responsive (20px móvil, 28px desktop)
-- [ ] Gap responsive
-- [ ] **Neumorfismo**: Panel con outset shadow
-- [ ] **Animación**: Scroll reveal
+- [x] Padding responsive: 20px móvil → 28px tablet → 32-40px desktop
+- [x] Gap responsive: 20px móvil → 28px desktop
+- [x] Grid: 1col móvil, 1.1fr/0.9fr ≥768px
+- [x] Border-radius: 24px → 28px desktop
+- [x] **Neumorfismo**: Panel gradient outset shadow, support-cards inset→outset on hover
+- [x] **Animación**: Scroll reveal, hover translateX(4px) + shadow swap
 
 ### Fase 8: Mobile App Section
 - [ ] Imagen: max-width 100%, height auto
