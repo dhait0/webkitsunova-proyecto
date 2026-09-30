@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { supabaseAdmin } from '../lib/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { z } from 'zod';
@@ -9,6 +10,10 @@ const adminRouter = Router();
 const updateUserStatusSchema = z.object({
   status: z.enum(['ACTIVE', 'SUSPENDED']),
   suspendedReason: z.string().optional(),
+});
+
+const updateUserRoleSchema = z.object({
+  role: z.enum(['USER', 'PSYCHOLOGIST', 'ADMIN']),
 });
 
 const psyContentStatusSchema = z.object({
@@ -241,6 +246,62 @@ adminRouter.patch('/users/:id/status', async (req, res, next) => {
     return res.json({
       success: true,
       message: `Estado actualizado a ${payload.status === 'ACTIVE' ? 'Activo' : 'Suspendido'}`,
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+/**
+ * Changes a user's application role.
+ *
+ * The role lives in two places and both must agree:
+ *  - `app_metadata.role` in Supabase is the source of truth for authentication
+ *    (see agents.md). The frontend and the auth middleware read only this.
+ *  - `User.role` in Prisma drives the admin listings, which filter by role.
+ *
+ * Supabase is updated first: it is the one that decides what the user can do.
+ * If the Prisma write then fails the account keeps the new permissions, and the
+ * user reappears under the new role once the listing is repaired.
+ *
+ * An administrator may not change their own role. Allowing it would let the last
+ * remaining admin demote themselves and lock the panel out of its own backend.
+ */
+adminRouter.patch('/users/:id/role', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const payload = updateUserRoleSchema.parse(req.body);
+
+    if (id === req.user?.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'No puedes cambiar tu propio rol',
+      });
+    }
+
+    const { error: supabaseError } = await supabaseAdmin.auth.admin.updateUserById(id, {
+      app_metadata: { role: payload.role },
+    });
+
+    if (supabaseError) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró el usuario en Supabase Auth',
+      });
+    }
+
+    await prisma.user.update({
+      where: { id },
+      data: {
+        role: payload.role,
+        updatedAt: new Date(),
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: `Rol actualizado a ${payload.role}`,
+      user: { id, role: payload.role },
     });
   } catch (error) {
     return next(error);

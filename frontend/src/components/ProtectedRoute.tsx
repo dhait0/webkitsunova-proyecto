@@ -1,15 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { roleFromSupabaseUser } from '@/lib/roles';
 import type { SessionUser } from '@/types/session';
-
-function getRoleFromUser(user: { app_metadata?: Record<string, unknown> } | null | undefined): string {
-  const appMetadata = user?.app_metadata;
-  if (appMetadata?.role && typeof appMetadata.role === 'string') {
-    return appMetadata.role;
-  }
-  return 'USER';
-}
 
 type ProtectedRouteProps = {
   children: ReactNode | ((session: SessionUser) => ReactNode);
@@ -31,7 +24,7 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
       if (supabaseSession) {
         const user = supabaseSession.user;
         const profile = (user.user_metadata as { first_name?: string; last_name?: string; username?: string }) ?? {};
-        const role = getRoleFromUser(user);
+        const role = roleFromSupabaseUser(user);
         setSession({
           id: user.id,
           email: user.email ?? '',

@@ -1,4 +1,5 @@
 import {
+  availableViews,
   homeForRole,
   roleFromSupabaseUser,
   sessionUserFromSupabaseUser,
@@ -51,5 +52,24 @@ describe('roles helpers', () => {
 
   it('returns null when there is no user', () => {
     expect(sessionUserFromSupabaseUser(null)).toBeNull();
+  });
+});
+
+describe('availableViews', () => {
+  it('offers all three areas to an administrator', () => {
+    expect(availableViews('ADMIN').map((v) => v.to)).toEqual(['/admin', '/psy', '/dashboard']);
+  });
+
+  it('offers only the psychologist and user areas to a psychologist', () => {
+    expect(availableViews('PSYCHOLOGIST').map((v) => v.to)).toEqual(['/psy', '/dashboard']);
+  });
+
+  it('offers a plain user nothing to switch to', () => {
+    expect(availableViews('USER')).toEqual([]);
+  });
+
+  it('treats an unknown role as a plain user rather than granting extra areas', () => {
+    expect(availableViews('admin')).toEqual([]);
+    expect(availableViews(undefined)).toEqual([]);
   });
 });

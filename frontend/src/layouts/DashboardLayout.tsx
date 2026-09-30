@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import DashboardSidebar from '@/components/DashboardSidebar';
+import RoleSwitcher from '@/components/RoleSwitcher';
 import { signOut } from '@/lib/api';
 import type { SessionUser } from '@/types/session';
 
@@ -73,6 +74,8 @@ function DashboardLayout({ session }: DashboardLayoutProps) {
           </div>
 
           <div className="dashboard-header-actions">
+            <RoleSwitcher session={session} />
+
             <button
               type="button"
               className="notif-bell-wrapper"

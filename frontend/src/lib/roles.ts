@@ -21,6 +21,38 @@ export function homeForRole(role: string | undefined | null): string {
   return roleHome[toAppRole(role)];
 }
 
+export type AppView = {
+  to: string;
+  label: string;
+  /** The role whose home this view is, used to mark the active entry. */
+  role: AppRole;
+};
+
+/**
+ * Every view a role may reach through the switcher.
+ *
+ * A `USER` has a single home, so the list is empty and the switcher is not
+ * rendered at all. `ADMIN` is admitted to `/psy` by `PsyRoute` so an
+ * administrator can inspect the psychologist experience; the psy API stays
+ * behind `requireRole('PSYCHOLOGIST')`.
+ */
+const VIEWS_BY_ROLE: Record<AppRole, AppView[]> = {
+  ADMIN: [
+    { to: roleHome.ADMIN, label: 'Administración', role: 'ADMIN' },
+    { to: roleHome.PSYCHOLOGIST, label: 'Psicólogo', role: 'PSYCHOLOGIST' },
+    { to: roleHome.USER, label: 'Usuario', role: 'USER' },
+  ],
+  PSYCHOLOGIST: [
+    { to: roleHome.PSYCHOLOGIST, label: 'Psicólogo', role: 'PSYCHOLOGIST' },
+    { to: roleHome.USER, label: 'Usuario', role: 'USER' },
+  ],
+  USER: [],
+};
+
+export function availableViews(role: string | undefined | null): AppView[] {
+  return VIEWS_BY_ROLE[toAppRole(role)];
+}
+
 /**
  * Reads the role from a Supabase user. `app_metadata.role` is the only source of
  * truth (see agents.md); `user.role` holds the Supabase auth role and must be
