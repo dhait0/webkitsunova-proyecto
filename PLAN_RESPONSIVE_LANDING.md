@@ -163,10 +163,15 @@ Añadir al `:root` en `global.css`:
 - [x] Focus-visible: accent outline
 
 ### Fase 9: Footer
-- [ ] Gap responsive
-- [ ] Padding responsive
-- [ ] Logo size responsive
-- [ ] **Neumorfismo**: Sutil shadow en logo container
+- [x] Grid responsive: 1col <640px → 2col 640-900px → 3col >900px
+- [x] Gap responsive: 24px → 28px → 32px
+- [x] Padding responsive: 32px 24px (mobile) → 5% desktop
+- [x] Logo size responsive: 90px → 110px → 120px con hover scale + glow
+- [x] Text center mobile, left desktop
+- [x] Link hover: translateX(4px) + color accent-2
+- [x] Focus-visible: accent outline
+- [x] **Neumorfismo**: Footer bg neumorphic-bg, border-top subtle, logo drop-shadow glow
+- [x] Bottom padding reduced, font-sizes clamp()
 
 ### Fase 10: Variables CSS & Utilidades + Polish
 - [ ] Definir breakpoints consistentes como variables CSS
