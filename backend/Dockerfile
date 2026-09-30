@@ -4,9 +4,8 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl \
   && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
-RUN npm install
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN npm install
 COPY tsconfig.json ./
 COPY src ./src
 
