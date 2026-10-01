@@ -124,7 +124,7 @@ El stack usa **Supabase Auth** (API en la nube) + **PostgreSQL local en Docker**
 - `requireAuth` (`src/middleware/auth.ts`) verifica el JWT y popula `req.user`.
 - `requireRole` (`src/middleware/requireRole.ts`) **confía en `req.user.role`**
   establecido por `requireAuth`. No re-valida contra Supabase para evitar
-  llamadas redundantes y el bug de pasar UUID en vez de JWT a `getUser()`.
+  llamadas redundantas y el bug de pasar UUID en vez de JWT a `getUser()`.
 
 ## SQL de esquema para Supabase
 
