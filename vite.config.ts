@@ -7,10 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
-  // The shared .env lives at the repo root (see .env.example), not in frontend/.
-  // Without this Vite silently loads nothing and createClient() throws at runtime,
-  // which blanks the whole app.
-  envDir: path.resolve(__dirname, '..'),
+  envDir: __dirname,
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
@@ -18,9 +15,15 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
-    outDir: 'dist',
+    outDir: 'public',
   }
 });

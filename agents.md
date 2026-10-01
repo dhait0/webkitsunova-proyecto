@@ -153,15 +153,34 @@ Si el admin login funciona pero `app_metadata.role = 'ADMIN'` no está en el JWT
     VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_mvWz3mfUpctYg2nM1ek7g_9Ixa8zo_
     ```
 
-## Despliegue en Vercel (unificado — frontend + backend)
+## Despliegue en Vercel (unificado — frontend + backend en un solo proyecto)
 
-Se usa un solo proyecto de Vercel con `vercel.json` en el root.
+Se usa un solo proyecto de Vercel con `vercel.json` en el root. El backend
+compila el frontend (Vite) y lo sirve como archivos estáticos.
 
 ### Arquitectura
-- **Frontend** (Vite, React) → `/frontend/dist/` → static build
+- **Frontend** (Vite, React) → compilado durante el `build` del backend → `public/`
 - **Backend** (Express) → serverless function via `@vercel/node`
-- **Routing**: `/api/*` → Express, `/` → archivos estáticos de Vite
+- **Routing**: `/api/*` → Express API routes, `/(.*)` → archivos estáticos (SPA fallback)
 - **CORS**: no necesario (mismo origen) — pero se mantiene el middleware para desarrollo local
+- **Frontend URLs**: relativas (`/api/...`) — no se usa `VITE_API_URL` en producción
+
+### Build (Vercel)
+1. `@vercel/node` ejecuta el `build` script de `backend/package.json`:
+   - Compila el frontend con Vite → `frontend/dist/`
+   - Copia el build a `backend/public/`
+   - Genera cliente Prisma
+   - Compila TypeScript del backend
+2. El serverless function sirve `/api/*` desde Express y `/(.*)` desde archivos estáticos
+
+### Local development
+```sh
+# Terminal 1: backend
+cd backend && npm run dev
+
+# Terminal 2: frontend
+cd frontend && npm run dev
+```
 
 ### Environment Variables en Vercel
 

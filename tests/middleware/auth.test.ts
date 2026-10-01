@@ -1,7 +1,7 @@
-import { supabaseAdmin } from '../../src/lib/supabase';
-import { getRole } from '../../src/lib/role';
+import { supabaseAdmin } from '../src/server/lib/supabase';
+import { getRole } from '../src/server/lib/role';
 
-vi.mock('../../src/lib/supabase', () => ({
+vi.mock('../../src/server/lib/supabase', () => ({
   supabaseAdmin: {
     auth: {
       getUser: vi.fn(),
@@ -9,7 +9,7 @@ vi.mock('../../src/lib/supabase', () => ({
   },
 }));
 
-vi.mock('../../src/lib/role', () => ({
+vi.mock('../../src/server/lib/role', () => ({
   getRole: vi.fn(),
 }));
 

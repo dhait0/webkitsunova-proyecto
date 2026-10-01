@@ -1,6 +1,6 @@
-import { prisma } from '../../src/lib/prisma';
+import { prisma } from '../src/server/lib/prisma';
 
-vi.mock('../../src/lib/prisma', () => ({
+vi.mock('../../src/server/lib/prisma', () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),
