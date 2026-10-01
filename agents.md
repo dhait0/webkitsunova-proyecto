@@ -13,13 +13,47 @@ Reconstruir Kitsunova como una plataforma web moderna con:
 - contenedores Docker para desarrollo y despliegue
 - CI/CD con Jenkins
 
-## Estructura del repositorio
+## Estructura del repositorio (unificada)
 
-- `frontend/`: interfaz de usuario
-- `backend/`: API, autenticación y lógica de negocio
+- `src/`: código fuente unificado (frontend + backend)
+  - `src/components/`: componentes React reutilizables
+  - `src/pages/`: páginas por dominio
+  - `src/server/`: código del backend (Express API + handler Vercel)
+    - `src/server/index.ts`: entry point para Vercel (`export default app`)
+    - `src/server/routes/`: rutas API
+    - `src/server/middleware/`: middleware (auth, requireRole)
+    - `src/server/services/`: lógica de negocio
+    - `src/server/lib/`: utilidades del servidor
+  - `src/services/`: capa de servicios API centralizada (cliente)
+  - `src/styles/`: estilos globales (tailwind.css)
+  - `src/*.tsx`: puntos de entrada frontend
+- `prisma/`: esquema Prisma y migrations
+- `tests/`: tests backend + frontend
+  - `tests/setup.ts`: setup backend (Sinpsabase mock, etc.)
+  - `tests/middleware/`, `tests/routes/`, etc.
+- `scripts/`: scripts de utilidad (seed, etc.)
 - `docs/`: documentación funcional y técnica
 - `docker-compose.yml`: entorno local completo
 - `Jenkinsfile`: pipeline de integración y entrega continua
+
+### Migración desde frontend/ + backend/
+
+El proyecto se reorganizó de una estructura dual (`frontend/` + `backend/`) a una
+estructura unificada bajo `src/`. Cambios clave:
+
+- `frontend/src/*` → `src/*`
+- `backend/src/*` → `src/server/*`
+- `backend/prisma/*` → `prisma/`
+- `backend/scripts/*` → `scripts/`
+- `backend/tests/*` → `tests/`
+- `frontend/index.html` → `index.html` (raíz)
+- `frontend/tsconfig.json` → `tsconfig.json` (raíz, unificado)
+- `frontend/vite.config.ts` → `vite.config.ts` (raíz)
+- `frontend/vitest.config.ts` → `vitest.config.ts` (raíz, unificado)
+- `frontend/tailwind.config.js` → `tailwind.config.js` (raíz)
+- `frontend/postcss.config.js` → `postcss.config.js` (raíz)
+
+Vercel deploy: `vercel.json` → `src/server/index.ts` (handler unificado).
 
 ## Convenciones
 
@@ -40,7 +74,7 @@ Reconstruir Kitsunova como una plataforma web moderna con:
 ## Backend
 
 - Usar Prisma como fuente de verdad del esquema.
-- Cualquier modelo nuevo debe reflejarse en `backend/prisma/schema.prisma`.
+- Cualquier modelo nuevo debe reflejarse en `prisma/schema.prisma`.
 - La API debe responder con JSON consistente.
 - Los errores de validación deben retornar `400`.
 - Los errores de autenticación deben retornar `401` o `403` según corresponda.

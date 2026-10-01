@@ -1,5 +1,5 @@
 import request from 'supertest';
-import app from '../src/server/app';
+import app from '../../src/server/app.js';
 
 vi.mock('../../src/server/lib/prisma', () => ({
   prisma: {

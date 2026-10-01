@@ -1,6 +1,6 @@
-import { prisma } from '../src/server/lib/prisma';
+import { prisma } from '../../src/server/lib/prisma.js';
 
-vi.mock('../../src/server/lib/prisma', () => ({
+vi.mock('../../src/server/lib/prisma.js', () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),
@@ -37,7 +37,7 @@ describe('requireApprovedPsychologist middleware', () => {
 
   it('returns 401 when there is no authenticated user', async () => {
     const { requireApprovedPsychologist } = await import(
-      '../../src/middleware/requireApprovedPsychologist'
+      '../../src/server/middleware/requireApprovedPsychologist.js'
     );
 
     const res = makeRes();
@@ -51,7 +51,7 @@ describe('requireApprovedPsychologist middleware', () => {
     mockFindUnique.mockResolvedValueOnce(null);
 
     const { requireApprovedPsychologist } = await import(
-      '../../src/middleware/requireApprovedPsychologist'
+      '../../src/server/middleware/requireApprovedPsychologist.js'
     );
 
     const res = makeRes();
@@ -65,7 +65,7 @@ describe('requireApprovedPsychologist middleware', () => {
     mockFindUnique.mockResolvedValueOnce({ ...approvedUser(), status: 'SUSPENDED' });
 
     const { requireApprovedPsychologist } = await import(
-      '../../src/middleware/requireApprovedPsychologist'
+      '../../src/server/middleware/requireApprovedPsychologist.js'
     );
 
     const res = makeRes();
@@ -82,7 +82,7 @@ describe('requireApprovedPsychologist middleware', () => {
     mockFindUnique.mockResolvedValueOnce({ status: 'ACTIVE', profile: null });
 
     const { requireApprovedPsychologist } = await import(
-      '../../src/middleware/requireApprovedPsychologist'
+      '../../src/server/middleware/requireApprovedPsychologist.js'
     );
 
     const res = makeRes();
@@ -100,7 +100,7 @@ describe('requireApprovedPsychologist middleware', () => {
     });
 
     const { requireApprovedPsychologist } = await import(
-      '../../src/middleware/requireApprovedPsychologist'
+      '../../src/server/middleware/requireApprovedPsychologist.js'
     );
 
     const res = makeRes();
@@ -116,7 +116,7 @@ describe('requireApprovedPsychologist middleware', () => {
     mockFindUnique.mockResolvedValueOnce(approvedUser());
 
     const { requireApprovedPsychologist } = await import(
-      '../../src/middleware/requireApprovedPsychologist'
+      '../../src/server/middleware/requireApprovedPsychologist.js'
     );
 
     const res = makeRes();
@@ -134,7 +134,7 @@ describe('requireApprovedPsychologist middleware', () => {
     mockFindUnique.mockRejectedValueOnce(new Error('db down'));
 
     const { requireApprovedPsychologist } = await import(
-      '../../src/middleware/requireApprovedPsychologist'
+      '../../src/server/middleware/requireApprovedPsychologist.js'
     );
 
     const res = makeRes();
