@@ -1,7 +1,7 @@
 import request from 'supertest';
-import app from '../../src/app';
+import app from '../src/server/app';
 
-vi.mock('../../src/lib/supabase', () => ({
+vi.mock('../../src/server/lib/supabase', () => ({
   supabaseAdmin: {
     auth: {
       signInWithPassword: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock('../../src/lib/supabase', () => ({
   },
 }));
 
-import { supabaseAdmin } from '../../src/lib/supabase';
+import { supabaseAdmin } from '../src/server/lib/supabase';
 
 const mockSignIn = vi.mocked(supabaseAdmin.auth.signInWithPassword);
 const mockSignInOAuth = vi.mocked(supabaseAdmin.auth.signInWithOAuth);

@@ -9,18 +9,24 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './src'),
     }
   },
   test: {
-    environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/setupTests.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
+    environment: 'node',
+    setupFiles: ['./src/setupTests.ts', './tests/setup.ts'],
+    include: [
+      'src/**/*.test.{ts,tsx}',
+      'tests/**/*.test.{ts,tsx}',
+    ],
+    environmentMatchGlobs: [
+      ['src/**/*.test.{ts,tsx}', 'jsdom'],
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
-      exclude: ['node_modules/', 'src/main.tsx']
-    }
-  }
+      exclude: ['node_modules/', 'src/main.tsx', 'src/server/'],
+    },
+  },
 });

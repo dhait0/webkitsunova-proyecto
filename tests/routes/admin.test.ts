@@ -1,7 +1,7 @@
 import request from 'supertest';
-import app from '../../src/app';
+import app from '../src/server/app';
 
-vi.mock('../../src/lib/prisma', () => ({
+vi.mock('../../src/server/lib/prisma', () => ({
   prisma: {
     user: { findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn(), update: vi.fn(), delete: vi.fn() },
     profile: { findUnique: vi.fn() },
@@ -12,7 +12,7 @@ vi.mock('../../src/lib/prisma', () => ({
   },
 }));
 
-vi.mock('../../src/lib/supabase', () => ({
+vi.mock('../../src/server/lib/supabase', () => ({
   supabaseAdmin: {
     auth: {
       getUser: vi.fn(),
@@ -23,13 +23,13 @@ vi.mock('../../src/lib/supabase', () => ({
   },
 }));
 
-vi.mock('../../src/lib/role', () => ({
+vi.mock('../../src/server/lib/role', () => ({
   getRole: vi.fn(),
 }));
 
-const { supabaseAdmin } = await import('../../src/lib/supabase');
-const { prisma } = await import('../../src/lib/prisma');
-const { getRole } = await import('../../src/lib/role');
+const { supabaseAdmin } = await import('../../src/server/lib/supabase');
+const { prisma } = await import('../../src/server/lib/prisma');
+const { getRole } = await import('../../src/server/lib/role');
 
 const mockGetUser = vi.mocked(supabaseAdmin.auth.getUser);
 const mockUpdateUserById = vi.mocked(supabaseAdmin.auth.admin.updateUserById);

@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 
-vi.mock('../../src/lib/supabase', () => ({
+vi.mock('../../src/server/lib/supabase', () => ({
   supabaseAdmin: {
     auth: {
       getUser: vi.fn(),
