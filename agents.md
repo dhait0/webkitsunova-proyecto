@@ -80,4 +80,55 @@ Reconstruir Kitsunova como una plataforma web moderna con:
 - Eliminar `passwordHash` del modelo User en schema.prisma (legacy).
 - Definir modelos de hábitos, mensajes, talleres, foro y psicólogos.
 - Crear layout base para `admin`, `user` y `psy`.
-- Añadir pruebas y seed inicial para Prisma.
+- Añadir pruebas y seed inicial para Prisma.** (parcialmente hecho)
+
+## Seed de admin en Supabase Auth
+
+El login se realiza vía `supabase.auth.signInWithPassword` (cliente). El usuario
+admin debe existir en **Supabase Auth** con `app_metadata.role = 'ADMIN'`.
+
+El seed de Prisma (`prisma/seed.ts`) solo crea el registro en PostgreSQL. Para
+crear el usuario en Supabase Auth y sincronizar Prisma, ejecutar:
+
+```sh
+cd backend && npm run seed:auth
+```
+
+Lee las credenciales de `SEED_ADMIN_*` en `.env` y usa `supabaseAdmin.auth.admin`
+para crear/actualizar el usuario con el rol correcto.
+
+## Entorno de desarrollo local
+
+El stack usa **Supabase Auth** (API en la nube) + **PostgreSQL local en Docker** para datos.
+
+1. `docker compose up -d --build` levanta PostgreSQL (puerto 5433→5432), backend y frontend.
+2. Para desarrollo con Vite/Express locales (no Docker), el backend
+   se conecta a PostgreSQL en `localhost:5433`. Usa `backend/.env` con:
+   ```
+   DATABASE_URL=postgresql://webkitsunova:webkitsunova_dev@localhost:5433/webkitsunova
+   ```
+3. `CORS_ORIGIN` debe incluir el puerto del frontend local:
+   ```
+   CORS_ORIGIN=http://localhost:5173,http://localhost:5174
+   ```
+4. Para crear tablas y sincronizar admin:
+   ```sh
+   npm run db:push        # crea las 19 tablas en PostgreSQL local
+   npm run seed:auth      # crea admin en Supabase Auth + sincroniza en Prisma
+   ```
+
+## Notas de arquitectura de autenticación
+
+- El rol se lee exclusivamente de `user.app_metadata.role` (nunca de
+  `user.role` que es el tipo de Auth de Supabase: 'authenticated'/'anon').
+- `requireAuth` (`src/middleware/auth.ts`) verifica el JWT y popula `req.user`.
+- `requireRole` (`src/middleware/requireRole.ts`) **confía en `req.user.role`**
+  establecido por `requireAuth`. No re-valida contra Supabase para evitar
+  llamadas redundantas y el bug de pasar UUID en vez de JWT a `getUser()`.
+
+## SQL de esquema para Supabase
+
+Si la base de datos Supabase es accesible (hostname `db.<ref>.supabase.co`
+resuelve), aplica `backend/supabase_schema.sql` en el **Supabase SQL Editor**.
+Incluye migraciones DDL, índices, foreign keys, políticas RLS y el INSERT del
+admin con su ID de Supabase Auth (`0cd92849-9588-4d4d-aec5-f5d66b8502fa`).

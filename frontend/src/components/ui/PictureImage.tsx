@@ -45,8 +45,8 @@ export function PictureImage({
       width={width}
       height={height}
       loading={loading}
-      fetchPriority={fetchPriority}
       decoding={decoding}
+      {...(fetchPriority ? ({ fetchpriority: fetchPriority } as Record<string, unknown>) : {})}
     />
   );
 

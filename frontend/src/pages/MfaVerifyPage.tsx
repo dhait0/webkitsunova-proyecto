@@ -127,9 +127,9 @@ function MfaVerifyPage() {
 
   return (
     <div className="login-page">
-      <Link to={mode === 'login' ? '/dashboard' : '/mfa/verify?mode=login'} className="back-btn" aria-label="Volver">
-        ←
-      </Link>
+    <Link to={sessionHome ?? '/dashboard'} className="back-btn" aria-label="Volver">
+      ←
+    </Link>
 
       <div className="login-layout">
         <section className="login-column">

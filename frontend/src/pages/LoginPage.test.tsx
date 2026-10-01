@@ -68,21 +68,15 @@ describe('LoginPage', () => {
 
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
       data: {
-        session: { access_token: 'token', refresh_token: 'refresh', expires_at: 9999 },
-        user: { id: 'user-1', email: 'test@example.com', app_metadata: {}, user_metadata: {} },
-      },
-      error: null,
-    } as any);
-
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: {
         session: {
           access_token: 'token',
           refresh_token: 'refresh',
           expires_at: 9999,
           user: { id: 'user-1', email: 'test@example.com', app_metadata: {}, user_metadata: {} },
         },
+        user: { id: 'user-1', email: 'test@example.com', app_metadata: {}, user_metadata: {} },
       },
+      error: null,
     } as any);
 
     vi.mocked(supabase.auth.mfa.getAuthenticatorAssuranceLevel).mockResolvedValue({
@@ -122,11 +116,6 @@ describe('LoginPage', () => {
     } as any);
 
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
-      data: { session: {}, user: {} },
-      error: null,
-    } as any);
-
-    vi.mocked(supabase.auth.getSession).mockResolvedValue({
       data: {
         session: {
           user: {
@@ -136,7 +125,14 @@ describe('LoginPage', () => {
             user_metadata: {},
           },
         },
+        user: {
+          id: 'psy-1',
+          email: 'psy@example.com',
+          app_metadata: { role: 'PSYCHOLOGIST' },
+          user_metadata: {},
+        },
       },
+      error: null,
     } as any);
 
     vi.mocked(supabase.auth.mfa.getAuthenticatorAssuranceLevel).mockResolvedValue({
@@ -161,6 +157,62 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(supabase.auth.mfa.getAuthenticatorAssuranceLevel).toHaveBeenCalled();
     });
+  });
+
+  it('redirects an ADMIN to the admin panel after login', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+      data: { session: null },
+    } as any);
+
+    vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
+      data: {
+        session: {
+          user: {
+            id: 'admin-1',
+            email: 'admin@kitsunova.local',
+            app_metadata: { role: 'ADMIN' },
+            user_metadata: {},
+          },
+        },
+        user: {
+          id: 'admin-1',
+          email: 'admin@kitsunova.local',
+          app_metadata: { role: 'ADMIN' },
+          user_metadata: {},
+        },
+      },
+      error: null,
+    } as any);
+
+    vi.mocked(supabase.auth.mfa.getAuthenticatorAssuranceLevel).mockResolvedValue({
+      data: { currentLevel: 'aal2', nextLevel: null },
+    } as any);
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin" element={<div>Panel admin</div>} />
+          <Route path="/dashboard" element={<div>Panel de usuario</div>} />
+          <Route path="/psy" element={<div>Panel del psicólogo</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Correo electrónico')).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText('Correo electrónico'), 'admin@kitsunova.local');
+    await user.type(screen.getByLabelText('Contraseña'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'Iniciar sesión' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Panel admin')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Panel de usuario')).not.toBeInTheDocument();
   });
 
   it('renders Google login button and calls signInWithOAuth', async () => {

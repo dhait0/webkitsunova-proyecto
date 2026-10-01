@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { homeForRole, roleFromSupabaseUser } from '@/lib/roles';
 
 type EnrollState = 'idle' | 'enrolled' | 'verified' | 'error';
 
@@ -19,10 +20,15 @@ function MfaEnrollPage() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [roleHome, setRoleHome] = useState('/dashboard');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate('/login', { replace: true });
+      if (!session) {
+        navigate('/login', { replace: true });
+        return;
+      }
+      setRoleHome(homeForRole(roleFromSupabaseUser(session.user)));
     });
   }, [navigate]);
 
@@ -99,7 +105,7 @@ function MfaEnrollPage() {
 
   return (
     <div className="login-page">
-      <Link to="/dashboard" className="back-btn" aria-label="Volver al dashboard">
+      <Link to={roleHome} className="back-btn" aria-label="Volver">
         ←
       </Link>
 

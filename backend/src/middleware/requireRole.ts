@@ -1,34 +1,20 @@
 import type { NextFunction, Request, Response } from 'express';
-import { supabaseAdmin } from '../lib/supabase.js';
-import { getRole } from '../lib/role.js';
 
 export function requireRole(...roles: string[]) {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { data: { user }, error } = await supabaseAdmin.auth.getUser(req.user!.id);
-
-      if (error || !user) {
-        return res.status(401).json({ success: false, message: 'Sesión inválida' });
-      }
-
-      const userRole = getRole(user);
-
-      if (!roles.includes(userRole)) {
-        return res.status(403).json({
-          success: false,
-          message: `Requiere rol: ${roles.join(', ')}`,
-        });
-      }
-
-      req.user = {
-        id: user.id,
-        email: user.email ?? '',
-        role: userRole,
-      };
-
-      return next();
-    } catch {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
       return res.status(401).json({ success: false, message: 'Sesión inválida' });
     }
+
+    const userRole = req.user?.role ?? 'USER';
+
+    if (!roles.includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: `Requiere rol: ${roles.join(', ')}`,
+      });
+    }
+
+    return next();
   };
 }
