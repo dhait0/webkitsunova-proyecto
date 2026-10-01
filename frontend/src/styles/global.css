@@ -161,6 +161,15 @@ button {
   flex-wrap: wrap;
 }
 
+/* The burger owns navigation below 769px; the inline nav owns it above. */
+.desktop-nav {
+  display: none;
+}
+
+.mobile-nav {
+  display: none;
+}
+
 .main-nav-links a {
   position: relative;
   color: white;
@@ -237,6 +246,197 @@ button {
   outline-offset: 2px;
 }
 
+/* Header CTA: same neumorphic shell, accent fill so it reads as the primary
+   action next to the ghost "Iniciar sesión". */
+.login-btn--primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0a1030;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.login-btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-neu-outset);
+}
+
+.login-btn--primary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-neu-pressed);
+}
+
+.login-btn--primary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.desktop-auth {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Landing structure */
+.hero-section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 84vh;
+  padding: 36px 16px;
+}
+
+.hero-grid {
+  display: grid;
+  gap: 48px;
+  align-items: center;
+}
+
+.hero-copy {
+  order: 2;
+  text-align: center;
+}
+
+.hero-visual {
+  order: 1;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 28px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.hero-cta--primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0a1030;
+  box-shadow: var(--shadow-neu-outset);
+}
+
+.hero-cta--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 12px 12px 24px var(--neumorphic-shadow-dark),
+    -12px -12px 24px var(--neumorphic-shadow-light);
+}
+
+.hero-cta--primary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-neu-pressed);
+}
+
+.hero-cta--ghost {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  box-shadow: var(--shadow-neu-subtle);
+}
+
+.hero-cta--ghost:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.hero-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Long Spanish words ("acompañamiento", "psicológico") must not blow the
+   layout at 320px, where a heading box can be as narrow as 256px. */
+.landing-page h1,
+.landing-page h2,
+.landing-page h3,
+.landing-page h4 {
+  overflow-wrap: break-word;
+}
+
+.signup-section {
+  position: relative;
+  padding: 40px 16px 72px;
+  scroll-margin-top: 88px;
+}
+
+/* Anchor targets clear the sticky header. */
+#inicio,
+#nosotros,
+#como-funciona,
+#solucion,
+#beneficios,
+#app,
+#contacto,
+#registro {
+  scroll-margin-top: 88px;
+}
+
+/* Welcome curtain */
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--neumorphic-bg);
+  background-image: radial-gradient(circle at 30% 20%, rgba(26, 42, 122, 0.9), transparent 60%),
+    radial-gradient(circle at 75% 80%, rgba(6, 18, 74, 0.95), transparent 55%);
+}
+
+.preloader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  width: min(320px, 100%);
+  text-align: center;
+}
+
+.preloader-logo {
+  width: 200px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.preloader-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(4, 8, 26, 0.6);
+  box-shadow: var(--shadow-neu-inset);
+  overflow: hidden;
+}
+
+.preloader-bar {
+  height: 100%;
+  border-radius: 999px;
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.preloader-caption {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
 .mobile-menu-toggle {
   display: none;
   flex-direction: column;
@@ -259,6 +459,42 @@ button {
   transition: all 0.2s ease;
 }
 
+@media (min-width: 900px) {
+  .hero-section {
+    padding: 64px 32px;
+  }
+
+  .hero-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 64px;
+  }
+
+  .hero-copy {
+    order: 1;
+    text-align: left;
+  }
+
+  .hero-visual {
+    order: 2;
+  }
+
+  .hero-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-nav {
+    display: flex;
+  }
+
+  .mobile-nav,
+  .mobile-menu-toggle,
+  .mobile-auth {
+    display: none !important;
+  }
+}
+
 @media (max-width: 768px) {
   .navbar-container {
     width: min(1400px, calc(100% - 16px));
@@ -278,7 +514,7 @@ button {
     display: none;
   }
 
-  .main-nav-links {
+  .mobile-nav {
     position: fixed;
     top: 0;
     right: 0;
@@ -297,7 +533,7 @@ button {
     overflow-y: auto;
   }
 
-  .main-nav-links a {
+  .mobile-nav a {
     padding: 14px 16px;
     font-size: 16px;
     border-radius: 12px;
@@ -305,15 +541,15 @@ button {
     text-align: left;
   }
 
-  .main-nav-links a:hover {
+  .mobile-nav a:hover {
     background: rgba(124, 108, 255, 0.15);
   }
 
-  .main-nav-links a.active::after {
+  .mobile-nav a.active::after {
     display: none;
   }
 
-  .main-nav-links a.active {
+  .mobile-nav a.active {
     background: rgba(124, 108, 255, 0.2);
   }
 
@@ -341,13 +577,13 @@ button {
     width: 100px;
   }
 
-  .main-nav-links {
+  .mobile-nav {
     width: 92vw;
     max-width: 280px;
     padding: 72px 12px 20px;
   }
 
-  .main-nav-links a {
+  .mobile-nav a {
     padding: 12px 14px;
     font-size: 15px;
   }
@@ -2393,10 +2629,6 @@ button {
 }
 
 @media (max-width: 640px) {
-  .main-navbar {
-    position: relative;
-  }
-
   .navbar-container {
     width: min(1400px, calc(100% - 24px));
   }
@@ -2483,7 +2715,6 @@ body::after {
   z-index: 0;
 }
 
-.main-navbar,
 .main-container,
 .stats-strip,
 .info-section,

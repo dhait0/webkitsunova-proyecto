@@ -4,7 +4,7 @@ import { landingSupportCards } from '@/content/siteContent';
 
 export function SupportCTA() {
   return (
-    <Section padding="lg" background="neu" divider="none" className="relative overflow-hidden">
+    <Section id="contacto" padding="lg" background="neu" divider="none" className="relative overflow-hidden">
       <Container size="lg">
         <Grid cols={2} gap="lg" className="items-start">
           <motion.div

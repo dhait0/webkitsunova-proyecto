@@ -3,16 +3,17 @@ import { Card, CardImage, Grid, Container, Section, Badge } from '@/components/u
 import { landingBenefitCards, landingFeatureCards } from '@/content/siteContent';
 
 interface FeatureCardsProps {
+  id?: string;
   title?: string;
   subtitle?: string;
   variant?: 'feature' | 'benefit';
 }
 
-export function FeatureCards({ title, subtitle, variant = 'feature' }: FeatureCardsProps) {
+export function FeatureCards({ id, title, subtitle, variant = 'feature' }: FeatureCardsProps) {
   const cards = variant === 'benefit' ? landingBenefitCards : landingFeatureCards;
 
   return (
-    <Section padding="lg" background="none" divider="none" className="relative">
+    <Section id={id} padding="lg" background="none" divider="none" className="relative">
       <Container size="lg">
         {(title || subtitle) && (
           <motion.div
