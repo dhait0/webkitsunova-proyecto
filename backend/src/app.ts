@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import path from 'node:path';
 import { env } from './config/env.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
@@ -33,6 +34,16 @@ app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/psy', psyRouter);
+
+// Serve frontend static files in production (built by Vite)
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.resolve(process.cwd(), 'public')));
+
+  // SPA fallback: serve index.html for all non-API routes
+  app.use((req, res) => {
+    res.sendFile(path.resolve(process.cwd(), 'public', 'index.html'));
+  });
+}
 
 app.use(errorHandler);
 
