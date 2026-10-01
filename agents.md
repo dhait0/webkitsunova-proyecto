@@ -153,25 +153,25 @@ Si el admin login funciona pero `app_metadata.role = 'ADMIN'` no está en el JWT
     VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_mvWz3mfUpctYg2nM1ek7g_9Ixa8zo_
     ```
 
-## Despliegue en Vercel
+## Despliegue en Vercel (unificado — frontend + backend)
 
-### Frontend y backend separados (arquitectura actual)
+Se usa un solo proyecto de Vercel con `vercel.json` en el root.
 
-El frontend se sirve desde `https://webkitsunova.parzkeys.com` y el backend desde
-`https://webkitsunova-proyecto-s8kn.vercel.app`. Requiere configuración de env vars:
+### Arquitectura
+- **Frontend** (Vite, React) → `/frontend/dist/` → static build
+- **Backend** (Express) → serverless function via `@vercel/node`
+- **Routing**: `/api/*` → Express, `/` → archivos estáticos de Vite
+- **CORS**: no necesario (mismo origen) — pero se mantiene el middleware para desarrollo local
 
 ### Environment Variables en Vercel
 
-**Frontend (Vite):**
-- `VITE_API_URL=https://webkitsunova-proyecto-s8kn.vercel.app` — sin `/api`
-  (los paths en `api.ts` ya incluyen el prefijo `/api/`)
+**Unificadas (mismo proyecto Vercel):**
 - `VITE_SUPABASE_URL=<production-supabase-url>`
 - `VITE_SUPABASE_PUBLISHABLE_KEY=<production-publishable-key>`
-
-**Backend (Express):**
-- `CORS_ORIGIN=https://webkitsunova.parzkeys.com` — incluir también localhost para desarrollo
 - `SUPABASE_URL=<production-supabase-url>`
 - `SUPABASE_SECRET_KEY=<production-service-role-key>`
 - `FRONTEND_URL=https://webkitsunova.parzkeys.com`
+- `CORS_ORIGIN=http://localhost:5173,http://localhost:5174,https://webkitsunova.parzkeys.com`
 - `DATABASE_URL=<production-postgres-url>`
 - `JWT_SECRET=<strong-random-string>`
+- No establecer `VITE_API_URL` (usa URLs relativas, mismo origen)
