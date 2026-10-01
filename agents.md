@@ -132,3 +132,22 @@ Si la base de datos Supabase es accesible (hostname `db.<ref>.supabase.co`
 resuelve), aplica `backend/supabase_schema.sql` en el **Supabase SQL Editor**.
 Incluye migraciones DDL, índices, foreign keys, políticas RLS y el INSERT del
 admin con su ID de Supabase Auth (`0cd92849-9588-4d4d-aec5-f5d66b8502fa`).
+
+### Troubleshooting: admin role no aparece en JWT
+
+Si el admin login funciona pero `app_metadata.role = 'ADMIN'` no está en el JWT:
+
+1. **Verifica el proyecto de Supabase**: el `iss` del JWT indica el proyecto real.
+   Puede diferir entre local (`qwijohugyovepcgrvhlt`) y producción.
+2. **Solución SQL** (ejecutar en Supabase Dashboard → SQL Editor del proyecto correcto):
+   ```sql
+   UPDATE auth.users
+   SET app_metadata = app_metadata || '{"role": "ADMIN"}'::jsonb
+   WHERE email = 'admin@kitsunova.local';
+   ```
+3. El usuario debe cerrar sesión y volver a iniciar sesión para obtener un JWT nuevo.
+4. Si el proyecto de producción fue eliminado, actualiza las env vars de Vercel:
+   ```
+   VITE_SUPABASE_URL=https://qwijohugyovepcgrvhlt.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_mvWz3mfUpctYg2nM1ek7g_9Ixa8zo_
+   ```
