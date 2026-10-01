@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 
-vi.mock('../../src/server/lib/supabase', () => ({
+vi.mock('../../src/server/lib/supabase.js', () => ({
   supabaseAdmin: {
     auth: {
       getUser: vi.fn(),
@@ -18,7 +18,7 @@ describe('requireRole middleware', () => {
   });
 
   it('returns 401 when req.user is not set', async () => {
-    const { requireRole } = await import('../../src/middleware/requireRole');
+    const { requireRole } = await import('../../src/server/middleware/requireRole.js');
 
     const req: any = {};
     const res: any = {
@@ -38,7 +38,7 @@ describe('requireRole middleware', () => {
   });
 
   it('returns 403 when user role is not in allowed roles', async () => {
-    const { requireRole } = await import('../../src/middleware/requireRole');
+    const { requireRole } = await import('../../src/server/middleware/requireRole.js');
 
     const req: any = { user: { id: 'user-123', email: 'test@example.com', role: 'USER' } };
     const res: any = {
@@ -58,7 +58,7 @@ describe('requireRole middleware', () => {
   });
 
   it('calls next() when user has an allowed role', async () => {
-    const { requireRole } = await import('../../src/middleware/requireRole');
+    const { requireRole } = await import('../../src/server/middleware/requireRole.js');
 
     const req: any = { user: { id: 'user-123', email: 'admin@example.com', role: 'ADMIN' } };
     const res: any = {};
@@ -70,7 +70,7 @@ describe('requireRole middleware', () => {
   });
 
   it('allows access when one of multiple roles matches', async () => {
-    const { requireRole } = await import('../../src/middleware/requireRole');
+    const { requireRole } = await import('../../src/server/middleware/requireRole.js');
 
     const req: any = { user: { id: 'user-123', email: 'psy@example.com', role: 'PSYCHOLOGIST' } };
     const res: any = {};

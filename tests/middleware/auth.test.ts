@@ -1,7 +1,7 @@
-import { supabaseAdmin } from '../src/server/lib/supabase';
-import { getRole } from '../src/server/lib/role';
+import { supabaseAdmin } from '../../src/server/lib/supabase.js';
+import { getRole } from '../../src/server/lib/role.js';
 
-vi.mock('../../src/server/lib/supabase', () => ({
+vi.mock('../../src/server/lib/supabase.js', () => ({
   supabaseAdmin: {
     auth: {
       getUser: vi.fn(),
@@ -9,7 +9,7 @@ vi.mock('../../src/server/lib/supabase', () => ({
   },
 }));
 
-vi.mock('../../src/server/lib/role', () => ({
+vi.mock('../../src/server/lib/role.js', () => ({
   getRole: vi.fn(),
 }));
 
@@ -24,7 +24,7 @@ describe('requireAuth middleware', () => {
   });
 
   it('returns 401 when no authorization header is provided', async () => {
-    const { requireAuth } = await import('../../src/middleware/auth');
+    const { requireAuth } = await import('../../src/server/middleware/auth.js');
 
     const req: any = { headers: {} };
     const res: any = {
@@ -43,7 +43,7 @@ describe('requireAuth middleware', () => {
   });
 
   it('returns 401 when authorization header is not Bearer', async () => {
-    const { requireAuth } = await import('../../src/middleware/auth');
+    const { requireAuth } = await import('../../src/server/middleware/auth.js');
 
     const req: any = { headers: { authorization: 'Basic abc123' } };
     const res: any = {
@@ -63,7 +63,7 @@ describe('requireAuth middleware', () => {
       error: { message: 'Invalid token' },
     });
 
-    const { requireAuth } = await import('../../src/middleware/auth');
+    const { requireAuth } = await import('../../src/server/middleware/auth.js');
 
     const req: any = { headers: { authorization: 'Bearer invalid-token' } };
     const res: any = {
@@ -84,7 +84,7 @@ describe('requireAuth middleware', () => {
   it('returns 401 when Supabase getUser throws an error', async () => {
     mockGetUser.mockRejectedValueOnce(new Error('Network error'));
 
-    const { requireAuth } = await import('../../src/middleware/auth');
+    const { requireAuth } = await import('../../src/server/middleware/auth.js');
 
     const req: any = { headers: { authorization: 'Bearer some-token' } };
     const res: any = {
@@ -110,7 +110,7 @@ describe('requireAuth middleware', () => {
     });
     mockGetRole.mockReturnValue('USER');
 
-    const { requireAuth } = await import('../../src/middleware/auth');
+    const { requireAuth } = await import('../../src/server/middleware/auth.js');
 
     const req: any = { headers: { authorization: 'Bearer valid-token' } };
     const res: any = {};

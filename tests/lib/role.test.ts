@@ -1,4 +1,4 @@
-import { getRole } from '../src/server/lib/role';
+import { getRole } from '../../src/server/lib/role.js';
 import type { User } from '@supabase/supabase-js';
 
 describe('getRole', () => {

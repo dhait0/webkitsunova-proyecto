@@ -14,7 +14,7 @@ describe('errorHandler middleware', () => {
 
   it('returns 400 with issues array for ZodError', async () => {
     const { ZodError } = await import('zod');
-    const { errorHandler } = await import('../../src/middleware/errorHandler');
+    const { errorHandler } = await import('../../src/server/middleware/errorHandler.js');
 
     const error = new ZodError([
       {
@@ -44,7 +44,7 @@ describe('errorHandler middleware', () => {
   });
 
   it('returns 500 for generic Error', async () => {
-    const { errorHandler } = await import('../../src/middleware/errorHandler');
+    const { errorHandler } = await import('../../src/server/middleware/errorHandler.js');
 
     const error = new Error('Something went wrong');
 
@@ -64,7 +64,7 @@ describe('errorHandler middleware', () => {
   });
 
   it('returns 500 for non-Error values', async () => {
-    const { errorHandler } = await import('../../src/middleware/errorHandler');
+    const { errorHandler } = await import('../../src/server/middleware/errorHandler.js');
 
     const req = {} as Request;
     const res = {
@@ -82,7 +82,7 @@ describe('errorHandler middleware', () => {
   });
 
   it('logs Prisma errors differently', async () => {
-    const { errorHandler } = await import('../../src/middleware/errorHandler');
+    const { errorHandler } = await import('../../src/server/middleware/errorHandler.js');
 
     const prismaError = new Error('Prisma: connection refused');
 

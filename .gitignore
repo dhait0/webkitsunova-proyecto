@@ -7,3 +7,5 @@ coverage
 proyecto viejo/
 
 .kilo/
+public/assets/
+public/index.html

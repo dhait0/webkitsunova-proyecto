@@ -1,5 +1,5 @@
 import request from 'supertest';
-import app from '../src/server/app';
+import app from '../../src/server/app.js';
 
 describe('Health routes', () => {
   it('GET /api responds with API info', async () => {

@@ -28,5 +28,9 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       exclude: ['node_modules/', 'src/main.tsx', 'src/server/'],
     },
+    // Allow TypeScript imports with .js extensions
+    passThroughPatterns: [/\.ts$/],
+    // Use tsconfig for resolution
+    tsconfig: 'tsconfig.json',
   },
 });
