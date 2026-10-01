@@ -32,7 +32,8 @@ export async function apiFetch<T>(
       : JSON.stringify(options.body as Record<string, unknown>);
   }
 
-  const response = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:3002'}${path}`, {
+  const baseUrl = import.meta.env.VITE_API_URL ?? '';
+  const response = await fetch(`${baseUrl}${path}`, {
     method: options.method ?? 'GET',
     headers: {
       Authorization: `Bearer ${session.access_token}`,

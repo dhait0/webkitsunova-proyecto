@@ -132,3 +132,46 @@ Si la base de datos Supabase es accesible (hostname `db.<ref>.supabase.co`
 resuelve), aplica `backend/supabase_schema.sql` en el **Supabase SQL Editor**.
 Incluye migraciones DDL, índices, foreign keys, políticas RLS y el INSERT del
 admin con su ID de Supabase Auth (`0cd92849-9588-4d4d-aec5-f5d66b8502fa`).
+
+### Troubleshooting: admin role no aparece en JWT
+
+Si el admin login funciona pero `app_metadata.role = 'ADMIN'` no está en el JWT:
+
+1. **Verifica el proyecto de Supabase**: el `iss` del JWT indica el proyecto real.
+   Puede diferir entre local (`qwijohugyovepcgrvhlt`) y producción.
+2. **Solución SQL** (ejecutar en Supabase Dashboard → SQL Editor del proyecto correcto):
+   ```sql
+   UPDATE auth.users
+   SET raw_app_meta_data = raw_app_meta_data || '{"role": "ADMIN"}'::jsonb
+   WHERE email = 'admin@kitsunova.local';
+   ```
+> Nota: En proyectos nuevos de Supabase, la columna se llama `raw_app_meta_data`, no `app_metadata`.
+3. El usuario debe cerrar sesión y volver a iniciar sesión para obtener un JWT nuevo.
+4. Si el proyecto de producción fue eliminado, actualiza las env vars de Vercel:
+   ```
+    VITE_SUPABASE_URL=https://qwijohugyovepcgrvhlt.supabase.co
+    VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_mvWz3mfUpctYg2nM1ek7g_9Ixa8zo_
+    ```
+
+## Despliegue en Vercel (unificado — frontend + backend)
+
+Se usa un solo proyecto de Vercel con `vercel.json` en el root.
+
+### Arquitectura
+- **Frontend** (Vite, React) → `/frontend/dist/` → static build
+- **Backend** (Express) → serverless function via `@vercel/node`
+- **Routing**: `/api/*` → Express, `/` → archivos estáticos de Vite
+- **CORS**: no necesario (mismo origen) — pero se mantiene el middleware para desarrollo local
+
+### Environment Variables en Vercel
+
+**Unificadas (mismo proyecto Vercel):**
+- `VITE_SUPABASE_URL=<production-supabase-url>`
+- `VITE_SUPABASE_PUBLISHABLE_KEY=<production-publishable-key>`
+- `SUPABASE_URL=<production-supabase-url>`
+- `SUPABASE_SECRET_KEY=<production-service-role-key>`
+- `FRONTEND_URL=https://webkitsunova.parzkeys.com`
+- `CORS_ORIGIN=http://localhost:5173,http://localhost:5174,https://webkitsunova.parzkeys.com`
+- `DATABASE_URL=<production-postgres-url>`
+- `JWT_SECRET=<strong-random-string>`
+- No establecer `VITE_API_URL` (usa URLs relativas, mismo origen)
