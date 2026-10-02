@@ -8,8 +8,6 @@ pipeline {
 
   environment {
     APP_DIR = "webkitsunova_proyecto"
-    FRONTEND_DIR = "webkitsunova_proyecto/frontend"
-    BACKEND_DIR = "webkitsunova_proyecto/backend"
     COMPOSE_FILE = "webkitsunova_proyecto/docker-compose.yml"
   }
 
@@ -21,39 +19,41 @@ pipeline {
     }
 
     stage('Install dependencies') {
-      parallel {
-        stage('Frontend install') {
-          steps {
-            dir("${FRONTEND_DIR}") {
-              sh 'npm install'
-            }
-          }
-        }
-        stage('Backend install') {
-          steps {
-            dir("${BACKEND_DIR}") {
-              sh 'npm install'
-            }
-          }
+      steps {
+        dir("${APP_DIR}") {
+          sh 'npm ci'
         }
       }
     }
 
-    stage('Typecheck and build') {
-      parallel {
-        stage('Frontend build') {
-          steps {
-            dir("${FRONTEND_DIR}") {
-              sh 'npm run typecheck && npm run build'
-            }
-          }
+    stage('Generate Prisma client') {
+      steps {
+        dir("${APP_DIR}") {
+          sh 'npx prisma generate'
         }
-        stage('Backend build') {
-          steps {
-            dir("${BACKEND_DIR}") {
-              sh 'npm run typecheck && npm run build'
-            }
-          }
+      }
+    }
+
+    stage('Typecheck') {
+      steps {
+        dir("${APP_DIR}") {
+          sh 'npm run typecheck'
+        }
+      }
+    }
+
+    stage('Tests') {
+      steps {
+        dir("${APP_DIR}") {
+          sh 'npm test'
+        }
+      }
+    }
+
+    stage('Build') {
+      steps {
+        dir("${APP_DIR}") {
+          sh 'npm run build'
         }
       }
     }
