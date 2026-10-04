@@ -4,21 +4,25 @@ on:
   push:
     branches: [main]
     paths:
-      - 'prisma/schema.prisma'
-      - 'prisma/migrations/**'
+      - 'backend/prisma/**'
+      - 'backend/prisma/migrations/**'
 
 jobs:
   deploy-migrations:
+    name: Deploy Prisma Migrations
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
       - run: npm ci
+        working-directory: backend
       - name: Run migrations
         run: npx prisma migrate deploy
+        working-directory: backend
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.PROD_DIRECT_URL }}
