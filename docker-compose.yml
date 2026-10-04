@@ -18,11 +18,9 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./backend
       target: dev
     restart: unless-stopped
-    command: npx tsx watch src/server/server.ts
     environment:
       NODE_ENV: development
       PORT: ${BACKEND_PORT:-3002}
@@ -36,12 +34,7 @@ services:
     ports:
       - "${BACKEND_PORT:-3002}:3002"
     volumes:
-      - ./src:/app/src
-      - ./prisma:/app/prisma
-      - ./scripts:/app/scripts
-      - ./tests:/app/tests
-      - ./package.json:/app/package.json
-      - ./tsconfig.json:/app/tsconfig.json
+      - ./backend:/app
       - backend_node_modules:/app/node_modules
     depends_on:
       postgres:
@@ -49,11 +42,9 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./frontend
       target: dev
     restart: unless-stopped
-    command: npx vite --host 0.0.0.0 --port 5173
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:3002}
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
@@ -63,14 +54,7 @@ services:
     ports:
       - "5174:5173"
     volumes:
-      - ./src:/app/src
-      - ./public:/app/public
-      - ./index.html:/app/index.html
-      - ./vite.config.ts:/app/vite.config.ts
-      - ./tailwind.config.js:/app/tailwind.config.js
-      - ./postcss.config.js:/app/postcss.config.js
-      - ./package.json:/app/package.json
-      - ./tsconfig.json:/app/tsconfig.json
+      - ./frontend:/app
       - frontend_node_modules:/app/node_modules
     depends_on:
       - backend
