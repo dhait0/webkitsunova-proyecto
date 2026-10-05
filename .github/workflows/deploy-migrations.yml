@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'prisma/**'
+      - '.github/workflows/deploy-migrations.yml'
 
 jobs:
   deploy-migrations:
