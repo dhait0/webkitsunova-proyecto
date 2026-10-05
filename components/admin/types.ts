@@ -38,4 +38,7 @@ export type IconName =
   | 'star'
   | 'checkCircle'
   | 'alertCircle'
-  | 'logout';
+  | 'logout'
+  | 'pencil'
+  | 'lock'
+  | 'mail';
