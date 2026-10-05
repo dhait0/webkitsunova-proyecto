@@ -6,6 +6,10 @@ import {
   updateUserStatus,
   deleteUser,
   updateUserRole,
+  updateUserProfile,
+  resetUserPassword,
+  approveUser,
+  resendConfirmationEmail,
   type AdminUser,
   type AdminUsersResponse,
 } from '@/app/(admin)/admin/actions';
@@ -17,6 +21,7 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import AdminEntityCell from '@/components/admin/AdminEntityCell';
 import StatusBadge, { USER_STATUS_LABELS, userStatusTone } from '@/components/admin/StatusBadge';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import AdminModal from '@/components/admin/AdminModal';
 import AdminToaster from '@/components/admin/AdminToaster';
 import Icon from '@/components/admin/Icon';
 import { AdminLoading, AdminEmptyState, AdminErrorState } from '@/components/admin/AdminStates';
@@ -28,6 +33,7 @@ import { useToasts } from '@/hooks/useToasts';
 const STATUS_OPTIONS: FilterOption[] = [
   { value: 'all', label: 'Todos los estados' },
   { value: 'ACTIVE', label: 'Activo' },
+  { value: 'PENDING', label: 'Pendiente' },
   { value: 'SUSPENDED', label: 'Suspendido' },
 ];
 
@@ -60,6 +66,8 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
+  const [editForm, setEditForm] = useState({ email: '', username: '', firstName: '', lastName: '' });
 
   const fetchUsers = useCallback(
     (query: { search: string; status: string; page: number; limit: number }) =>
@@ -145,6 +153,94 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
     }
   }
 
+  function openEdit(user: AdminUser) {
+    setEditTarget(user);
+    setEditForm({
+      email: user.email,
+      username: user.username ?? '',
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+    });
+  }
+
+  async function handleEditSave() {
+    if (!editTarget) return;
+    setPendingUserId(editTarget.id);
+    try {
+      const res = await updateUserProfile(editTarget.id, {
+        email: editForm.email || undefined,
+        username: editForm.username || undefined,
+        firstName: editForm.firstName || undefined,
+        lastName: editForm.lastName || undefined,
+      });
+      if (res.success) {
+        updateRow(editTarget.id, {
+          email: editForm.email,
+          username: editForm.username || null,
+          firstName: editForm.firstName || null,
+          lastName: editForm.lastName || null,
+        });
+        toasts.success('Usuario actualizado');
+        setEditTarget(null);
+      } else {
+        toasts.error(res.message);
+      }
+    } catch (err) {
+      toasts.error((err as Error).message || 'Error al actualizar usuario');
+    } finally {
+      setPendingUserId(null);
+    }
+  }
+
+  async function handleResetPassword(userId: string) {
+    setPendingUserId(userId);
+    try {
+      const res = await resetUserPassword(userId);
+      if (res.success) {
+        toasts.success('Correo de restablecimiento enviado');
+      } else {
+        toasts.error(res.message);
+      }
+    } catch (err) {
+      toasts.error((err as Error).message || 'Error al restablecer contraseña');
+    } finally {
+      setPendingUserId(null);
+    }
+  }
+
+  async function handleApprove(userId: string) {
+    setPendingUserId(userId);
+    try {
+      const res = await approveUser(userId);
+      if (res.success) {
+        updateRow(userId, { status: 'ACTIVE' });
+        toasts.success('Usuario aprobado');
+      } else {
+        toasts.error(res.message);
+      }
+    } catch (err) {
+      toasts.error((err as Error).message || 'Error al aprobar usuario');
+    } finally {
+      setPendingUserId(null);
+    }
+  }
+
+  async function handleResendConfirmation(userId: string) {
+    setPendingUserId(userId);
+    try {
+      const res = await resendConfirmationEmail(userId);
+      if (res.success) {
+        toasts.success('Correo de confirmación reenviado');
+      } else {
+        toasts.error(res.message);
+      }
+    } catch (err) {
+      toasts.error((err as Error).message || 'Error al reenviar confirmación');
+    } finally {
+      setPendingUserId(null);
+    }
+  }
+
   const columns: AdminColumn<AdminUser>[] = [
     {
       key: 'user',
@@ -194,6 +290,7 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
       render: (user) => {
         const busy = pendingUserId === user.id;
         const isActive = user.status === 'ACTIVE';
+        const isPending = user.status === 'PENDING';
         return (
           <div className="admin-actions">
             <select
@@ -206,6 +303,49 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
               <option value="PSYCHOLOGIST">Psicólogo</option>
               <option value="ADMIN">Admin</option>
             </select>
+            {isPending ? (
+              <>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-primary"
+                  onClick={() => handleApprove(user.id)}
+                  disabled={busy}
+                >
+                  <Icon name="check" size={12} />
+                  Aprobar
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-ghost"
+                  onClick={() => handleResendConfirmation(user.id)}
+                  disabled={busy}
+                >
+                  <Icon name="mail" size={12} />
+                  Reenviar confirmación
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-ghost"
+                  onClick={() => openEdit(user)}
+                  disabled={busy}
+                >
+                  <Icon name="pencil" size={12} />
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-ghost"
+                  onClick={() => handleResetPassword(user.id)}
+                  disabled={busy}
+                >
+                  <Icon name="lock" size={12} />
+                  Reset
+                </button>
+              </>
+            )}
             <button
               type="button"
               className="admin-btn admin-btn-ghost"
@@ -294,6 +434,62 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
+
+      <AdminModal
+        open={editTarget !== null}
+        title="Editar usuario"
+        onClose={() => setEditTarget(null)}
+      >
+        {editTarget ? (
+          <div className="admin-form">
+            <label className="field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+              />
+            </label>
+            <label className="field">
+              <span>Nombre de usuario</span>
+              <input
+                type="text"
+                value={editForm.username}
+                onChange={(e) => setEditForm((f) => ({ ...f, username: e.target.value }))}
+              />
+            </label>
+            <label className="field">
+              <span>Nombre</span>
+              <input
+                type="text"
+                value={editForm.firstName}
+                onChange={(e) => setEditForm((f) => ({ ...f, firstName: e.target.value }))}
+              />
+            </label>
+            <label className="field">
+              <span>Apellido</span>
+              <input
+                type="text"
+                value={editForm.lastName}
+                onChange={(e) => setEditForm((f) => ({ ...f, lastName: e.target.value }))}
+              />
+            </label>
+            <div className="admin-modal-actions">
+              <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setEditTarget(null)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="admin-btn admin-btn-primary"
+                onClick={handleEditSave}
+                disabled={pendingUserId === editTarget.id}
+              >
+                Guardar cambios
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </AdminModal>
 
       <AdminToaster {...toasts} />
     </div>

@@ -6,6 +6,10 @@ import { vi } from 'vitest';
 import LoginForm from '@/features/auth/LoginForm';
 import { createClient } from '@/lib/supabase/browser';
 
+vi.mock('@/app/(auth)/actions', () => ({
+  registerUser: vi.fn(),
+}));
+
 const push = vi.fn();
 const replace = vi.fn();
 const refresh = vi.fn();

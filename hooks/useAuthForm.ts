@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Session } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/browser';
+import { registerUser } from '@/app/(auth)/actions';
 
 export type AuthMode = 'login' | 'register';
 
@@ -69,20 +70,17 @@ export function useAuthForm(initialMode: AuthMode, options?: { onSuccess?: AuthS
 
     try {
       if (isRegister) {
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const result = await registerUser({
           email: formData.email,
           password: formData.password,
-          options: { data: { username: formData.username || undefined } },
+          username: formData.username || undefined,
         });
-        if (signUpError) throw signUpError;
 
-        if (data.session) {
-          // The session now lives in cookies, so the server has to re-read them.
-          router.refresh();
-          options?.onSuccess?.('register', data.session);
-        } else {
-          setSuccess('Cuenta creada. Revisa tu correo para confirmar el acceso.');
+        if (!result.success) {
+          throw new Error(result.message);
         }
+
+        setSuccess(result.message);
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email: formData.email,
