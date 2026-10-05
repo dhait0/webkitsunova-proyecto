@@ -19,6 +19,7 @@ export type AdminUser = {
   lastName: string | null;
   username: string | null;
   status: string;
+  role: string;
   twoFactorEnabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -89,6 +90,7 @@ export async function getAdminUserStats(): Promise<AdminUserStats> {
 export async function getAdminUsers(params?: {
   search?: string;
   status?: string;
+  role?: string;
   page?: number;
   limit?: number;
 }): Promise<AdminUsersResponse> {
@@ -100,6 +102,10 @@ export async function getAdminUsers(params?: {
 
   if (params?.status && params.status !== 'all') {
     where.status = params.status;
+  }
+
+  if (params?.role && params.role !== 'all') {
+    where.role = params.role;
   }
 
   if (params?.search) {
@@ -142,6 +148,7 @@ export async function getAdminUsers(params?: {
     id: u.id,
     email: u.email,
     status: u.status,
+    role: u.role,
     firstName: u.profile?.firstName ?? null,
     lastName: u.profile?.lastName ?? null,
     username: u.profile?.username ?? null,
@@ -183,6 +190,18 @@ export async function deleteUser(
   });
 
   return { success: true, message: 'Usuario eliminado correctamente' };
+}
+
+export async function updateUserRole(
+  userId: string,
+  role: 'USER' | 'PSYCHOLOGIST' | 'ADMIN'
+): Promise<{ success: boolean; message: string }> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { role: role as 'USER' | 'PSYCHOLOGIST' | 'ADMIN' },
+  });
+
+  return { success: true, message: 'Rol actualizado correctamente' };
 }
 
 export async function getAdminPsyStats(): Promise<AdminPsyStats> {

@@ -5,6 +5,7 @@ import {
   getAdminUsers,
   updateUserStatus,
   deleteUser,
+  updateUserRole,
   type AdminUser,
   type AdminUsersResponse,
 } from '@/app/(admin)/admin/actions';
@@ -30,6 +31,13 @@ const STATUS_OPTIONS: FilterOption[] = [
   { value: 'SUSPENDED', label: 'Suspendido' },
 ];
 
+const ROLE_OPTIONS: FilterOption[] = [
+  { value: 'all', label: 'Todos los roles' },
+  { value: 'USER', label: 'Usuario' },
+  { value: 'PSYCHOLOGIST', label: 'Psicólogo' },
+  { value: 'ADMIN', label: 'Administrador' },
+];
+
 function formatDate(iso: string) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
@@ -51,6 +59,7 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
 
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [roleFilter, setRoleFilter] = useState<string>('all');
 
   const fetchUsers = useCallback(
     (query: { search: string; status: string; page: number; limit: number }) =>
@@ -59,8 +68,9 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
         limit: query.limit,
         search: query.search || undefined,
         status: query.status !== 'all' ? query.status : undefined,
+        role: roleFilter !== 'all' ? roleFilter : undefined,
       }),
-    []
+    [roleFilter]
   );
 
   const selectRows = useCallback((payload: AdminUsersResponse) => payload.users, []);
@@ -102,6 +112,21 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
     }
   }
 
+  async function handleRoleChange(userId: string, role: 'USER' | 'PSYCHOLOGIST' | 'ADMIN') {
+    setPendingUserId(userId);
+    try {
+      const res = await updateUserRole(userId, role);
+      if (res.success) {
+        updateRow(userId, { role });
+        toasts.success('Rol actualizado');
+      }
+    } catch (err) {
+      toasts.error((err as Error).message || 'Error al actualizar rol');
+    } finally {
+      setPendingUserId(null);
+    }
+  }
+
   async function handleDelete() {
     if (!deleteTarget) return;
     const userId = deleteTarget.id;
@@ -132,6 +157,13 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
       ),
     },
     { key: 'email', header: 'Email', render: (user) => user.email },
+    {
+      key: 'role',
+      header: 'Rol',
+      render: (user) => (
+        <span className="admin-badge admin-badge-role">{user.role}</span>
+      ),
+    },
     {
       key: 'status',
       header: 'Estado',
@@ -164,6 +196,16 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
         const isActive = user.status === 'ACTIVE';
         return (
           <div className="admin-actions">
+            <select
+              value={user.role}
+              onChange={(e) => handleRoleChange(user.id, e.target.value as 'USER' | 'PSYCHOLOGIST' | 'ADMIN')}
+              disabled={busy}
+              className="admin-select"
+            >
+              <option value="USER">Usuario</option>
+              <option value="PSYCHOLOGIST">Psicólogo</option>
+              <option value="ADMIN">Admin</option>
+            </select>
             <button
               type="button"
               className="admin-btn admin-btn-ghost"
@@ -206,6 +248,15 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
         resultCount={loading ? undefined : pagination?.total}
         resultNoun="usuarios"
       />
+      <select
+        value={roleFilter}
+        onChange={(e) => setRoleFilter(e.target.value)}
+        className="admin-toolbar-select"
+      >
+        {ROLE_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
 
       {error ? <AdminErrorState message={error} onRetry={reload} /> : null}
 
