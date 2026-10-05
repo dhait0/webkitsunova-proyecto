@@ -311,7 +311,7 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
                   onClick={() => handleApprove(user.id)}
                   disabled={busy}
                 >
-                  <Icon name="check" size={12} />
+                  <Icon name="check" size={14} />
                   Aprobar
                 </button>
                 <button
@@ -320,7 +320,7 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
                   onClick={() => handleResendConfirmation(user.id)}
                   disabled={busy}
                 >
-                  <Icon name="mail" size={12} />
+                  <Icon name="mail" size={14} />
                   Reenviar confirmación
                 </button>
               </>
@@ -332,7 +332,7 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
                   onClick={() => openEdit(user)}
                   disabled={busy}
                 >
-                  <Icon name="pencil" size={12} />
+                  <Icon name="pencil" size={14} />
                   Editar
                 </button>
                 <button
@@ -341,7 +341,7 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
                   onClick={() => handleResetPassword(user.id)}
                   disabled={busy}
                 >
-                  <Icon name="lock" size={12} />
+                  <Icon name="lock" size={14} />
                   Reset
                 </button>
               </>
@@ -352,7 +352,7 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
               onClick={() => handleStatusChange(user.id, isActive ? 'SUSPENDED' : 'ACTIVE')}
               disabled={busy}
             >
-              {busy ? <span className="admin-btn-spinner" /> : <Icon name={isActive ? 'ban' : 'check'} size={12} />}
+              {busy ? <span className="admin-btn-spinner" /> : <Icon name={isActive ? 'ban' : 'check'} size={14} />}
               {isActive ? 'Suspender' : 'Activar'}
             </button>
             <button
