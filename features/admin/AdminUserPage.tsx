@@ -375,28 +375,30 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
     <div className="admin-page">
       <AdminPageHeader title={heading} subtitle={subtitle} />
 
-      <AdminToolbar
-        searchValue={searchInput}
-        onSearchChange={setSearchInput}
-        searchLabel="Buscar usuarios"
-        searchPlaceholder="Buscar por nombre, email o username..."
-        filterValue={statusFilter}
-        onFilterChange={setStatusFilter}
-        filterLabel="Estado"
-        filterOptions={STATUS_OPTIONS}
-        onClear={clearFilters}
-        resultCount={loading ? undefined : pagination?.total}
-        resultNoun="usuarios"
-      />
-      <select
-        value={roleFilter}
-        onChange={(e) => setRoleFilter(e.target.value)}
-        className="admin-toolbar-select"
-      >
-        {ROLE_OPTIONS.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
+      <div className="admin-toolbar-wrap">
+        <AdminToolbar
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
+          searchLabel="Buscar usuarios"
+          searchPlaceholder="Buscar por nombre, email o username..."
+          filterValue={statusFilter}
+          onFilterChange={setStatusFilter}
+          filterLabel="Estado"
+          filterOptions={STATUS_OPTIONS}
+          onClear={clearFilters}
+          resultCount={loading ? undefined : pagination?.total}
+          resultNoun="usuarios"
+        />
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="admin-toolbar-select"
+        >
+          {ROLE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
 
       {error ? <AdminErrorState message={error} onRetry={reload} /> : null}
 
