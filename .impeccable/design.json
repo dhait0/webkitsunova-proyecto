@@ -1,0 +1,578 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-04T06:02:47Z",
+  "title": "Design System: Kitsunova — public landing",
+  "extensions": {
+    "colorMeta": {
+      "violet": {
+        "role": "primary",
+        "displayName": "Violet",
+        "canonical": "#7c6cff",
+        "tonalRamp": [
+          "oklch(15% 0.136 283)",
+          "oklch(26.4% 0.177 283)",
+          "oklch(37.9% 0.203 283)",
+          "oklch(49.3% 0.21 283)",
+          "oklch(60.7% 0.198 283)",
+          "oklch(72.1% 0.168 283)",
+          "oklch(83.6% 0.124 283)",
+          "oklch(95% 0.074 283)"
+        ]
+      },
+      "violet-soft": {
+        "role": "primary",
+        "displayName": "Violet Soft",
+        "canonical": "#a99aff",
+        "tonalRamp": [
+          "oklch(15% 0.094 283)",
+          "oklch(26.4% 0.122 283)",
+          "oklch(37.9% 0.14 283)",
+          "oklch(49.3% 0.146 283)",
+          "oklch(60.7% 0.137 283)",
+          "oklch(72.1% 0.116 283)",
+          "oklch(83.6% 0.086 283)",
+          "oklch(95% 0.051 283)"
+        ]
+      },
+      "blue-deep": {
+        "role": "secondary",
+        "displayName": "Deep Blue",
+        "canonical": "#3048d8",
+        "tonalRamp": [
+          "oklch(15% 0.116 264)",
+          "oklch(26.4% 0.151 264)",
+          "oklch(37.9% 0.173 264)",
+          "oklch(49.3% 0.18 264)",
+          "oklch(60.7% 0.17 264)",
+          "oklch(72.1% 0.144 264)",
+          "oklch(83.6% 0.106 264)",
+          "oklch(95% 0.062 264)"
+        ]
+      },
+      "cyan": {
+        "role": "tertiary",
+        "displayName": "Cyan",
+        "canonical": "#5ddcff",
+        "tonalRamp": [
+          "oklch(15% 0.078 219)",
+          "oklch(26.4% 0.102 219)",
+          "oklch(37.9% 0.117 219)",
+          "oklch(49.3% 0.121 219)",
+          "oklch(60.7% 0.114 219)",
+          "oklch(72.1% 0.097 219)",
+          "oklch(83.6% 0.072 219)",
+          "oklch(95% 0.042 219)"
+        ]
+      },
+      "indigo-ground": {
+        "role": "neutral",
+        "displayName": "Indigo Ground",
+        "canonical": "#07186b",
+        "tonalRamp": [
+          "oklch(15% 0.09 266)",
+          "oklch(26.4% 0.117 266)",
+          "oklch(37.9% 0.134 266)",
+          "oklch(49.3% 0.14 266)",
+          "oklch(60.7% 0.132 266)",
+          "oklch(72.1% 0.112 266)",
+          "oklch(83.6% 0.082 266)",
+          "oklch(95% 0.048 266)"
+        ]
+      },
+      "indigo-mid": {
+        "role": "neutral",
+        "displayName": "Indigo Mid",
+        "canonical": "#020535",
+        "tonalRamp": [
+          "oklch(15% 0.058 266)",
+          "oklch(26.4% 0.075 266)",
+          "oklch(37.9% 0.086 266)",
+          "oklch(49.3% 0.09 266)",
+          "oklch(60.7% 0.085 266)",
+          "oklch(72.1% 0.072 266)",
+          "oklch(83.6% 0.053 266)",
+          "oklch(95% 0.031 266)"
+        ]
+      },
+      "indigo-abyss": {
+        "role": "neutral",
+        "displayName": "Indigo Abyss",
+        "canonical": "#010114",
+        "tonalRamp": [
+          "oklch(15% 0.026 270)",
+          "oklch(26.4% 0.033 270)",
+          "oklch(37.9% 0.038 270)",
+          "oklch(49.3% 0.04 270)",
+          "oklch(60.7% 0.038 270)",
+          "oklch(72.1% 0.032 270)",
+          "oklch(83.6% 0.023 270)",
+          "oklch(95% 0.014 270)"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Card",
+        "canonical": "#0d1430",
+        "tonalRamp": [
+          "oklch(15% 0.052 264)",
+          "oklch(26.4% 0.067 264)",
+          "oklch(37.9% 0.077 264)",
+          "oklch(49.3% 0.08 264)",
+          "oklch(60.7% 0.075 264)",
+          "oklch(72.1% 0.064 264)",
+          "oklch(83.6% 0.047 264)",
+          "oklch(95% 0.028 264)"
+        ]
+      },
+      "card-deep": {
+        "role": "neutral",
+        "displayName": "Card Deep",
+        "canonical": "#0b1128",
+        "tonalRamp": [
+          "oklch(15% 0.045 264)",
+          "oklch(26.4% 0.058 264)",
+          "oklch(37.9% 0.067 264)",
+          "oklch(49.3% 0.07 264)",
+          "oklch(60.7% 0.066 264)",
+          "oklch(72.1% 0.056 264)",
+          "oklch(83.6% 0.041 264)",
+          "oklch(95% 0.024 264)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "#1a2455",
+        "tonalRamp": [
+          "oklch(15% 0.071 264)",
+          "oklch(26.4% 0.092 264)",
+          "oklch(37.9% 0.106 264)",
+          "oklch(49.3% 0.11 264)",
+          "oklch(60.7% 0.104 264)",
+          "oklch(72.1% 0.088 264)",
+          "oklch(83.6% 0.065 264)",
+          "oklch(95% 0.038 264)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#f4f1ea",
+        "tonalRamp": [
+          "oklch(15% 0.006 87)",
+          "oklch(26.4% 0.008 87)",
+          "oklch(37.9% 0.009 87)",
+          "oklch(49.3% 0.01 87)",
+          "oklch(60.7% 0.009 87)",
+          "oklch(72.1% 0.008 87)",
+          "oklch(83.6% 0.006 87)",
+          "oklch(95% 0.003 87)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#2a2418",
+        "tonalRamp": [
+          "oklch(15% 0.013 84)",
+          "oklch(26.4% 0.017 84)",
+          "oklch(37.9% 0.019 84)",
+          "oklch(49.3% 0.02 84)",
+          "oklch(60.7% 0.019 84)",
+          "oklch(72.1% 0.016 84)",
+          "oklch(83.6% 0.012 84)",
+          "oklch(95% 0.007 84)"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Ink Soft",
+        "canonical": "#565040",
+        "tonalRamp": [
+          "oklch(15% 0.019 90)",
+          "oklch(26.4% 0.025 90)",
+          "oklch(37.9% 0.029 90)",
+          "oklch(49.3% 0.03 90)",
+          "oklch(60.7% 0.028 90)",
+          "oklch(72.1% 0.024 90)",
+          "oklch(83.6% 0.018 90)",
+          "oklch(95% 0.011 90)"
+        ]
+      },
+      "ink-rule": {
+        "role": "neutral",
+        "displayName": "Ink Rule",
+        "canonical": "rgba(42, 36, 24, 0.16)",
+        "tonalRamp": [
+          "oklch(15% 0.013 84)",
+          "oklch(26.4% 0.017 84)",
+          "oklch(37.9% 0.019 84)",
+          "oklch(49.3% 0.02 84)",
+          "oklch(60.7% 0.019 84)",
+          "oklch(72.1% 0.016 84)",
+          "oklch(83.6% 0.012 84)",
+          "oklch(95% 0.007 84)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(124, 108, 255, 0.2)",
+        "tonalRamp": [
+          "oklch(15% 0.136 283)",
+          "oklch(26.4% 0.177 283)",
+          "oklch(37.9% 0.203 283)",
+          "oklch(49.3% 0.21 283)",
+          "oklch(60.7% 0.198 283)",
+          "oklch(72.1% 0.168 283)",
+          "oklch(83.6% 0.124 283)",
+          "oklch(95% 0.074 283)"
+        ]
+      },
+      "hairline-hot": {
+        "role": "neutral",
+        "displayName": "Hairline Hot",
+        "canonical": "rgba(124, 108, 255, 0.5)",
+        "tonalRamp": [
+          "oklch(15% 0.136 283)",
+          "oklch(26.4% 0.177 283)",
+          "oklch(37.9% 0.203 283)",
+          "oklch(49.3% 0.21 283)",
+          "oklch(60.7% 0.198 283)",
+          "oklch(72.1% 0.168 283)",
+          "oklch(83.6% 0.124 283)",
+          "oklch(95% 0.074 283)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26.4% 0 0)",
+          "oklch(37.9% 0 0)",
+          "oklch(49.3% 0 0)",
+          "oklch(60.7% 0 0)",
+          "oklch(72.1% 0 0)",
+          "oklch(83.6% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "text-body": {
+        "role": "neutral",
+        "displayName": "Text Body",
+        "canonical": "#c7d2fe",
+        "tonalRamp": [
+          "oklch(15% 0.032 260)",
+          "oklch(26.4% 0.042 260)",
+          "oklch(37.9% 0.048 260)",
+          "oklch(49.3% 0.05 260)",
+          "oklch(60.7% 0.047 260)",
+          "oklch(72.1% 0.04 260)",
+          "oklch(83.6% 0.029 260)",
+          "oklch(95% 0.017 260)"
+        ]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Text Muted",
+        "canonical": "#a9b4e0",
+        "tonalRamp": [
+          "oklch(15% 0.026 258)",
+          "oklch(26.4% 0.033 258)",
+          "oklch(37.9% 0.038 258)",
+          "oklch(49.3% 0.04 258)",
+          "oklch(60.7% 0.038 258)",
+          "oklch(72.1% 0.032 258)",
+          "oklch(83.6% 0.023 258)",
+          "oklch(95% 0.014 258)"
+        ]
+      },
+      "text-dim": {
+        "role": "neutral",
+        "displayName": "Text Dim",
+        "canonical": "#8f93b8",
+        "tonalRamp": [
+          "oklch(15% 0.019 256)",
+          "oklch(26.4% 0.025 256)",
+          "oklch(37.9% 0.029 256)",
+          "oklch(49.3% 0.03 256)",
+          "oklch(60.7% 0.028 256)",
+          "oklch(72.1% 0.024 256)",
+          "oklch(83.6% 0.017 256)",
+          "oklch(95% 0.01 256)"
+        ]
+      },
+      "error": {
+        "role": "state",
+        "displayName": "Error",
+        "canonical": "#ff9d8a",
+        "tonalRamp": [
+          "oklch(15% 0.078 30)",
+          "oklch(26.4% 0.101 30)",
+          "oklch(37.9% 0.116 30)",
+          "oklch(49.3% 0.12 30)",
+          "oklch(60.7% 0.113 30)",
+          "oklch(72.1% 0.096 30)",
+          "oklch(83.6% 0.07 30)",
+          "oklch(95% 0.041 30)"
+        ]
+      },
+      "ok": {
+        "role": "state",
+        "displayName": "OK",
+        "canonical": "#8ff0c4",
+        "tonalRamp": [
+          "oklch(15% 0.078 160)",
+          "oklch(26.4% 0.101 160)",
+          "oklch(37.9% 0.116 160)",
+          "oklch(49.3% 0.12 160)",
+          "oklch(60.7% 0.113 160)",
+          "oklch(72.1% 0.096 160)",
+          "oklch(83.6% 0.07 160)",
+          "oklch(95% 0.041 160)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Cover headline only, set over the indigo ground. Never used for a sentence."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Every page title and the register panel title. Condensed heavy Archivo, balanced wrapping."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Stage names, index row titles, mode-switch tabs, footer column headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All running text, 0.75rem floor, measures between 44ch and 68ch. Spanish throughout."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase 11px Archivo eyebrows, field labels, and stamps. Announces a category, never a sentence."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "Dates and counts in tabular figures so digits align on the ruling."
+      }
+    },
+    "shadows": [
+      {
+        "name": "page",
+        "value": "0 18px 40px rgba(1, 1, 20, 0.55)",
+        "purpose": "The only resting shadow. Every dark page and the register panel cast it onto the indigo ground."
+      },
+      {
+        "name": "lift",
+        "value": "0 28px 60px rgba(1, 1, 20, 0.62)",
+        "purpose": "The top sheet only, while hovered or holding focus within: the page is picked up."
+      },
+      {
+        "name": "stack",
+        "value": "0 18px 40px rgba(1, 1, 20, 0.55)",
+        "purpose": "A panel floating over other content on the ground rather than resting in the page; today only the mobile nav."
+      },
+      {
+        "name": "fox-glow",
+        "value": "0 0 34px rgba(78, 122, 255, 0.5)",
+        "purpose": "The fox image only. The only glow in the system, inherited from the legacy treatment."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The single easing curve in the world. Every state transition and the mobile nav entrance use it."
+      },
+      {
+        "name": "state",
+        "value": "180ms",
+        "purpose": "Colour, transform and shadow transitions on buttons, tabs, fields and the grip."
+      },
+      {
+        "name": "field",
+        "value": "160ms",
+        "purpose": "Border and focus-ring transitions on inputs and the mode switch."
+      },
+      {
+        "name": "sheet-lift",
+        "value": "420ms",
+        "purpose": "The cover sheet lifting -10px with -0.35deg while hovered or focused within."
+      },
+      {
+        "name": "grip-flip",
+        "value": "320ms",
+        "purpose": "The lift grip chevron rotating 180deg when the sheet beneath is open."
+      },
+      {
+        "name": "nav-stack",
+        "value": "180ms",
+        "purpose": "The mobile nav dropdown entrance and exit."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.001ms",
+        "purpose": "One block neutralises every animation and transition under prefers-reduced-motion, and removes the sheet lift transform while keeping its state."
+      }
+    ],
+    "breakpoints": [
+      { "name": "wide", "value": "1080px", "note": "Cover collapses to one column, page head stacks, fox scales to 340px." },
+      { "name": "mid", "value": "860px", "note": "Tabs replaced by a 44px toggle, shell gutter to 32px, rows, columns, index and footer all collapse to one column." },
+      { "name": "narrow", "value": "560px", "note": "Page padding to 24px 20px 28px, margin rule to 16px, footer bottom padding to 40px." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button — Violet",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The submit on indigo. Violet fill with abyss text; used full-width inside the register.",
+      "html": "<div class=\"ds-surface-ground\"><button class=\"ds-btn-primary\">Crear mi cuenta</button></div>",
+      "css": ".ds-surface-ground { background: radial-gradient(circle at 14% -6%, #07186b, #020535 42%, #010114); padding: 28px; } .ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border: 1px solid transparent; border-radius: 12px; background: #7c6cff; color: #010114; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 90, 'wght' 700; font-size: 0.9375rem; letter-spacing: 0.005em; cursor: pointer; transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.18s cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:hover { background: #a99aff; transform: translateY(-1px); } .ds-btn-primary:focus-visible { outline: 2px solid #5ddcff; outline-offset: 2px; } .ds-btn-primary[disabled] { opacity: 0.5; cursor: not-allowed; transform: none; }"
+    },
+    {
+      "name": "Quiet Button — Indigo",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Secondary action on the ground: transparent, hairline border, muted text, filling with a violet wash on hover.",
+      "html": "<div class=\"ds-surface-ground\"><button class=\"ds-btn-quiet\">Ver un ejemplo de registro</button></div>",
+      "css": ".ds-surface-ground { background: radial-gradient(circle at 14% -6%, #07186b, #020535 42%, #010114); padding: 28px; } .ds-btn-quiet { display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border: 1px solid rgba(124, 108, 255, 0.2); border-radius: 12px; background: transparent; color: #a9b4e0; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 90, 'wght' 700; font-size: 0.9375rem; cursor: pointer; transition: background-color 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-quiet:hover { background: rgba(124, 108, 255, 0.1); border-color: rgba(124, 108, 255, 0.5); } .ds-btn-quiet:focus-visible { outline: 2px solid #5ddcff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "A hole cut into the panel: brighter panel fill, violet hairline border, uppercase label, violet focus ring with no outline.",
+      "html": "<div class=\"ds-surface-panel\"><label class=\"ds-field\"><span>Correo electrónico</span><input type=\"email\" placeholder=\"correo@ejemplo.com\"></label></div>",
+      "css": ".ds-surface-panel { background: #1a2455; padding: 28px; } .ds-field { display: block; } .ds-field > span { display: block; margin-bottom: 6px; color: #a9b4e0; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 96, 'wght' 600; font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; } .ds-field input { width: 100%; min-height: 46px; padding: 0 13px; border: 1px solid rgba(124, 108, 255, 0.2); border-radius: 4px; background: #1a2455; color: #ffffff; font-family: 'Source Sans 3', system-ui, -apple-system, sans-serif; font-size: 0.9375rem; transition: border-color 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s cubic-bezier(0.16, 1, 0.3, 1); } .ds-field input::placeholder { color: #a7abd0; } .ds-field input:hover { border-color: rgba(124, 108, 255, 0.5); } .ds-field input:focus { outline: none; border-color: #7c6cff; box-shadow: 0 0 0 3px rgba(124, 108, 255, 0.32); } .ds-field input:focus-visible { outline: none; }"
+    },
+    {
+      "name": "Mode Switch",
+      "kind": "custom",
+      "refersTo": "panel-register",
+      "description": "Two-cell segmented switch inside a 12px-radius tray: a wash tray, and a selected cell that reads as a chip resting in it.",
+      "html": "<div class=\"ds-surface-panel\"><div class=\"ds-modes\" role=\"tablist\" aria-label=\"Modo del formulario\"><button type=\"button\" role=\"tab\" aria-selected=\"true\">Crear cuenta</button><button type=\"button\" role=\"tab\" aria-selected=\"false\">Iniciar sesión</button></div></div>",
+      "css": ".ds-surface-panel { background: #1a2455; padding: 28px; } .ds-modes { display: flex; gap: 4px; padding: 3px; background: rgba(1, 1, 20, 0.5); border: 1px solid rgba(124, 108, 255, 0.2); border-radius: 12px; margin-bottom: 20px; } .ds-modes button { flex: 1; min-height: 38px; padding: 0 12px; border: 0; border-radius: 4px; background: transparent; color: #a9b4e0; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 92, 'wght' 600; font-size: 0.8125rem; cursor: pointer; transition: background-color 0.16s cubic-bezier(0.16, 1, 0.3, 1), color 0.16s cubic-bezier(0.16, 1, 0.3, 1); } .ds-modes button[aria-selected='true'] { background: #7c6cff; color: #010114; } .ds-modes button:focus-visible { outline: 2px solid #5ddcff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "refersTo": "tab-item",
+      "description": "Sticky 68px bar in abyss with hairline-separated tabs; the current tab inverts to violet on abyss.",
+      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav__inner\"><span class=\"ds-brandword\">Kitsunova</span><div class=\"ds-tabs\"><a class=\"ds-tab\">El registro</a><a class=\"ds-tab\" aria-current=\"page\">El proceso</a></div></div></nav>",
+      "css": ".ds-nav { position: sticky; top: 0; z-index: 40; height: 68px; background: rgba(1, 1, 20, 0.82); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(124, 108, 255, 0.2); } .ds-nav__inner { display: flex; align-items: center; height: 100%; gap: 24px; padding: 0 24px; } .ds-brandword { color: #c7d2fe; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 88, 'wght' 700; font-size: 1.0625rem; letter-spacing: -0.01em; } .ds-tabs { display: flex; align-self: stretch; margin-left: auto; gap: 4px; } .ds-tab { display: inline-flex; align-items: center; padding: 0 14px; border: 0; border-radius: 4px; background: transparent; color: #a9b4e0; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 96, 'wght' 600; font-size: 0.8125rem; text-decoration: none; cursor: pointer; transition: color 0.18s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.18s cubic-bezier(0.16, 1, 0.3, 1); } .ds-tab:hover { color: #ffffff; background: rgba(124, 108, 255, 0.14); } .ds-tab[aria-current='page'] { color: #ffffff; background: rgba(124, 108, 255, 0.2); box-shadow: inset 0 -2px 0 #7c6cff; } .ds-tab:focus-visible { outline: 2px solid #5ddcff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Dark Page Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A dark card casting one soft shadow onto the indigo, structured by hairlines, with a violet hairline border.",
+      "html": "<div class=\"ds-surface-ground\"><div class=\"ds-card\"><div class=\"ds-card__head\"><div><span class=\"ds-label\">El recorrido</span><h3 class=\"ds-heading\">Tres etapas, y solo una de ellas es automática</h3></div><p class=\"ds-body\">El orden importa: primero se anota, después se devuelve lo que se ve, y únicamente al final aparece una persona.</p></div></div></div>",
+      "css": ".ds-surface-ground { background: radial-gradient(circle at 14% -6%, #07186b, #020535 42%, #010114); padding: 28px; } .ds-card { background: linear-gradient(145deg, #0d1430, #0b1128); border: 1px solid rgba(124, 108, 255, 0.2); border-radius: 20px; padding: clamp(26px, 3.6vw, 46px); } .ds-card__head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px); gap: 32px; align-items: end; padding-bottom: 22px; border-bottom: 1px solid rgba(124, 108, 255, 0.2); margin-bottom: 28px; } .ds-label { display: block; margin-bottom: 10px; color: #a99aff; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 96, 'wght' 600; font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; } .ds-heading { margin: 0; color: #ffffff; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 88, 'wght' 700; font-size: clamp(1.625rem, 2.9vw, 2.375rem); line-height: 1.08; letter-spacing: -0.02em; } .ds-body { margin: 0; color: #a9b4e0; font-family: 'Source Sans 3', system-ui, -apple-system, sans-serif; font-size: 0.9375rem; line-height: 1.6; max-width: 68ch; }"
+    },
+    {
+      "name": "Light Record Card",
+      "kind": "card",
+      "refersTo": "card-light",
+      "description": "The single light surface: bone paper with iron-gall ink, border transparent, radius 20px. Punctuation, not the base.",
+      "html": "<div class=\"ds-surface-ground\"><div class=\"ds-card ds-card--light\"><div class=\"ds-card__head\"><div><span class=\"ds-label\">Ejemplo de una entrada</span><h3 class=\"ds-heading\">Un proceso se lee como una bitácora, no como una barra</h3></div><p class=\"ds-body\">Así ve Kitsunova un proceso en curso. La automatización escribe la primera línea y solo marca el cambio cuando hace falta una persona.</p></div></div></div>",
+      "css": ".ds-surface-ground { background: radial-gradient(circle at 14% -6%, #07186b, #020535 42%, #010114); padding: 28px; } .ds-card { border-radius: 20px; padding: clamp(26px, 3.6vw, 46px); } .ds-card--light { background: #f4f1ea; border: 1px solid transparent; color: #2a2418; } .ds-card--light .ds-card__head { border-bottom-color: rgba(42, 36, 24, 0.16); } .ds-card--light .ds-label { color: #7c6cff; } .ds-card--light .ds-heading { color: #2a2418; } .ds-card--light .ds-body { color: #565040; } .ds-card__head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px); gap: 32px; align-items: end; padding-bottom: 22px; border-bottom: 1px solid rgba(124, 108, 255, 0.2); margin-bottom: 28px; } .ds-label { display: block; margin-bottom: 10px; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 96, 'wght' 600; font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; } .ds-heading { margin: 0; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 88, 'wght' 700; font-size: clamp(1.625rem, 2.9vw, 2.375rem); line-height: 1.08; letter-spacing: -0.02em; } .ds-body { margin: 0; font-family: 'Source Sans 3', system-ui, -apple-system, sans-serif; font-size: 0.9375rem; line-height: 1.6; max-width: 68ch; }"
+    },
+    {
+      "name": "Tail Row",
+      "kind": "custom",
+      "refersTo": "tail-cell-cut",
+      "description": "Nine ruled cells. A tail is cut when a review closes, never on a timer: no animation, no counter, no streak.",
+      "html": "<div class=\"ds-surface-ground\"><div class=\"ds-card\"><ul class=\"ds-tails\" aria-label=\"3 de 9 colas cortadas\"><li></li><li></li><li data-cut=\"true\"></li></ul><p class=\"ds-tails__note\">Una cola aparece cuando una revisión se cierra de verdad, y ninguna se gana por racha.</p></div></div>",
+      "css": ".ds-surface-ground { background: radial-gradient(circle at 14% -6%, #07186b, #020535 42%, #010114); padding: 28px; } .ds-card { background: linear-gradient(145deg, #0d1430, #0b1128); border: 1px solid rgba(124, 108, 255, 0.2); border-radius: 20px; padding: clamp(26px, 3.6vw, 46px); } .ds-tails { display: flex; gap: 8px; margin: 0 0 20px; padding: 0; list-style: none; max-width: 560px; } .ds-tails li { flex: 1; height: 52px; border: 1px solid rgba(124, 108, 255, 0.2); border-radius: 4px; background: rgba(124, 108, 255, 0.06); } .ds-tails li[data-cut='true'] { background: linear-gradient(160deg, #a99aff, #7c6cff); border-color: transparent; box-shadow: 0 0 18px rgba(124, 108, 255, 0.4); } .ds-tails__note { margin: 0; color: #565040; font-family: 'Source Sans 3', system-ui, -apple-system, sans-serif; font-size: 0.9375rem; line-height: 1.6; max-width: 68ch; }"
+    },
+    {
+      "name": "Fox Figure",
+      "kind": "custom",
+      "refersTo": "fox-figure",
+      "description": "The brand fox, centered in its stage with the legacy violet-blue glow. No glow cards; this is the only glow in the system.",
+      "html": "<div class=\"ds-surface-ground\"><div class=\"ds-fox\"><img src=\"zorro-r.webp\" alt=\"Zorro de nueve colas de Kitsunova, tu acompañante\" width=\"1024\" height=\"1024\"></div></div>",
+      "css": ".ds-surface-ground { background: radial-gradient(circle at 14% -6%, #07186b, #020535 42%, #010114); padding: 28px; } .ds-fox { position: relative; z-index: 1; width: min(430px, 100%); margin-inline: auto; } .ds-fox img { display: block; width: 100%; height: auto; filter: drop-shadow(0 0 34px rgba(78, 122, 255, 0.5)); }"
+    },
+    {
+      "name": "Index Row",
+      "kind": "custom",
+      "refersTo": "index-row",
+      "description": "A 12px mark (two 2px squares offset 4px) paired with a title and a 46ch note.",
+      "html": "<div class=\"ds-surface-ground\"><div class=\"ds-card\"><div class=\"ds-index__row\"><span class=\"ds-index__mark\" aria-hidden=\"true\"></span><div><h3 class=\"ds-subhead\">Hábitos con guía</h3><p>Crea rutinas y recibe sugerencias automáticas que se ajustan a lo que registras.</p></div></div></div></div>",
+      "css": ".ds-surface-ground { background: radial-gradient(circle at 14% -6%, #07186b, #020535 42%, #010114); padding: 28px; } .ds-card { background: linear-gradient(145deg, #0d1430, #0b1128); border: 1px solid rgba(124, 108, 255, 0.2); border-radius: 20px; padding: clamp(26px, 3.6vw, 46px); } .ds-index__row { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 16px; padding: 22px 0; border-bottom: 1px solid rgba(124, 108, 255, 0.2); } .ds-index__row:last-child { border-bottom: 0; } .ds-index__mark { position: relative; width: 12px; height: 12px; margin-top: 7px; border-radius: 2px; background: #3048d8; } .ds-index__mark::after { content: ''; position: absolute; inset: 0; border-radius: 2px; background: #7c6cff; transform: translate(4px, 4px); } .ds-subhead { margin: 0; color: #ffffff; font-family: Archivo, system-ui, sans-serif; font-variation-settings: 'wdth' 92, 'wght' 600; font-size: clamp(1.0625rem, 1.5vw, 1.1875rem); line-height: 1.24; letter-spacing: -0.01em; } .ds-index__row p { margin: 6px 0 0; color: #a9b4e0; font-family: 'Source Sans 3', system-ui, -apple-system, sans-serif; font-size: 0.9375rem; line-height: 1.6; max-width: 46ch; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Near-Black Indigo Identity",
+    "overview": "The landing is a deep, near-black indigo identity executed with current craft: a radial gradient ground in violet-tinged indigo, violet and blue light on it, and exactly one bone light surface as punctuation. The density is clean and modern. There is no paper craft, no cut edges, no neumorphism. The hero is a deliberate two-column split — registration form on the left, headline and fox on the right — never overlapping. The fox carries the legacy violet-blue glow as the single deliberate glow in the system. Depth is conveyed through tonal layering and real offset shadows on the register panel and the liftable sheet, not through glow cards.",
+    "keyCharacteristics": [
+      "Radial near-black indigo ground (radial-gradient(circle at 14% -6%, #07186b, #020535 42%, #010114)), fixed attachment.",
+      "Dark cards with a 1px violet hairline (rgba(124,108,255,0.2)) and linear-gradient(145deg, #0d1430, #0b1128).",
+      "One bone light surface (#f4f1ea) reserved for the record section; it is punctuation, not the base.",
+      "Accent hierarchy: violet #7c6cff dominant, blue #3048d8 deeper for secondary layers and scrollbar only, cyan #5ddcff reserved for focus rings.",
+      "Fox image with legacy drop-shadow(0 0 34px rgba(78,122,255,0.5)).",
+      "Hero composition: grid-template-columns: minmax(0,430px) minmax(0,1fr); form left, stage right.",
+      "Breakpoints at 1080px, 860px, 560px.",
+      "prefers-reduced-motion neutralised in CSS and the framer-motion mobile nav reads useReducedMotion() and sets duration to 0.",
+      "Contrast verified numerically; no headless browser available, so no screenshot verification."
+    ],
+    "rules": [
+      {
+        "name": "The Accent Hierarchy Rule",
+        "body": "Violet carries filled actions and selected states. Blue is structural and scroll-only. Cyan is attention-only (focus). No other accent hues exist.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Glow Rule",
+        "body": "Shadows are offset and blur only. The fox is the only element that carries a glow, and it is a legacy filter, not a box-shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Shadow Per Surface Rule",
+        "body": "A dark surface gets either the page shadow or the lift shadow. It never gets both, and it never gets a second decorative shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Condensed-Heavy Rule",
+        "body": "Archivo is for shapes, labels, numerals and headlines; running text is always Source Sans 3, and no sentence is ever set in Archivo.",
+        "section": "typography"
+      },
+      {
+        "name": "The 0.75rem Floor Rule",
+        "body": "Running text never drops below 0.75rem. Smaller sizes are uppercase Archivo labels or tabular numerals.",
+        "section": "typography"
+      },
+      {
+        "name": "The 26px Rhythm Rule",
+        "body": "Top-level sections inside <main> are separated by exactly 26px. Card padding scales with clamp(26px, 3.6vw, 46px).",
+        "section": "layout"
+      }
+    ],
+    "dos": [
+      "Do scope every new landing rule to a .kb-* class inside the .kb-root token scope, and define new values as CSS custom properties there, so the psychologist, user and admin surfaces keep their own world.",
+      "Do reserve deep blue for secondary layers and the scrollbar only, and cyan for focus rings only.",
+      "Do give a dark surface exactly one hairline border and one shadow only when it is the register panel or the liftable sheet.",
+      "Do set every date, count and numeral in tabular figures so the columns stay aligned.",
+      "Do mark state redundantly — colour plus label plus glyph plus position — so nothing depends on colour alone.",
+      "Do keep running text in Source Sans 3 at 0.75rem or larger, and cap every measure between 44ch and 68ch.",
+      "Do disable, rather than hide, what does not exist yet, and say so in the copy next to it.",
+      "Do label illustrative data as an example in the product itself, with a stamp and a footnote."
+    ],
+    "donts": [
+      "Don't reintroduce neumorphism, paper craft, or cut edges. The ground is indigo, the cards are dark with hairline borders, and the only light surface is bone.",
+      "Don't reach for the legacy --neumorphic-*, --psy-* or --admin-* token scopes from inside this world; they belong to surfaces this landing does not govern.",
+      "Don't put a glow on the fox, a gradient on the bone, or a rim light on a cut edge. The fox glow is the only glow, and it is a filter.",
+      "Don't express progress as a percentage, a bar, a streak, an achievement counter or a locked tier. A tail is cut by a closed review, and a state change changes the page.",
+      "Don't encode state in colour alone, and don't let a colour be the only difference between two rows.",
+      "Don't invent metrics, testimonials, user counts, professional names or outcomes. The landing states what exists and says what does not.",
+      "Don't add a fourth breakpoint, a second font request, or a second @import.",
+      "Don't lift this world onto the user, psychologist or admin surfaces without a deliberate decision — they have their own, and this file does not describe them."
+    ]
+  }
+}
