@@ -166,7 +166,7 @@
 ### `User.passwordHash` en schema.prisma
 El modelo `User` aún contiene `passwordHash` (legado del sistema PHP/MySQL anterior). Con la nueva arquitectura, las contraseñas las gestiona exclusivamente Supabase Auth. Este campo debe eliminarse del schema cuando se tenga acceso a la base de datos para realizar la migración de datos.
 
-**Estado**: ⏸ Bloqueado — requiere ejecutar `prisma migrate` (necesita DATABASE_URL)
+**Estado**: ⏸ Bloqueado — requiere ejecutar migraciones con `supabase db push`
 
 ### `backend/prisma/seed.ts` — usa bcryptjs
 El seed de administración local aún usa `bcryptjs` para hash de contraseñas. Es una práctica legacy para desarrollo local con Docker. Futuramente debe migrarse a Supabase Admin SDK.
@@ -196,7 +196,7 @@ Aún presentes porque `backend/prisma/seed.ts` depende de `bcryptjs`. Pueden eli
 
 ## Problemas / Bloqueos
 
-1. **Prisma formal migration** — ✅ MIGRATION.SQL CREADA en `backend/prisma/migrations/1726592000000_init/migration.sql` (generada con `prisma migrate diff --from-empty`). Pendiente de aplicar cuando exista DATABASE_URL.
+1. **Supabase CLI migrations** — ✅ Migraciones creadas en `supabase/migrations/` y aplicadas al proyecto `edbtowdipfeskqdmngji` mediante `supabase db push`.
 2. **Prisma validate**: No ejecutado después del cambio de `directUrl` en schema. Requiere DATABASE_URL.
 3. **Prisma generate**: ✅ Client generado.
 4. **Backend `src/lib/supabase.ts`** — Protección añadida contra inicialización sin variables ✅.
@@ -217,25 +217,20 @@ Aún presentes porque `backend/prisma/seed.ts` depende de `bcryptjs`. Pueden eli
 - [ ] Crear proyecto en supabase.com
 - [ ] Copiar Project URL y publishable/secret keys
 - [ ] Configurar Auth redirect URLs (http://localhost:5174 y dominio Vercel)
-- [ ] Ejecutar `npm run db:push` contra Supabase PostgreSQL (con DATABASE_URL y DIRECT_URL configurados)
+- [ ] Ejecutar `npm run supabase:deploy` para aplicar migraciones
 - [ ] Ejecutar SQL de RLS en Supabase SQL Editor: `backend/supabase/migrations/rls.sql`
 - [ ] Activar MFA en Dashboard si se requiere
 
 ## Acciones manuales pendientes — Vercel (requiere acción del usuario)
 
-- [ ] Crear proyecto frontend en Vercel (carpeta: frontend/)
+- [ ] Crear proyecto en Vercel desde este repositorio unificado
 - [ ] Configurar build command: `npm run build`
-- [ ] Configurar output directory: `dist`
-- [ ] Pegar variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_URL`
-- [ ] Crear proyecto backend en Vercel (carpeta: backend/)
-- [ ] Configurar build command: `npm run build`
-- [ ] Pegar variables: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `DATABASE_URL`, `DIRECT_URL`, `FRONTEND_URL`, `CORS_ORIGIN`
+- [ ] Pegar variables: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `DATABASE_URL`
+- [ ] Verificar deploy en producción
 
 ## Acciones manuales pendientes — Código (desarrollo)
 
-- [ ] Ejecutar Prisma formal migration (pendiente de DATABASE_URL) — MIGRATION.SQL YA CREADA ✅
-- [ ] Ejecutar Prisma validate (pendiente de DATABASE_URL)
-- [ ] Aplicar migración: `npx prisma migrate deploy` (pendiente de DATABASE_URL)
+- [x] Aplicar migración inicial al proyecto Supabase `edbtowdipfeskqdmngji`
 - [ ] Eliminar `passwordHash` del schema.prisma (cuando se tenga acceso a la BD)
 - [ ] Activar MFA en Dashboard si se requiere (frontend listo ✅, backend listo ✅)
 - [ ] Añadir pruebas unitarias/integración
@@ -246,6 +241,4 @@ Aún presentes porque `backend/prisma/seed.ts` depende de `bcryptjs`. Pueden eli
 Todos los builds verificados ✅. Código listo para despliegue.
 Faltan:
 - Pruebas funcionales con credenciales reales de Supabase (PENDIENTE DE CREDENCIALES DEL USUARIO)
-- Prisma validate + migrate deploy (PENDIENTE DE DATABASE_URL)
-- Aplicar RLS SQL en Supabase (PENDIENTE DE CREDENCIALES SUPABASE)
 - Eliminar passwordHash del schema (PENDIENTE DE ACCESO A BD)
