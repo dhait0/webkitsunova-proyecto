@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { AuthSuccessHandler } from '@/components/landing/AuthUnified';
+import type { AuthSuccessHandler } from '@/hooks/useAuthForm';
 import { supabase } from '@/lib/supabase';
-import { AuthUnified } from '@/components/landing';
+import { FieldRegister } from '@/components/landing/FieldRegister';
+import { FoxFigure } from '@/components/landing/FoxFigure';
+import PublicHeader from '@/components/PublicHeader';
+import PublicFooter from '@/components/PublicFooter';
+import { loginPage } from '@/content/siteContent';
 import { homeForRole, roleFromSupabaseUser } from '@/lib/roles';
 
 function LoginPage() {
@@ -39,74 +43,63 @@ function LoginPage() {
   };
 
   if (checkingSession) {
-    return <div className="route-guard">Verificando sesión...</div>;
+    return (
+      <div className="kb-root">
+        <div className="kb-shell" style={{ padding: '100px 0', textAlign: 'center' }}>
+          <p className="kb-body">Verificando sesión…</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="login-page">
-      <Link to="/" className="back-btn" aria-label="Volver al inicio">
-        ←
-      </Link>
+    <div className="kb-root">
+      <a className="kb-skip" href="#registro">
+        {loginPage.backLabel}
+      </a>
 
-      <div className="login-layout">
-        <section className="login-column">
-          <div className="login-logo">
-            <img src="/brand/imagotipo.png" alt="Kitsunova" />
+      <PublicHeader showSections={false} />
+
+      <main>
+        <section className="kb-shell kb-cover" aria-labelledby="login-titulo">
+          <div className="kb-cover__form">
+            <FieldRegister initialMode="login" onSuccess={handleAuthSuccess} />
           </div>
 
-          <div className="login-intro">
-            <span className="eyebrow">Acceso</span>
-            <h1>Accede a tus hábitos y a tu red de apoyo</h1>
-            <p className="section-copy">
-              Entra para revisar tu progreso, seguir tus rutinas, chatear con psicólogos y
-              agendar citas desde una sola cuenta.
-            </p>
-
-            <div className="login-highlights">
-              <div className="login-highlight">
-                <strong>Seguimiento</strong>
-                <span>Rutinas y hábitos activos</span>
-              </div>
-              <div className="login-highlight">
-                <strong>Chat</strong>
-                <span>Contacta apoyo profesional</span>
-              </div>
-              <div className="login-highlight">
-                <strong>Citas</strong>
-                <span>Escala cuando sea necesario</span>
-              </div>
+          <div className="kb-cover__stage">
+            <div className="kb-cover__type">
+              <h1 className="kb-display" id="login-titulo">
+                {loginPage.heroTitle} <span>{loginPage.heroSpan}</span>
+              </h1>
+              <p className="kb-body kb-cover__copy">{loginPage.heroCopy}</p>
             </div>
-          </div>
 
-          <div className="login-auth">
-            <AuthUnified mode="login" showModeToggle onSuccess={handleAuthSuccess} />
+            <FoxFigure className="kb-foxfigure" />
           </div>
         </section>
 
-        <aside className="right-section login-hero">
-          <img src="/brand/zorro-r.png" alt="Zorro Kitsunova" className="hero-image" />
-          <div className="hero-text">
-            <h1>
-              Hábitos, chat y citas <span>cuando lo necesites</span>
-            </h1>
-            <p>
-              Sigue tu proceso con seguimiento automatizado y apoyo profesional disponible en el
-              momento adecuado.
-            </p>
+        <section className="kb-shell" aria-label="Qué obtienes en Kitsunova">
+          <div className="kb-card">
+          <div className="kb-card__head">
+            <h2 className="kb-heading" id="login-acceso-titulo">
+              {loginPage.headline}
+            </h2>
+            <p className="kb-body">{loginPage.lede}</p>
           </div>
 
-          <div className="panel-stack">
-            <article className="floating-panel login-panel">
-              <span>Qué obtienes</span>
-              <p>Un acceso limpio a tu progreso, conversaciones y agenda profesional.</p>
-            </article>
-            <article className="floating-panel login-panel">
-              <span>Cuándo escalar</span>
-              <p>Si el hábito necesita intervención humana, el sistema te dirige a un psicólogo.</p>
-            </article>
+            <div className="kb-columns">
+              {loginPage.highlights.map((highlight) => (
+                <div className="kb-col" key={highlight.strong}>
+                  <h3 className="kb-subhead">{highlight.strong}</h3>
+                  <p>{highlight.text}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </aside>
-      </div>
+        </section>
+      </main>
+
+      <PublicFooter showSectionLinks={false} />
     </div>
   );
 }

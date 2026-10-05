@@ -1,63 +1,47 @@
 import { Link } from 'react-router-dom';
-import { PictureImage } from '@/components/ui';
+import { fieldFooter } from '@/content/siteContent';
 
-function PublicFooter() {
+interface PublicFooterProps {
+  showSectionLinks?: boolean;
+}
+
+export function PublicFooter({ showSectionLinks = true }: PublicFooterProps) {
   return (
-    <footer className="main-footer">
-      <div className="footer-container">
-        <div className="footer-brand">
-          <PictureImage
-            src="/brand/isotipo.png"
-            alt="Kitsunova"
-            width={300}
-            height={280}
-            className="footer-logo"
-          />
-          <p>Hábitos, apoyo profesional y seguimiento continuo</p>
+    <footer className="kb-footer">
+      <div className={`kb-shell kb-footer__grid${showSectionLinks ? '' : ' kb-footer__grid--dos'}`}>
+        <div className="kb-footer__brand">
+          <img src="/brand/isotipo.webp" alt="Kitsunova" width={150} height={140} />
+          <p>{fieldFooter.promise}</p>
         </div>
 
-        <div className="footer-links">
-          <h4>Enlaces rápidos</h4>
-          <ul>
-            <li>
-              <a href="#como-funciona">Cómo funciona</a>
-            </li>
-            <li>
-              <a href="#solucion">Solución</a>
-            </li>
-            <li>
-              <a href="#beneficios">Beneficios</a>
-            </li>
-            <li>
-              <a href="#app">App</a>
-            </li>
-            <li>
-              <Link to="/login">Acceso</Link>
-            </li>
-          </ul>
-        </div>
+        {showSectionLinks && (
+          <div>
+            <h3>En esta página</h3>
+            <ul>
+              {fieldFooter.quickLinks.map((link) => (
+                <li key={link.href}>
+                  <a href={link.href}>{link.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-        <div className="footer-links">
-          <h4>Acceso rápido</h4>
+        <div>
+          <h3>Acceso</h3>
           <ul>
-            <li>
-              <a href="#registro">Registro</a>
-            </li>
-            <li>
-              <a href="#solucion">Qué ofrece</a>
-            </li>
-            <li>
-              <a href="#beneficios">Casos de uso</a>
-            </li>
-            <li>
-              <a href="#app">Descarga</a>
-            </li>
+            {fieldFooter.areas.map((link) => (
+              <li key={link.label}>
+                <Link to={link.href}>{link.label}</Link>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
 
-      <div className="footer-bottom">
+      <div className="kb-shell kb-footer__bottom">
         <p>&copy; 2026 Kitsunova. Todos los derechos reservados.</p>
+        <p>Proyecto full-stack en desarrollo activo.</p>
       </div>
     </footer>
   );

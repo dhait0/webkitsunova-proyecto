@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { PictureImage } from '@/components/ui';
-import { siteNavigation } from '@/content/siteContent';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { fieldNav } from '@/content/siteContent';
 import { scrollToSection, useActiveSection } from '@/hooks/useActiveSection';
 
-const NAV_IDS = siteNavigation.map((item) => item.id);
+const FIELD_NAV_IDS = fieldNav.map((item) => item.id);
 
-function PublicHeader() {
+interface PublicHeaderProps {
+  showSections?: boolean;
+}
+
+export function PublicHeader({ showSections = true }: PublicHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const activeId = useActiveSection(NAV_IDS);
+  const reduceMotion = useReducedMotion();
+  const activeId = useActiveSection(FIELD_NAV_IDS);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -20,92 +24,77 @@ function PublicHeader() {
   }
 
   return (
-    <header className="main-navbar">
-      <div className="navbar-container">
-        <Link to="/" className="logo-container" aria-label="Inicio de Kitsunova" onClick={closeMenu}>
-          <PictureImage
-            src="/brand/imagotipo.png"
-            alt="Kitsunova"
-            width={400}
-            height={160}
-            loading="eager"
-            className="logo"
-          />
+    <header className="kb-nav">
+      <div className="kb-shell kb-nav__inner">
+        <Link to="/" className="kb-nav__brand" aria-label="Inicio de Kitsunova" onClick={closeMenu}>
+          <img src="/brand/imagotipo.webp" alt="Kitsunova" width={200} height={80} />
         </Link>
 
-        {/* Visible from 640px up; the burger handles everything below. */}
-        <nav id="main-nav" className="main-nav-links desktop-nav" aria-label="Navegación principal">
-          {siteNavigation.map((item) => (
-            <a
-              key={item.id}
-              href={`#${item.id}`}
-              className={activeId === item.id ? 'active' : ''}
-              aria-current={activeId === item.id ? 'page' : undefined}
-              onClick={(event) => handleAnchor(event, item.id)}
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
+        {showSections && (
+          <nav className="kb-tabs" aria-label="Secciones de esta página">
+            {fieldNav.map((item) => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                className="kb-tab"
+                aria-current={activeId === item.id ? 'page' : undefined}
+                onClick={(event) => handleAnchor(event, item.id)}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        )}
 
-        <button
-          type="button"
-          className="mobile-menu-toggle"
-          onClick={() => setMenuOpen((prev) => !prev)}
-          aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
-          aria-expanded={menuOpen}
-          aria-controls="main-nav-mobile"
+        <Link
+          to="/login"
+          className={`kb-btn kb-btn--quiet kb-nav__session${showSections ? '' : ' kb-nav__session--solo'}`}
         >
-          <span />
-          <span />
-          <span />
-        </button>
+          Iniciar sesión
+        </Link>
 
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.nav
-              id="main-nav-mobile"
-              className="main-nav-links mobile-nav open"
-              aria-label="Navegación principal"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 50 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            >
-              {siteNavigation.map((item) => (
+        {showSections && (
+          <button
+            type="button"
+            className="kb-toggle"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={menuOpen}
+            aria-controls="kb-nav-mobile"
+          >
+            <span className="kb-toggle__bars" />
+          </button>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {showSections && menuOpen && (
+          <motion.nav
+            id="kb-nav-mobile"
+            className="kb-tabs kb-tabs--stack"
+            aria-label="Secciones de esta página"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: reduceMotion ? 0 : 0.18, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {showSections &&
+              fieldNav.map((item) => (
                 <a
                   key={item.id}
                   href={`#${item.id}`}
-                  className={activeId === item.id ? 'active' : ''}
-                  aria-current={activeId === item.id ? 'page' : undefined}
+                  className="kb-tab"
                   onClick={(event) => handleAnchor(event, item.id)}
                 >
                   {item.label}
                 </a>
               ))}
-
-              <div className="auth-buttons mobile-auth">
-                <Link to="/login" className="login-btn" onClick={closeMenu}>
-                  Iniciar sesión
-                </Link>
-              </div>
-            </motion.nav>
-          )}
-        </AnimatePresence>
-
-        <div className="auth-buttons desktop-auth">
-          <Link to="/login" className="login-btn">
-            Iniciar sesión
-          </Link>
-          <button
-            type="button"
-            className="login-btn login-btn--primary"
-            onClick={() => scrollToSection('registro')}
-          >
-            Crear cuenta
-          </button>
-        </div>
-      </div>
+            <Link to="/login" className="kb-tab" onClick={closeMenu}>
+              Iniciar sesión
+            </Link>
+          </motion.nav>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

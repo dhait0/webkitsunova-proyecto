@@ -319,6 +319,71 @@ Solución:
 
 Evitar registrar errores triviales o de una sola vez.
 
+## Problema
+
+Síntoma:
+
+```text
+El frontend en el puerto 5174 responde con:
+ENOENT: no such file or directory, open '/app/index.html'
+```
+
+Causa:
+
+```text
+El puerto 5174 no lo tenía el stack de este proyecto, sino contenedores de otro proyecto de
+Docker llamado `usuario`, creado desde un worktree de Agent Manager en
+`.kilo/worktrees/usuario`. Ese worktree ya no existe (el directorio está vacío y
+`.kilo/agent-manager.json` no registra worktrees), pero sus contenedores llevaban 32 horas vivos y
+sus bind mounts apuntaban a archivos borrados, así que `/app/index.html` no existía.
+
+Además el stack real estaba apagado: `docker compose ps` no mostraba ningún servicio vivo.
+```
+
+Solución:
+
+```text
+1. Identificar el ocupante del puerto antes de tocar código:
+   docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'
+   lsof -nP -iTCP:5174 -sTCP:LISTEN
+2. Retirar los contenedores huérfanos (sin -v, para no borrar volúmenes):
+   docker rm -f <nombre>-frontend-1 <nombre>-backend-1 <nombre>-postgres-1
+3. Levantar el stack real: docker compose up -d
+```
+
+## Problema
+
+Síntoma:
+
+```text
+El contenedor de frontend entra en Restarting (1) y Vite muere con:
+[Failed to load PostCSS config: Loading PostCSS Plugin failed: Cannot find module 'tailwindcss']
+```
+
+Causa:
+
+```text
+El volumen nombrado `webkitsunova_proyecto_frontend_node_modules` es de antes de que Tailwind
+fuera dependencia. El compose monta `./frontend:/app` más ese volumen sobre `/app/node_modules`, y
+el volumen obsoleto tapa las dependencias que sí trae la imagen, así que PostCSS no encuentra
+tailwindcss.
+```
+
+Solución:
+
+```text
+1. Confirmar que el volumen está obsoleto:
+   docker run --rm -v <proyecto>_frontend_node_modules:/v alpine sh -lc 'ls -d /v/tailwindcss'
+2. El volumen tiene que estar en uso, así que primero se retira el contenedor:
+   docker compose rm -f frontend
+3. Se borra el volumen y se recrea; Docker lo repuebla desde la imagen:
+   docker volume rm <proyecto>_frontend_node_modules
+   docker compose up -d frontend
+```
+
+Nota: no reemplazar el volumen nombrado por un bind mount de `node_modules` del host. Las
+dependencias del host son binarios para macOS y no corren dentro del contenedor alpine.
+
 ---
 
 # 11. Descubrimientos pendientes
