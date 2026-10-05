@@ -230,7 +230,7 @@ Preferir una estructura aproximadamente similar a:
 ├── .github/
 │   └── workflows/
 ├── AGENTS.md
-├── DESIGN_SYSTEM.md
+├── DESIGN.md
 └── package.json
 ```
 
@@ -780,10 +780,14 @@ No duplicar manualmente tipos que puedan derivarse de una única fuente.
 El diseño visual debe seguir:
 
 ```text
-DESIGN_SYSTEM.md
+DESIGN.md
 ```
 
 Ese documento es la fuente de verdad visual.
+
+`DESIGN.md` se escribe desde el mundo ya construido, no antes: si una regla del documento no
+existe en el código, es una regla que nadie implementó. `DESIGN_SYSTEM.md` fue retirado por
+documentar un mundo neumórfico que nunca existió en el producto original.
 
 Mantener:
 

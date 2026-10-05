@@ -1,12 +1,9 @@
-import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
 import { Button, Input, Card, Tabs, Flex, Grid } from '@/components/ui';
+import type { AuthMode, AuthSuccessHandler } from '@/hooks/useAuthForm';
+import { useAuthForm } from '@/hooks/useAuthForm';
 
-type AuthMode = 'login' | 'register';
-
-export type AuthSuccessHandler = (mode: AuthMode, session: Session) => void;
+export type { AuthSuccessHandler };
 
 const emailIcon = (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,8 +59,6 @@ interface AuthUnifiedProps {
   className?: string;
 }
 
-const emptyForm = { email: '', password: '', confirmPassword: '', username: '' };
-
 export function AuthUnified({
   mode: initialMode = 'login',
   onSuccess,
@@ -72,122 +67,18 @@ export function AuthUnified({
   redirectTo,
   className = '',
 }: AuthUnifiedProps) {
-  const [mode, setMode] = useState<AuthMode>(initialMode);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [formData, setFormData] = useState(emptyForm);
-
-  const isRegister = mode === 'register';
-
-  const handleModeChange = (newMode: AuthMode) => {
-    setMode(newMode);
-    setError('');
-    setSuccess('');
-    setFormData(emptyForm);
-    onModeChange?.(newMode);
-  };
-
-  const handleTabsChange = (value: string) => {
-    handleModeChange(value as AuthMode);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (error) setError('');
-  };
-
-  const validateForm = () => {
-    if (isRegister) {
-      if (!formData.username.trim()) {
-        setError('El nombre de usuario es requerido');
-        return false;
-      }
-      if (formData.password.length < 8) {
-        setError('La contraseña debe tener al menos 8 caracteres');
-        return false;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setError('Las contraseñas no coinciden');
-        return false;
-      }
-    }
-    if (!formData.email || !formData.password) {
-      setError('Complete todos los campos');
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      if (isRegister) {
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              username: formData.username || undefined,
-            },
-          },
-        });
-        if (signUpError) throw signUpError;
-
-        if (data.session) {
-          onSuccess?.('register', data.session);
-        } else {
-          setSuccess('Cuenta creada. Revisa tu correo para confirmar el acceso.');
-        }
-      } else {
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
-        if (signInError) throw signInError;
-
-        if (!data.session) {
-          setError('No hay sesión activa');
-          return;
-        }
-
-        onSuccess?.('login', data.session);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error de autenticación');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleAuth = async () => {
-    setLoading(true);
-    setError('');
-
-    const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}${redirectTo ?? '/dashboard'}`,
-      },
-    });
-
-    if (oauthError) {
-      setError(oauthError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (data?.url) {
-      window.location.href = data.url;
-    }
-  };
+  const {
+    mode,
+    isRegister,
+    loading,
+    error,
+    success,
+    formData,
+    changeMode,
+    handleChange,
+    handleSubmit,
+    handleGoogleAuth
+  } = useAuthForm(initialMode, { onSuccess, redirectTo });
 
   const form = (
     <Grid cols={1} gap="lg" className="space-y-4">
@@ -303,7 +194,7 @@ export function AuthUnified({
         <Tabs
           items={tabsItems}
           value={mode}
-          onChange={handleTabsChange}
+          onChange={(value) => changeMode(value as AuthMode, onModeChange)}
           variant="soft"
           fullWidth
           className="mb-6"

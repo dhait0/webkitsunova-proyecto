@@ -7,6 +7,7 @@ import { homeForRole, roleFromSupabaseUser } from './lib/roles';
 
 import './styles/tailwind.css';
 import './styles/global.css';
+import './styles/landing.css';
 
 function AuthHandler() {
   const navigate = useNavigate();

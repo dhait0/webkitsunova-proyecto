@@ -1,120 +1,132 @@
 export type RegisterRole = 'USER' | 'PSYCHOLOGIST';
 
-/**
- * Landing sections in reading order. The header anchors and the section ids in
- * HomePage both derive from this list, so a link can never point at a missing
- * anchor again.
- */
-export const siteNavigation = [
-  { id: 'inicio', label: 'Inicio' },
-  { id: 'nosotros', label: 'Sobre nosotros' },
-  { id: 'como-funciona', label: 'Cómo funciona' },
-  { id: 'solucion', label: 'Solución' },
-  { id: 'app', label: 'App' },
+export const fieldNav = [
+  { id: 'proceso', label: 'El proceso' },
+  { id: 'recorrido', label: 'El recorrido' },
+  { id: 'acompanante', label: 'El acompañante' },
+  { id: 'que-obtienes', label: 'Qué obtienes' },
+  { id: 'app', label: 'La app' }
 ] as const;
 
-export const aboutSection = {
-  badge: 'Quiénes somos',
-  title: 'Kitsunova acompaña el cambio de hábitos con tecnología y profesionales',
-  lead: 'Somos una plataforma de acompañamiento que combina seguimiento automatizado y apoyo psicológico en un mismo proceso, para que la persona no tenga que decidir sola cuándo necesita ayuda.',
-  points: [
+export const fieldCover = {
+  title: 'Hábitos que se registran, y una persona cuando dejan de bastar',
+  lede: 'Kitsunova anota lo que haces cada día, te devuelve lo que ve en esa anotación y abre la puerta a un psicólogo en el momento en que la automatización deja de servir. El acompañamiento es el proceso completo, no una función suelta.',
+  primaryAction: 'Crear mi cuenta',
+  secondaryAction: 'Ver un ejemplo de registro'
+} as const;
+
+export const fieldEntryPage = {
+  stamp: 'Ejemplo de una entrada',
+  title: 'Un proceso se lee como una bitácora, no como una barra',
+  lede: 'Así ve Kitsunova un proceso en curso. La automatización escribe la primera línea y solo marca el cambio cuando hace falta una persona.',
+  rows: [
     {
-      title: 'Para quién es',
-      text: 'Personas que quieren construir hábitos sostenibles con una guía clara y sin quedar atrapadas en la automatización.'
+      date: '12 mar',
+      stage: 'Registro',
+      note: 'Anota tres hábitos nuevos y los horarios en que se caen. Todavía no necesita a nadie.',
+      escalated: false
     },
     {
-      title: 'Qué resolvemos',
-      text: 'La duda de saber cuándo insistir con el hábito y cuándo pedir ayuda profesional, y el vacío entre una app y una consulta.'
+      date: '26 mar',
+      stage: 'Registro',
+      note: 'El patrón se repite: el mismo hábito se cae los martes. Kitsunova propone un ajuste y lo deja abierto para que la persona decida.',
+      escalated: false
     },
     {
-      title: 'Cómo lo hacemos',
-      text: 'Una ruta por etapas: seguimiento diario, asistencia automatizada y escalamiento a chat o cita con psicólogos.'
+      date: '09 abr',
+      stage: 'Escalamiento',
+      note: 'La anotación dice que esto ya no se resuelve solo. La ruta cambia y aparece un psicólogo.',
+      escalated: true
+    }
+  ],
+  escalation: 'Persona disponible el 09 abr',
+  footnote:
+    'Entrada de ejemplo. No son datos de una persona real: sirven para mostrar cómo se lee el proceso.'
+} as const;
+
+export const fieldStages = [
+  {
+    title: 'Se anota',
+    text: 'Registras lo que haces y la hora en que lo haces. Sin puntajes y sin metas de rachas.'
+  },
+  {
+    title: 'Se devuelve',
+    text: 'La asistencia automatizada te muestra el patrón y propone un ajuste. La decisión sigue siendo tuya.'
+  },
+  {
+    title: 'Se escala',
+    text: 'Cuando el registro muestra que solo no alcanza, el chat con un psicólogo y la cita quedan a un paso.'
+  }
+] as const;
+
+export const fieldCompanion = {
+  title: 'El zorro crece con lo que aprendes, no con lo que coleccionas',
+  lede: 'Las nueve colas son el registro de cuánto has entendido de tu propio proceso, no un premio por marcar casillas. Una cola aparece cuando una revisión se cierra de verdad, y ninguna se gana por racha.',
+  tailsCut: 3,
+  tailsTotal: 9
+} as const;
+
+export const fieldIndexRows = [
+  {
+    title: 'Hábitos con guía',
+    text: 'Crea rutinas y recibe sugerencias automáticas que se ajustan a lo que registras.'
+  },
+  {
+    title: 'Chat con psicólogos',
+    text: 'Conversa con profesionales desde la misma cuenta cuando quieras escalar.'
+  },
+  {
+    title: 'Citas y seguimiento',
+    text: 'Agenda sesiones y revisa tu proceso por etapas, no por rachas.'
+  },
+  {
+    title: 'Sesiones documentadas',
+    text: 'Cada consulta queda anotada en tu registro, para que no tengas que repetir lo mismo.'
+  }
+] as const;
+
+export const fieldApp = {
+  title: 'Te acompaña donde estés',
+  lede: 'La idea de la aplicación móvil sigue viva en el proyecto. Todavía no hay app publicada, y preferimos decírtelo a prometer una descarga que no existe.'
+} as const;
+
+export const fieldFooter = {
+  promise: 'Hábitos, acompañamiento y atención psicológica en el mismo proceso.',
+  quickLinks: [
+    { label: 'El proceso', href: '#proceso' },
+    { label: 'El recorrido', href: '#recorrido' },
+    { label: 'El acompañante', href: '#acompanante' },
+    { label: 'Qué obtienes', href: '#que-obtienes' },
+    { label: 'La app', href: '#app' }
+  ],
+  areas: [{ label: 'Iniciar sesión', href: '/login' }]
+} as const;
+
+export const loginPage = {
+  backLabel: 'Ir al inicio',
+  headline: 'Accede a tus hábitos y a tu red de apoyo',
+  lede:
+    'Entra para revisar tu progreso, seguir tus rutinas, chatear con psicólogos y agendar citas desde una sola cuenta.',
+  highlights: [
+    { strong: 'Seguimiento', text: 'Rutinas y hábitos activos' },
+    { strong: 'Chat', text: 'Contacta apoyo profesional' },
+    { strong: 'Citas', text: 'Escala cuando sea necesario' }
+  ],
+  heroTitle: 'Hábitos, chat y citas',
+  heroSpan: 'cuando lo necesites',
+  heroCopy:
+    'Sigue tu proceso con seguimiento automatizado y apoyo profesional disponible en el momento adecuado.',
+  panels: [
+    {
+      label: 'Qué obtienes',
+      text: 'Un acceso limpio a tu progreso, conversaciones y agenda profesional.'
+    },
+    {
+      label: 'Cuándo escalar',
+      text: 'Si el hábito necesita intervención humana, el sistema te dirige a un psicólogo.'
     }
   ]
 } as const;
-
-export const landingFeatureCards = [
-  {
-    image: '/brand/lista.png',
-    imageWidth: 800,
-    imageHeight: 533,
-    title: 'Hábitos guiados',
-    text: 'Crea rutinas, recibe sugerencias automáticas y sigue tu avance diario con claridad.'
-  },
-  {
-    image: '/brand/zorro-c.png',
-    imageWidth: 800,
-    imageHeight: 533,
-    title: 'Chat con psicólogos',
-    text: 'Cuando necesites apoyo humano, conversa con profesionales desde una misma plataforma.'
-  },
-  {
-    image: '/brand/evolucion.png',
-    imageWidth: 800,
-    imageHeight: 533,
-    title: 'Citas y seguimiento',
-    text: 'Agenda sesiones, revisa tu progreso y continúa tu proceso con acompañamiento real.'
-  }
-] as const;
-
-export const landingBenefitCards = [
-  {
-    image: '/brand/isotipo.png',
-    imageWidth: 300,
-    imageHeight: 280,
-    title: 'Acompañamiento emocional',
-    text: 'Tu avance no depende solo de la automatización: también cuenta el apoyo humano cuando haga falta.'
-  },
-  {
-    image: '/brand/zorro-r.png',
-    imageWidth: 1024,
-    imageHeight: 1024,
-    title: 'Rutinas inteligentes',
-    text: 'Recibe recordatorios, seguimiento y metas ajustadas a tu comportamiento y objetivos.'
-  },
-  {
-    image: '/brand/zorro-c.png',
-    imageWidth: 800,
-    imageHeight: 533,
-    title: 'Atención integral',
-    text: 'Hábitos, chat y citas con psicólogos en un solo lugar, sin perder el foco del proceso.'
-  }
-] as const;
-
-export const landingStats = [
-  { label: 'Seguimiento', value: '24/7', detail: 'Rutinas automáticas y recordatorios' },
-  { label: 'Acompañamiento', value: 'Chat', detail: 'Con psicólogos cuando haga falta' },
-  { label: 'Agenda', value: 'Citas', detail: 'Sesiones desde el mismo flujo' }
-] as const;
-
-export const landingJourneySteps = [
-  {
-    number: '01',
-    title: 'Observa tu rutina',
-    text: 'La app detecta patrones, organiza hábitos y te muestra tu progreso con claridad.'
-  },
-  {
-    number: '02',
-    title: 'Recibe guía',
-    text: 'La asistencia automatizada propone ajustes, recordatorios y pequeños objetivos.'
-  },
-  {
-    number: '03',
-    title: 'Escala a apoyo humano',
-    text: 'Si necesitas más ayuda, entras al chat con psicólogos o agendas una cita.'
-  }
-] as const;
-
-export const landingSupportCards = [
-  {
-    title: 'Seguimiento inteligente',
-    text: 'Paneles de hábitos, progreso y alertas para que el usuario no pierda contexto.'
-  },
-  {
-    title: 'Atención escalable',
-    text: 'Desde automatización básica hasta soporte psicológico, sin saltos de experiencia.'
-  }
-] as const;
 
 export const dashboardSidebarItems = [
   { label: 'Inicio', code: 'IN', to: '/dashboard', end: true },
