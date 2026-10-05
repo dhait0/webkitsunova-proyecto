@@ -22,4 +22,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
 
       - name: Run migrations
-        run: npx prisma migrate deploy --url "${{ secrets.PROD_DATABASE_URL }}"
+        run: |
+          echo "DATABASE_URL=${{ secrets.PROD_DATABASE_URL }}" > .env
+          npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
