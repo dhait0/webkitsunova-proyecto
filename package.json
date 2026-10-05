@@ -16,12 +16,10 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "prisma:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "seed": "prisma db seed",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy",
-    "release": "npm run prisma:deploy && npm run typecheck && npm run test && vercel --prod",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "supabase:migration:new": "supabase migration new",
+    "supabase:deploy": "supabase db push --db-url \"$DATABASE_URL\" --yes",
+    "release": "npm run supabase:deploy && npm run typecheck && npm run test && vercel --prod"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

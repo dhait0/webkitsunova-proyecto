@@ -107,26 +107,28 @@ La opción elegida debe documentarse aquí una vez quede estabilizada.
 
 ---
 
-# 7. Prisma
+# 7. Prisma y Supabase CLI
 
 Comandos habituales, si aplican:
 
 ```sh
 npx prisma generate
-npx prisma migrate dev
-npx prisma studio
+npm run supabase:migration:new <name>
+npm run supabase:deploy
 ```
 
 Evitar utilizar `prisma db push` como sustituto permanente de migraciones.
 
 Para cambios de esquema durante desarrollo:
 
-1. modificar schema
-2. generar migración
-3. revisar SQL generado
-4. ejecutar localmente
+1. modificar `prisma/schema.prisma`
+2. generar migración con `npm run supabase:migration:new <name>` desde el schema actual
+3. revisar SQL generado en `supabase/migrations/`
+4. ejecutar localmente con `npm run supabase:deploy`
 5. probar funcionalidad
 6. versionar migración
+
+Las migraciones residen en `supabase/migrations/` y se versionan con Supabase CLI.
 
 ---
 

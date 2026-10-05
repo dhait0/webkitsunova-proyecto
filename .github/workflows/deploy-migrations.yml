@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'prisma/**'
+      - 'supabase/migrations/**'
       - '.github/workflows/deploy-migrations.yml'
 
 jobs:
   deploy-migrations:
-    name: Deploy Prisma Migrations
+    name: Deploy Supabase Migrations
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,12 +19,11 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      - run: npm install -g supabase
+
       - run: npm ci --no-audit --no-fund
 
       - name: Run migrations
-        run: |
-          echo "DATABASE_URL=${{ secrets.PROD_DATABASE_URL }}" > .env
-          echo "DIRECT_URL=${{ secrets.PROD_DATABASE_URL }}" >> .env
-          npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: npx supabase db push --db-url "$DATABASE_URL" --yes

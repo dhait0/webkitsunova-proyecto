@@ -207,7 +207,7 @@ Cuando sea viable, probar migraciones contra una base temporal o de integración
 Después de superar validaciones, producción puede ejecutar:
 
 ```sh
-npx prisma migrate deploy
+npm run supabase:deploy
 ```
 
 o el mecanismo equivalente definido por el proyecto.
