@@ -49,9 +49,6 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          for (const { name, value } of cookiesToSet) {
-            request.cookies.set(name, value);
-          }
           response = NextResponse.next({ request });
           for (const { name, value, options } of cookiesToSet) {
             response.cookies.set(name, value, options);
@@ -63,9 +60,18 @@ export async function proxy(request: NextRequest) {
 
   // Refreshes a stale access token. This is the only place that writes cookies
   // during an ordinary navigation.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user: { app_metadata?: Record<string, unknown> } | null = null;
+
+  try {
+    const {
+      data: { user: sessionUser },
+    } = await supabase.auth.getUser();
+    user = sessionUser;
+  } catch {
+    const login = new URL('/login', request.url);
+    login.searchParams.set('next', `${pathname}${search}`);
+    return NextResponse.redirect(login);
+  }
 
   const area = areaOf(pathname);
 
