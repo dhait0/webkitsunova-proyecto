@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export type AdminUserStats = {
   success: boolean;
@@ -338,4 +339,194 @@ export async function approvePsychologist(
   });
 
   return { success: true, message: 'Psicólogo aprobado correctamente' };
+}
+
+export type AdminUserUpdatePayload = {
+  email?: string;
+  username?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+};
+
+export async function updateUserProfile(
+  userId: string,
+  payload: AdminUserUpdatePayload
+): Promise<{ success: boolean; message: string }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, profile: { select: { username: true, firstName: true, lastName: true } } },
+  });
+
+  if (!user) {
+    return { success: false, message: 'Usuario no encontrado' };
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      email: payload.email ?? user.email,
+      profile: {
+        upsert: {
+          create: {
+            username: payload.username ?? null,
+            firstName: payload.firstName ?? null,
+            lastName: payload.lastName ?? null,
+          },
+          update: {
+            username: payload.username ?? user.profile?.username ?? null,
+            firstName: payload.firstName ?? user.profile?.firstName ?? null,
+            lastName: payload.lastName ?? user.profile?.lastName ?? null,
+          },
+        },
+      },
+    },
+  });
+
+  return { success: true, message: 'Usuario actualizado' };
+}
+
+export async function resetUserPassword(
+  userId: string
+): Promise<{ success: boolean; message: string }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+
+  if (!user) {
+    return { success: false, message: 'Usuario no encontrado' };
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.auth.admin.generateLink({
+    type: 'recovery',
+    email: user.email,
+  });
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  return { success: true, message: 'Correo de restablecimiento enviado' };
+}
+
+export async function approveUser(
+  userId: string
+): Promise<{ success: boolean; message: string }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+
+  if (!user) {
+    return { success: false, message: 'Usuario no encontrado' };
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { status: 'ACTIVE' },
+  });
+
+  return { success: true, message: 'Usuario aprobado correctamente' };
+}
+
+export async function resendConfirmationEmail(
+  userId: string
+): Promise<{ success: boolean; message: string }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+
+  if (!user) {
+    return { success: false, message: 'Usuario no encontrado' };
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: user.email,
+  });
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  return { success: true, message: 'Correo de confirmación reenviado' };
+}
+
+export type AdminPsychologistUpdatePayload = {
+  name?: string | null;
+  email?: string | null;
+  specialties?: string[];
+  bio?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  sessionPrice?: number | null;
+};
+
+export async function updatePsychologistProfile(
+  psyId: string,
+  payload: AdminPsychologistUpdatePayload
+): Promise<{ success: boolean; message: string }> {
+  const profile = await prisma.psychologistProfile.findUnique({
+    where: { id: psyId },
+    include: { profile: { select: { user: { select: { email: true } } } } },
+  });
+
+  if (!profile) {
+    return { success: false, message: 'Psicólogo no encontrado' };
+  }
+
+  const data: Record<string, unknown> = {};
+
+  if (payload.specialties !== undefined) {
+    data.specialties = payload.specialties;
+  }
+  if (payload.bio !== undefined) {
+    data.profile = {
+      update: { bio: payload.bio },
+    };
+  }
+  if (payload.country !== undefined || payload.phone !== undefined) {
+    data.profile = {
+      ...(data.profile as Record<string, unknown> | undefined),
+      update: {
+        ...((data.profile as Record<string, unknown> | undefined)?.update as Record<string, unknown> | undefined),
+        ...(payload.country !== undefined ? { country: payload.country } : {}),
+        ...(payload.phone !== undefined ? { phone: payload.phone } : {}),
+      },
+    };
+  }
+  if (payload.sessionPrice !== undefined) {
+    data.sessionPrice = payload.sessionPrice;
+  }
+  if (payload.email !== undefined) {
+    data.profile = {
+      ...(data.profile as Record<string, unknown> | undefined),
+      update: {
+        ...((data.profile as Record<string, unknown> | undefined)?.update as Record<string, unknown> | undefined),
+        user: { update: { email: payload.email } },
+      },
+    };
+  }
+  if (payload.name !== undefined) {
+    const [firstName, ...rest] = (payload.name ?? '').split(' ');
+    const lastName = rest.join(' ');
+    data.profile = {
+      ...(data.profile as Record<string, unknown> | undefined),
+      update: {
+        ...((data.profile as Record<string, unknown> | undefined)?.update as Record<string, unknown> | undefined),
+        firstName: firstName || null,
+        lastName: lastName || null,
+      },
+    };
+  }
+
+  await prisma.psychologistProfile.update({
+    where: { id: psyId },
+    data: data as never,
+  });
+
+  return { success: true, message: 'Psicólogo actualizado' };
 }

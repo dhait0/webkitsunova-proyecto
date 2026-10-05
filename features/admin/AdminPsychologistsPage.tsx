@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import {
   getPsychologists,
   approvePsychologist,
+  updatePsychologistProfile,
   type AdminPsychologist,
   type AdminPsychologistsResponse,
 } from '@/app/(admin)/admin/actions';
