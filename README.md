@@ -1,98 +1,122 @@
 # WebKitsunova Proyecto
 
-Monorepo base para reconstruir Kitsunova con:
+Aplicación full-stack unificada construida sobre Next.js 16 (App Router) y React 19. Un solo repositorio, un solo proceso, un solo despliegue.
 
-- `frontend`: React + TypeScript + Vite
-- `backend`: Express + TypeScript + Prisma
-- `supabase`: PostgreSQL + Auth
-- `vercel`: despliegue
-- `docker-compose.yml`: entorno local con recarga automática del frontend
-- `Jenkinsfile`: pipeline base de CI/CD
+- **App**: Next.js 16 App Router + React 19, Server Components y Server Actions
+- **Datos**: PostgreSQL en Supabase, accedido con Prisma
+- **Auth**: Supabase Auth mediante `@supabase/ssr` (cookies httpOnly, sin token en `localStorage`)
+- **Estilos**: Tailwind CSS
+- **Tests**: Vitest + Testing Library
+- **Despliegue**: Vercel (el proyecto Next.js se despliega tal cual)
+- **Local**: `docker compose` con Postgres y hot reload
+
+Ya no existen `frontend/` ni `backend/`. No los busques.
+
+## Requisitos
+
+- Node.js `>=22` (obligatorio: el runtime de Vercel y las imágenes Docker usan Node 22)
+
+## Arranque local (Supabase + npm)
+
+1. Copia `.env.example` a `.env` y rellena tus claves de Supabase.
+2. Instala dependencias y genera el cliente de Prisma:
+
+```bash
+npm install
+npx prisma generate
+```
+
+3. Aplica las migraciones:
+
+```bash
+npx prisma migrate deploy
+```
+
+4. Arranca:
+
+```bash
+npm run dev
+```
+
+Abre http://localhost:3000.
 
 ## Arranque local (Docker)
-
-1. Copia `.env.example` a `.env` y ajusta secretos si hace falta.
-2. Ejecuta:
 
 ```bash
 docker compose up --build
 ```
 
-3. Abre:
+Abre http://localhost:3000.
 
-- Frontend: http://localhost:5174
-- Backend: http://localhost:3002/api/health
-
-## Arranque local (Supabase + Vercel)
-
-1. Crea un proyecto en [supabase.com](https://supabase.com) y anota:
-- `SUPABASE_URL`
-- `SUPABASE_SECRET_KEY` (secreto)
-2. Configura las variables de entorno en tu PC:
+Para hot reload contra el Postgres del compose:
 
 ```bash
-export SUPABASE_URL="https://xxxxx.supabase.co"
-export SUPABASE_SECRET_KEY="eyJhbG..."
-export VITE_SUPABASE_URL="https://xxxxx.supabase.co"
-export VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbG..."
+docker compose --profile dev up --build
 ```
 
-3. Sincroniza la base de datos:
+## Variables de entorno
+
+| Variable | Expuesta al navegador | Para qué sirve |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | sí | URL del proyecto Supabase |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | sí | Clave `publishable` del cliente |
+| `SUPABASE_URL` | no | Misma URL, para el runtime de Node |
+| `SUPABASE_SECRET_KEY` | no | Operaciones administrativas. Solo servidor |
+| `DATABASE_URL` | no | Pooler de Postgres (puerto 6543) |
+| `DIRECT_URL` | no | Conexión directa, usada por las migraciones |
+
+`DATABASE_URL` debe apuntar al **Transaction pooler**: las conexiones directas agotan el límite de clientes de PostgreSQL en un entorno serverless. Detalle en `.env.example`.
+
+## Validación
 
 ```bash
-cd backend
-npm run db:push
+npm run typecheck
+npm run test
+npm run build
 ```
 
-4. Despliega en Vercel:
+Los tres comandos deben pasar antes de abrir un Pull Request. En local hacen falta `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` y `DATABASE_URL` válidos para que `next build` termine.
+
+## Autenticación y rutas
+
+- `proxy.ts` (antes `middleware.ts`) hace solo una redirección optimista en Edge: lee el rol de la sesión sin revalidarlo.
+- La autorización real vive en `lib/auth/guard.ts`, que corre en Node y llama a `supabase.auth.getUser()`.
+- `app/(user)/layout.tsx`, `app/(psychologist)/layout.tsx` y `app/(admin)/layout.tsx` ejecutan el guard real antes de renderizar.
+
+| Área | Prefijo | Roles admitidos |
+| --- | --- | --- |
+| Público | `/` | todos |
+| Autenticación | `/login`, `/mfa/*` | todos |
+| Usuario | `/dashboard/*` | USER |
+| Psicólogo | `/psy/*` | PSYCHOLOGIST, ADMIN |
+| Administración | `/admin/*` | ADMIN |
+
+Los grupos entre paréntesis existen para mantener los nombres de carpeta de `agents.md` sin alterar las URLs públicas.
+
+## Prisma
 
 ```bash
-cd frontend && npx vercel --prod
-cd ../backend && npx vercel --prod
+npx prisma generate        # regenerar el cliente tras editar el esquema
+npx prisma migrate dev     # crear una migración en desarrollo
+npx prisma migrate deploy  # aplicar migraciones (producción y CI)
+npx prisma db seed         # usuario admin de desarrollo
 ```
 
-## Inicializar Prisma
-
-Cuando el contenedor del backend esté arriba por primera vez, sincroniza el esquema:
-
-```bash
-docker compose exec backend npm run db:push
-```
-
-Si prefieres migraciones formales, usa:
-
-```bash
-docker compose exec backend npm run prisma:migrate -- --name init
-```
-
-Para crear o actualizar el usuario administrador de desarrollo:
-
-```bash
-docker compose exec backend npm run db:seed
-```
+Nunca uses `prisma db push` contra producción: el esquema se despliega con migraciones versionadas.
 
 ## Registro público
 
-El formulario público de registro crea cuentas de usuario normales via Supabase Auth. Los perfiles de psicólogo deben darse de alta por un flujo administrativo separado.
+El formulario público de registro crea cuentas de usuario normales vía Supabase Auth. Los perfiles de psicólogo se dan de alta por un flujo administrativo separado.
 
-## MFA (Autenticación de dos factores)
+## MFA (autenticación de dos factores)
 
-El soporte MFA TOTP está implementado en el frontend:
-- **/mfa/enroll**: Activar MFA (escanear QR)
-- **/mfa/verify**: Verificar código al iniciar sesión
-- **/mfa/settings**: Gestionar MFA (activar/desactivar)
+- `/mfa/enroll`: activar MFA escaneando un QR
+- `/mfa/verify`: verificar el código al iniciar sesión
+- `/mfa/settings`: gestionar MFA (activar o desactivar)
 
-Vea `MIGRATION_STATUS.md` para detalles técnicos.
+## Documentación
 
-## Seed
-
-Para desarrollo local con Docker:
-```bash
-docker compose exec backend npm run db:seed
-```
-
-El seed crea un usuario admin con passwordHash LEGACY para desarrollo local. Para crear el administrador en producción, usa Supabase Auth directamente.
-
-## Siguiente paso recomendado
-
-Conectar el frontend a los endpoints reales del backend y migrar el modelo de datos existente de PHP/MySQL a Prisma/PostgreSQL.
+- `docs/DEVELOPMENT.md`: flujo de trabajo local
+- `docs/AUTH.md`: sesiones, roles y guards
+- `docs/DEPLOYMENT.md`: Vercel, migraciones y CI/CD
+- `docs/PROJECT_MEMORY.md`: conocimiento técnico acumulado del proyecto
