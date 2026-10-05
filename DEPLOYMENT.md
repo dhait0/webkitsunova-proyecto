@@ -31,31 +31,22 @@ export VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbG..."
 
 ### 4. Conexión PostgreSQL
 Ve a Supabase → Project Settings → Database → Connection strings.
-Dos opciones:
-- **Connection string** (directa): para `prisma generate` y `prisma migrate deploy`
-- **Connection string with pooler**: para aplicaciones serverless (recomendado)
 
 Configura en `.env` o variables del entorno:
-- `DATABASE_URL` — conexión con pooler (transaction pooler, pgbouncer en puerto 6543, para runtime Prisma/Express en Vercel)
-- `DIRECT_URL` — conexión directa (puerto 5432, sin pgbouncer, para `prisma generate` y `prisma migrate deploy` local)
+- `DATABASE_URL` — conexión con pooler (transaction pooler, pgbouncer en puerto 6543)
 
-### 5. Sincronizar esquema Prisma
+### 5. Sincronizar esquema
 
-Localmente (con Docker corriendo), usa `prisma migrate dev` para crear y aplicar la migración desde el schema:
+Localmente, usa Supabase CLI para crear y aplicar migraciones:
+
 ```bash
-cd backend
-npx prisma migrate dev --name init
+npm run supabase:migration:new init
+npm run supabase:deploy
 ```
 
-Contra Supabase (cuando tengas DATABASE_URL y DIRECT_URL configurados):
-```bash
-cd backend
-npx prisma validate
-npx prisma generate
-npx prisma migrate deploy
-```
+Para producción/CI, `npm run release` aplica `supabase db push` antes de desplegar.
 
-**IMPORTANTE**: No uses `prisma db push` — ya tenemos migraciones formales (`migrate deploy` es el comando correcto para aplicar migraciones en producción/staging).
+**IMPORTANTE**: No uses `prisma db push` contra producción.
 
 ### 5b. Migración de datos (si aplica)
 Si provienes de una base de datos existente (ej. PHP/MySQL legado):

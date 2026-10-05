@@ -453,9 +453,11 @@ Fases 1–9 completadas en este worktree. Verde: `backend` 68 tests,
   `Appointment`, `Conversation`, `ConversationMember`, `Message`, `MessageRead`,
   `Workshop`, `WorkshopEnrollment`, `Resource`, `PatientReport`, `Notification`,
   `NotificationPreference`, `PsyReferral`, `Review`) + 7 enums.
-- `backend/prisma/migrations/20260930010000_psy_module/migration.sql` — migración generada
-  con `prisma migrate diff` (aún no aplicada: requiere `DATABASE_URL` de Supabase).
-- `backend/prisma/migrations/migration_lock.toml` — faltaba en el repositorio; creado.
+ - `backend/prisma/migrations/20260930010000_psy_module/migration.sql` — migración generada
+   con `prisma migrate diff` (aún no aplicada: requiere `DATABASE_URL` de Supabase).
+ - `backend/prisma/migrations/migration_lock.toml` — faltaba en el repositorio; creado.
+ - `supabase/migrations/20240101000001_psy_module.sql` — migración equivalente para Supabase CLI
+   aplicada al proyecto `edbtowdipfeskqdmngji`.
 - `backend/src/middleware/requireApprovedPsychologist.ts` — guard de rol **y** estado.
   Devuelve códigos estables: `ACCOUNT_SUSPENDED`, `PSY_PROFILE_MISSING`, `PSY_NOT_APPROVED`.
 - `backend/src/services/psy/` — `shared`, `dashboard`, `appointments`, `workshops`,

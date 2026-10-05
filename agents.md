@@ -347,6 +347,28 @@ eliminar estructura antigua posteriormente
 
 Las migraciones de producción deben ejecutarse únicamente después de superar las validaciones del pipeline.
 
+Debido a que el proyecto usa Supabase PostgreSQL, las migraciones se ejecutan mediante Supabase CLI antes de cada deploy:
+
+```text
+npm run release
+```
+
+Este script ejecuta en orden:
+1. `supabase db push` — aplica migraciones contra la base de producción
+2. `typecheck` — valida TypeScript
+3. `test` — ejecuta tests
+4. `vercel --prod` — despliega a producción
+
+Antes de ejecutar `npm run release`, asegurarse de que el `.env` local tenga:
+- `DATABASE_URL` apuntando al pooler de Supabase (puerto 6543)
+
+Las migraciones residen en `supabase/migrations/` y se versionan con Supabase CLI.
+
+Para aplicar migraciones manualmente sin deploy:
+```text
+npm run supabase:deploy
+```
+
 ---
 
 # 12. CI/CD

@@ -26,13 +26,13 @@ npm install
 npx prisma generate
 ```
 
-3. Aplica las migraciones:
+ 3. Aplica las migraciones:
 
-```bash
-npx prisma migrate deploy
-```
+ ```bash
+ npm run supabase:deploy
+ ```
 
-4. Arranca:
+ 4. Arranca:
 
 ```bash
 npm run dev
@@ -56,16 +56,15 @@ docker compose --profile dev up --build
 
 ## Variables de entorno
 
-| Variable | Expuesta al navegador | Para qué sirve |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | sí | URL del proyecto Supabase |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | sí | Clave `publishable` del cliente |
-| `SUPABASE_URL` | no | Misma URL, para el runtime de Node |
-| `SUPABASE_SECRET_KEY` | no | Operaciones administrativas. Solo servidor |
-| `DATABASE_URL` | no | Pooler de Postgres (puerto 6543) |
-| `DIRECT_URL` | no | Conexión directa, usada por las migraciones |
+ | Variable | Expuesta al navegador | Para qué sirve |
+ | --- | --- | --- |
+ | `NEXT_PUBLIC_SUPABASE_URL` | sí | URL del proyecto Supabase |
+ | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | sí | Clave `publishable` del cliente |
+ | `SUPABASE_URL` | no | Misma URL, para el runtime de Node |
+ | `SUPABASE_SECRET_KEY` | no | Operaciones administrativas. Solo servidor |
+ | `DATABASE_URL` | no | Pooler de Postgres (puerto 6543) |
 
-`DATABASE_URL` debe apuntar al **Transaction pooler**: las conexiones directas agotan el límite de clientes de PostgreSQL en un entorno serverless. Detalle en `.env.example`.
+ `DATABASE_URL` debe apuntar al **Transaction pooler**: las conexiones directas agotan el límite de clientes de PostgreSQL en un entorno serverless. Detalle en `.env.example`.
 
 ## Validación
 
@@ -93,16 +92,15 @@ Los tres comandos deben pasar antes de abrir un Pull Request. En local hacen fal
 
 Los grupos entre paréntesis existen para mantener los nombres de carpeta de `agents.md` sin alterar las URLs públicas.
 
-## Prisma
+ ## Migraciones
 
-```bash
-npx prisma generate        # regenerar el cliente tras editar el esquema
-npx prisma migrate dev     # crear una migración en desarrollo
-npx prisma migrate deploy  # aplicar migraciones (producción y CI)
-npx prisma db seed         # usuario admin de desarrollo
-```
+ ```bash
+ npm run supabase:deploy      # aplicar migraciones a producción
+ ```
 
-Nunca uses `prisma db push` contra producción: el esquema se despliega con migraciones versionadas.
+ Las migraciones residen en `supabase/migrations/` y se versionan con Supabase CLI.
+
+ Nunca uses `prisma db push` contra producción.
 
 ## Registro público
 
