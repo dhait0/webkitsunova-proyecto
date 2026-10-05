@@ -163,7 +163,7 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
               className="admin-btn admin-btn-ghost"
               onClick={() => setDetailTarget(psy)}
             >
-              <Icon name="eye" size={12} />
+              <Icon name="eye" size={14} />
               Ver
             </button>
             {psy.status !== 'suspendido' ? (
@@ -173,7 +173,7 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
                 onClick={() => handleApprove(psy)}
                 disabled={busy}
               >
-                {busy ? <span className="admin-btn-spinner" /> : <Icon name="check" size={12} />}
+                {busy ? <span className="admin-btn-spinner" /> : <Icon name="check" size={14} />}
                 {psy.verified ? 'Re-verificar' : 'Aprobar'}
               </button>
             ) : null}
