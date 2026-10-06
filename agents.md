@@ -229,6 +229,9 @@ Preferir una estructura aproximadamente similar a:
 ├── proyecto viejo/
 ├── .github/
 │   └── workflows/
+├── .kilo/
+│   └── skills/
+│       └── soft-ui-guardian/
 ├── AGENTS.md
 ├── DESIGN.md
 └── package.json
@@ -459,6 +462,19 @@ merge según corresponda
 - El usuario será quien normalmente cree el Pull Request desde GitHub.
 - No asumir que porque una rama local está correcta debe publicarse automáticamente.
 
+## Regla de conflictos en merge
+
+Cuando un merge contra la rama objetivo (por ejemplo `staging`) produce conflictos:
+
+- Conservar los cambios en lo más posible: ningún cambio válido se elimina por
+  tener un conflicto.
+- Resolver combinando: el resultado debe integrar ambas versiones, no elegir una
+  y descartar la otra.
+- Si dos implementaciones hacen lo mismo, quedarse con la más completa y mejorada,
+  y preservar lo útil de la descartada (lógica, copys, tests, accesibilidad).
+- Mejorar siempre, eliminar nunca: ante la duda, sumar en lugar de quitar.
+- Registrar en el mensaje del commit qué conflictos hubo y cómo se resolvieron.
+
 ---
 
 # 15. Rama staging
@@ -479,7 +495,7 @@ Cuando el usuario solicite el merge a `staging`:
 2. cambiar a la rama local `staging`
 3. actualizarla localmente solo si es necesario y seguro
 4. hacer el merge de la rama de trabajo
-5. resolver conflictos sin descartar cambios válidos
+5. resolver conflictos combinando ambas versiones (ver "Regla de conflictos en merge": conservar, mejorar, nunca eliminar)
 6. ejecutar validaciones completas
 7. informar el resultado al usuario
 8. NO hacer push automáticamente
@@ -824,6 +840,294 @@ Mantener:
 - feedback de interacción
 
 No cambiar lógica de negocio cuando la solicitud sea exclusivamente visual.
+
+---
+
+## 27.1. Skill de gobierno visual: `soft-ui-guardian`
+
+El proyecto dispone de una skill especializada para gobernar la calidad visual, responsive,
+accesibilidad y motion de las interfaces:
+
+```text
+.kilo/skills/soft-ui-guardian/
+```
+
+Su función es actuar como guardián del sistema de diseño y no como una fuente visual paralela.
+
+### Fuente de verdad
+
+Antes de crear, modificar, refactorizar o auditar una vista, el agente debe:
+
+1. Leer este `AGENTS.md` para comprender las reglas generales del proyecto.
+2. Leer `DESIGN.md` en la raíz del repositorio.
+3. Aplicar la skill `soft-ui-guardian` para ejecutar y validar esas reglas.
+4. Revisar los componentes y patrones existentes antes de crear variantes nuevas.
+
+La prioridad es:
+
+```text
+AGENTS.md
+    ↓
+DESIGN.md
+    ↓
+soft-ui-guardian
+    ↓
+implementación existente y componentes reutilizables
+```
+
+`soft-ui-guardian` no sustituye `DESIGN.md`.
+
+La skill debe convertir las reglas documentadas en decisiones de implementación, revisión y QA.
+No debe inventar un segundo sistema de diseño.
+
+### Ámbito
+
+Aplicar `soft-ui-guardian` cuando una tarea afecte uno o más de estos aspectos:
+
+- layout
+- responsive design
+- mobile
+- componentes visuales
+- formularios
+- tablas
+- cards
+- modales
+- drawers
+- navegación
+- sidebars
+- toolbars
+- tabs
+- estados visuales
+- feedback de interacción
+- focus
+- accesibilidad visual
+- animaciones
+- microinteracciones
+- Framer Motion
+- loading states
+- empty states
+- error states
+- consistencia visual entre pantallas
+
+También debe utilizarse al auditar una pantalla existente aunque la solicitud sea únicamente
+"mejorar la vista", "hacerla responsive", "pulir UI/UX" o equivalente.
+
+### Mobile first
+
+La aplicación debe diseñarse y revisarse con prioridad móvil.
+
+La validación visual no debe limitarse a escritorio.
+
+Como mínimo, cuando el cambio lo justifique, revisar:
+
+```text
+mobile estrecho
+mobile estándar
+tablet
+portátil
+desktop
+```
+
+La skill debe detectar y evitar especialmente:
+
+- overflow horizontal
+- textos cortados
+- controles fuera del viewport
+- tablas imposibles de operar en móvil
+- acciones que no puedan envolver correctamente
+- modales más altos o anchos que la pantalla
+- targets táctiles demasiado pequeños
+- layouts dependientes de anchos rígidos
+- sidebars que desplacen o oculten contenido incorrectamente
+- cambios de layout que produzcan saltos innecesarios
+
+No crear breakpoints arbitrarios si ya existe una regla específica para esa superficie en `DESIGN.md`
+o en los estilos existentes.
+
+### Motion y Framer Motion
+
+Framer Motion es la herramienta principal para animaciones complejas o con estado.
+
+Las animaciones deben comunicar:
+
+- entrada o salida
+- cambio de estado
+- jerarquía
+- continuidad espacial
+- feedback de interacción
+
+No añadir movimiento únicamente como decoración.
+
+Mantener como principios:
+
+- transiciones explícitas
+- feedback `:active` o press
+- animaciones interrumpibles
+- entrada y salida coherentes
+- evitar animar propiedades costosas cuando `transform` y `opacity` resuelvan el efecto
+- evitar layout shift innecesario
+- respetar `prefers-reduced-motion`
+- utilizar `useReducedMotion()` cuando corresponda en Framer Motion
+- conservar navegación por teclado y focus durante animaciones
+
+Como guía general, salvo regla más específica en `DESIGN.md`:
+
+```text
+microinteracción     120–180 ms
+UI estándar          180–250 ms
+modal / drawer       220–320 ms
+transición amplia    250–400 ms
+```
+
+No crear un timing diferente en cada componente sin una razón funcional.
+
+### Filosofía Emil design engineering
+
+La skill debe convivir con las reglas o skills de Emil design engineering disponibles en el proyecto.
+
+Cuando ambas apliquen:
+
+```text
+DESIGN.md
+    ↓
+soft-ui-guardian
+    ↓
+Emil design engineering para refinamiento de interacción y motion
+```
+
+Emil puede mejorar la calidad de interacción y microanimación, pero no debe:
+
+- cambiar la identidad visual definida en `DESIGN.md`
+- crear tokens paralelos
+- introducir nuevos colores arbitrariamente
+- romper breakpoints existentes
+- sustituir componentes reutilizables sin necesidad
+- sacrificar accesibilidad por animación
+
+### Reutilización de componentes
+
+Antes de crear un componente visual nuevo:
+
+1. Buscar una implementación existente.
+2. Revisar variantes del mismo componente.
+3. Preferir extender mediante props, variants o composición.
+4. Crear un componente nuevo solo cuando represente una abstracción realmente distinta.
+
+En superficies administrativas, revisar primero componentes propios como:
+
+```text
+AdminModal
+AdminSelect
+componentes admin existentes
+```
+
+Seguir el patrón del proyecto basado en:
+
+```text
+Tailwind CSS
+class-variance-authority
+clsx
+tailwind-merge
+```
+
+No introducir Material UI, Radix UI directo u otra librería de componentes únicamente para resolver
+una necesidad que el sistema existente pueda cubrir.
+
+### Estados obligatorios
+
+Cuando correspondan al componente, verificar:
+
+```text
+default
+hover
+focus-visible
+active / pressed
+disabled
+loading
+success
+error
+empty
+selected
+expanded / collapsed
+```
+
+Los estados importantes no deben depender exclusivamente del color.
+
+### Focus y teclado
+
+Mantener focus visible y consistente.
+
+El cyan definido por el sistema visual debe utilizarse donde `DESIGN.md` lo establezca.
+
+Los modales y overlays interactivos deben:
+
+- mover el focus de forma predecible
+- mantener focus trap cuando corresponda
+- permitir cierre mediante teclado si el patrón lo requiere
+- devolver el focus al trigger al cerrarse
+- evitar pérdida de focus durante animaciones de salida
+
+### QA visual obligatorio
+
+Antes de dar por terminada una modificación visual relevante, la skill debe revisar:
+
+```text
+[ ] identidad visual correcta
+[ ] superficie visual correcta
+[ ] componente reutilizado cuando corresponde
+[ ] mobile first
+[ ] sin overflow horizontal
+[ ] responsive en anchos relevantes
+[ ] tipografía y spacing coherentes
+[ ] estados interactivos completos
+[ ] focus visible
+[ ] navegación por teclado
+[ ] reduced motion
+[ ] animaciones consistentes
+[ ] sin layout shift innecesario
+[ ] loading / empty / error cuando corresponda
+[ ] sin estilos duplicados innecesarios
+[ ] sin modificar lógica de negocio accidentalmente
+```
+
+### Actualización de `DESIGN.md`
+
+`DESIGN.md` es documentación viva del sistema ya implementado.
+
+Actualizarlo solamente cuando el cambio establezca una decisión reutilizable y permanente, por ejemplo:
+
+- nuevo token
+- nuevo patrón de componente
+- nuevo comportamiento responsive
+- nueva regla de motion
+- nuevo breakpoint deliberado
+- nueva variante visual estable
+- cambio de jerarquía tipográfica
+- nueva convención de focus o accesibilidad
+
+No actualizar `DESIGN.md` por:
+
+- un fix CSS puntual
+- una excepción de una sola pantalla
+- un parche temporal
+- una decisión todavía no implementada
+- experimentos descartables
+
+Primero implementar y validar.
+
+Después documentar la regla estable en `DESIGN.md`.
+
+### Regla de superficie
+
+No trasladar automáticamente una identidad visual de una superficie a otra.
+
+La landing pública, autenticación, aplicación de usuario, aplicación de psicólogos y administración
+pueden tener reglas específicas.
+
+Cuando `DESIGN.md` defina reglas particulares para una superficie, esas reglas tienen prioridad sobre
+cualquier estilo genérico de Soft UI.
+
+---
 
 ---
 

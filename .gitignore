@@ -1,5 +1,6 @@
 .env
 .env.local
+.env.production
 .DS_Store
 node_modules
 .next
@@ -19,3 +20,4 @@ Mockups/
 # Supabase CLI
 .supabase
 supabase/.temp
+.env.production
