@@ -3579,14 +3579,14 @@ body::after {
 .admin-main {
   flex: 1;
   margin-left: 260px;
-  transition: transform 0.3s ease;
+  transition: margin-left 0.3s ease;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
 
 .admin-sidebar.collapsed ~ .admin-main {
-  transform: translateX(-200px);
+  margin-left: 60px;
 }
 
 .admin-topbar {
@@ -4048,15 +4048,14 @@ body::after {
    ================================================================ */
 .admin-filters-bar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
 .admin-search-box {
-  flex: 1;
+  flex: 1 1 240px;
   max-width: 360px;
   position: relative;
 }
@@ -4070,7 +4069,7 @@ body::after {
   color: var(--admin-text);
   font-size: 13px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 160ms ease-out, background-color 160ms ease-out, box-shadow 160ms ease-out;
 }
 
 .admin-search-box input:focus {
@@ -4109,7 +4108,7 @@ body::after {
   font-size: 13px;
   outline: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 160ms ease-out, background-color 160ms ease-out, box-shadow 160ms ease-out;
 }
 
 .admin-filter-select:focus {
@@ -4351,7 +4350,14 @@ body::after {
 }
 
 .admin-toolbar-select {
-  margin-left: auto;
+  margin-left: 0;
+}
+
+.admin-toolbar-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
 }
 
 /* ================================================================
@@ -4705,7 +4711,7 @@ button.admin-stat-card:focus-visible {
 
 .admin-table-actions-cell {
   width: 1%;
-  white-space: nowrap;
+  white-space: normal;
   text-align: right;
 }
 
@@ -4713,13 +4719,14 @@ button.admin-stat-card:focus-visible {
   display: inline-flex;
   gap: 6px;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .admin-entity-cell {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 180px;
+  min-width: 140px;
 }
 
 .admin-entity-avatar {
@@ -5034,11 +5041,27 @@ button.admin-stat-card:focus-visible {
     text-align: center;
     gap: 8px;
   }
+
+  .admin-topbar {
+    padding: 0 16px;
+  }
+
+  .admin-content {
+    padding: 20px;
+  }
+
+  .admin-entity-cell {
+    min-width: 120px;
+  }
 }
 
 @media (max-width: 600px) {
   .admin-content {
     padding: 16px;
+  }
+
+  .admin-page {
+    gap: 14px;
   }
 
   .admin-stats-grid {
@@ -5053,6 +5076,27 @@ button.admin-stat-card:focus-visible {
   .admin-table td {
     padding: 10px 8px;
     font-size: 12px;
+  }
+
+  .admin-entity-cell {
+    min-width: 100px;
+  }
+
+  .admin-table-actions-cell .admin-btn {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 10px;
+    gap: 4px;
+    border-radius: 8px;
+  }
+
+  .admin-filters-bar {
+    gap: 10px;
+  }
+
+  .admin-search-box {
+    flex: 1 1 100%;
+    max-width: none;
   }
 }
 
