@@ -19,3 +19,4 @@ Mockups/
 # Supabase CLI
 .supabase
 supabase/.temp
+.env.production
