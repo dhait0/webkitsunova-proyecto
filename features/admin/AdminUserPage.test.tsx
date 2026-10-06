@@ -48,6 +48,18 @@ function mockList(rows: AdminUser[] = users, totalPages = 1) {
   });
 }
 
+async function openActionsMenu(user: ReturnType<typeof userEvent.setup>, row: HTMLElement) {
+  const actionsCell = within(row).getByText('Acciones').closest('td');
+  if (!actionsCell) throw new Error('Actions cell not found');
+  const trigger = within(actionsCell).getByRole('button', { name: 'Acciones' });
+  await user.click(trigger);
+  await waitFor(() => screen.getByRole('menu'));
+}
+
+async function clickMenuItem(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(screen.getByRole('menuitem', { name }));
+}
+
 describe('AdminUserPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -171,7 +183,8 @@ describe('AdminUserPage', () => {
     render(<AdminUserPage />);
 
     const janeRow = (await screen.findByText('Jane Doe')).closest('tr') as HTMLElement;
-    await user.click(within(janeRow).getByRole('button', { name: /Suspender/ }));
+    await openActionsMenu(user, janeRow);
+    await clickMenuItem(user, 'Suspender');
 
     expect(updateUserStatus).toHaveBeenCalledWith('u1', 'SUSPENDED', 'Acción de administrador');
     expect(await screen.findByText('Usuario suspendido')).toBeInTheDocument();
@@ -186,7 +199,8 @@ describe('AdminUserPage', () => {
     render(<AdminUserPage />);
 
     const johnRow = (await screen.findByText('John Roe')).closest('tr') as HTMLElement;
-    await user.click(within(johnRow).getByRole('button', { name: /Activar/ }));
+    await openActionsMenu(user, johnRow);
+    await clickMenuItem(user, 'Activar');
 
     expect(updateUserStatus).toHaveBeenCalledWith('u2', 'ACTIVE', 'Acción de administrador');
     expect(await screen.findByText('Usuario reactivado')).toBeInTheDocument();
@@ -198,7 +212,8 @@ describe('AdminUserPage', () => {
     render(<AdminUserPage />);
 
     const janeRow = (await screen.findByText('Jane Doe')).closest('tr') as HTMLElement;
-    await user.click(within(janeRow).getByRole('button', { name: /Suspender/ }));
+    await openActionsMenu(user, janeRow);
+    await clickMenuItem(user, 'Suspender');
 
     expect(await screen.findByText('No autorizado')).toBeInTheDocument();
     const row = (await screen.findByText('Jane Doe')).closest('tr') as HTMLElement;
@@ -211,7 +226,8 @@ describe('AdminUserPage', () => {
     render(<AdminUserPage />);
 
     const janeRow = (await screen.findByText('Jane Doe')).closest('tr') as HTMLElement;
-    await user.click(within(janeRow).getByRole('button', { name: /Eliminar/ }));
+    await openActionsMenu(user, janeRow);
+    await clickMenuItem(user, 'Eliminar');
 
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(deleteUser).not.toHaveBeenCalled();
@@ -228,7 +244,8 @@ describe('AdminUserPage', () => {
     render(<AdminUserPage />);
 
     const janeRow = (await screen.findByText('Jane Doe')).closest('tr') as HTMLElement;
-    await user.click(within(janeRow).getByRole('button', { name: /Eliminar/ }));
+    await openActionsMenu(user, janeRow);
+    await clickMenuItem(user, 'Eliminar');
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
 
     expect(deleteUser).not.toHaveBeenCalled();
@@ -241,7 +258,8 @@ describe('AdminUserPage', () => {
     render(<AdminUserPage />);
 
     const janeRow = (await screen.findByText('Jane Doe')).closest('tr') as HTMLElement;
-    await user.click(within(janeRow).getByRole('button', { name: /Eliminar/ }));
+    await openActionsMenu(user, janeRow);
+    await clickMenuItem(user, 'Eliminar');
     await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }));
 
     expect(await screen.findByText('Usuario con citas activas')).toBeInTheDocument();
@@ -278,7 +296,8 @@ describe('AdminUserPage', () => {
     );
 
     getAdminUsers.mockClear();
-    await user.click(screen.getByRole('button', { name: /Eliminar/ }));
+    await openActionsMenu(user, (await screen.findByText('Jane Doe')).closest('tr') as HTMLElement);
+    await clickMenuItem(user, 'Eliminar');
     await user.click(screen.getByRole('button', { name: 'Eliminar definitivamente' }));
 
     await waitFor(() => {
