@@ -50,7 +50,7 @@ function DashboardLayout({ session, children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="dashboard-layout">
+    <div className="user-layout">
       <DashboardSidebar
         session={session}
         onLogout={handleLogout}
@@ -59,22 +59,22 @@ function DashboardLayout({ session, children }: DashboardLayoutProps) {
         toggleSidebar={toggleSidebar}
       />
 
-      <main className="dashboard-main">
-        <header className="inicio-header">
-          <div>
-            <span className="eyebrow">Panel privado</span>
-            <h1>Bienvenido de vuelta, {displayName}.</h1>
-            <p>
+      <main className="user-main">
+        <header className="user-topbar">
+          <div className="user-topbar-copy">
+            <span className="user-eyebrow">Panel privado</span>
+            <h1 className="user-headline">Bienvenido de vuelta, {displayName}.</h1>
+            <p className="user-lede">
               Esta es tu central de hábitos, chats con psicólogos y citas de seguimiento.
             </p>
           </div>
 
-          <div className="dashboard-header-actions">
+          <div className="user-topbar-actions">
             <RoleSwitcher session={session} />
 
             <button
               type="button"
-              className="notif-bell-wrapper"
+              className="user-bell"
               aria-label="Notificaciones"
               title="Próximamente"
             >
@@ -85,16 +85,17 @@ function DashboardLayout({ session, children }: DashboardLayoutProps) {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
               >
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
-              <span className="notif-badge hidden" aria-hidden="true">
+              <span className="user-bell-badge hidden" aria-hidden="true">
                 0
               </span>
             </button>
 
-            <div className="dashboard-chip">
+            <div className="user-chip">
               <strong>{roleLabel}</strong>
               <span>{session.status ?? 'Cuenta activa'}</span>
             </div>

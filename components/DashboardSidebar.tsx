@@ -34,73 +34,76 @@ function DashboardSidebar({
         : 'Usuario activo';
 
   return (
-    <aside className={`sidebar${sidebarCollapsed ? ' collapsed' : ''}`}>
-      <button
-        type="button"
-        className="sidebar-toggle"
-        onClick={toggleSidebar}
-        aria-label={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}
-        title={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          {sidebarCollapsed ? (
-            <path d="M4 6h16M4 12h16M4 18h16" />
-          ) : (
-            <path d="M6 18L18 6M18 18L6 6" />
-          )}
-        </svg>
-      </button>
-
-      <div className="sidebar-header">
-        <Link href="/" className="sidebar-logo" aria-label="Volver al inicio">
+    <aside className={`user-sidebar${sidebarCollapsed ? ' collapsed' : ''}`}>
+      <div className="user-sidebar-brand">
+        <Link href="/" className="user-brand-mark" aria-label="Volver al inicio">
           <img src="/brand/isotipo.png" alt="Kitsunova" />
         </Link>
-        <div className="sidebar-brand">
-          <strong>Kitsunova</strong>
-          <span>Plataforma de hábitos</span>
+        <div className="user-brand-text">
+          <span className="user-brand-name">Kitsunova</span>
+          <span className="user-brand-tag">Plataforma de hábitos</span>
         </div>
+        <button
+          type="button"
+          className="user-sidebar-toggle"
+          onClick={toggleSidebar}
+          aria-label={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}
+          title={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {sidebarCollapsed ? (
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            ) : (
+              <path d="M6 18L18 6M18 18L6 6" />
+            )}
+          </svg>
+        </button>
       </div>
 
-      <div className="sidebar-user">
-        <div className="sidebar-avatar">{displayName.slice(0, 1).toUpperCase()}</div>
+      <div className="user-sidebar-user">
+        <div className="user-avatar" aria-hidden="true">
+          {displayName.slice(0, 1).toUpperCase()}
+        </div>
         <div>
           <strong>{displayName}</strong>
           <span>{roleLabel}</span>
         </div>
       </div>
 
-      <nav className="sidebar-menu" aria-label="Navegación lateral">
-        <ul>
-          {dashboardSidebarItems.map((item) => {
-            const end = 'end' in item ? item.end : false;
-            const isActive = end ? pathname === item.to : pathname.startsWith(item.to);
+      <nav className="user-nav" aria-label="Navegación lateral">
+        {dashboardSidebarItems.map((item) => {
+          const end = 'end' in item ? item.end : false;
+          const isActive = end ? pathname === item.to : pathname.startsWith(item.to);
 
-            return (
-              <li key={item.label}>
-                <Link
-                  href={item.to}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`sidebar-link${isActive ? ' active' : ''}`}
-                >
-                  <span className="menu-icon">{item.code}</span>
-                  <span>{item.label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+          return (
+            <Link
+              key={item.label}
+              href={item.to}
+              aria-current={isActive ? 'page' : undefined}
+              className={`user-nav-link${isActive ? ' active' : ''}`}
+            >
+              <span className="user-nav-code" aria-hidden="true">
+                {item.code}
+              </span>
+              <span className="user-nav-label">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
-      <button className="help-btn" type="button" onClick={onLogout} disabled={loggingOut}>
-        <span>{loggingOut ? 'Cerrando...' : 'Cerrar sesión'}</span>
-      </button>
+      <div className="user-sidebar-footer">
+        <button className="user-logout" type="button" onClick={onLogout} disabled={loggingOut}>
+          <span>{loggingOut ? 'Cerrando...' : 'Cerrar sesión'}</span>
+        </button>
+      </div>
     </aside>
   );
 }
