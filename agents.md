@@ -459,6 +459,19 @@ merge según corresponda
 - El usuario será quien normalmente cree el Pull Request desde GitHub.
 - No asumir que porque una rama local está correcta debe publicarse automáticamente.
 
+## Regla de conflictos en merge
+
+Cuando un merge contra la rama objetivo (por ejemplo `staging`) produce conflictos:
+
+- Conservar los cambios en lo más posible: ningún cambio válido se elimina por
+  tener un conflicto.
+- Resolver combinando: el resultado debe integrar ambas versiones, no elegir una
+  y descartar la otra.
+- Si dos implementaciones hacen lo mismo, quedarse con la más completa y mejorada,
+  y preservar lo útil de la descartada (lógica, copys, tests, accesibilidad).
+- Mejorar siempre, eliminar nunca: ante la duda, sumar en lugar de quitar.
+- Registrar en el mensaje del commit qué conflictos hubo y cómo se resolvieron.
+
 ---
 
 # 15. Rama staging
@@ -479,7 +492,7 @@ Cuando el usuario solicite el merge a `staging`:
 2. cambiar a la rama local `staging`
 3. actualizarla localmente solo si es necesario y seguro
 4. hacer el merge de la rama de trabajo
-5. resolver conflictos sin descartar cambios válidos
+5. resolver conflictos combinando ambas versiones (ver "Regla de conflictos en merge": conservar, mejorar, nunca eliminar)
 6. ejecutar validaciones completas
 7. informar el resultado al usuario
 8. NO hacer push automáticamente
