@@ -61,9 +61,19 @@ export function SuccessBlock({ message }: { message: string }) {
   );
 }
 
-export function StatCard({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
+export function StatCard({
+  label,
+  value,
+  hint,
+  variant
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: string;
+  variant?: 'default' | 'psy';
+}) {
   return (
-    <article className="stat-card">
+    <article className={`stat-card ${variant === 'psy' ? 'psy-content-card' : ''}`}>
       <span>{label}</span>
       <h3>{value}</h3>
       {hint ? <p>{hint}</p> : null}
@@ -79,15 +89,17 @@ export function Panel({
   title,
   eyebrow,
   actions,
-  children
+  children,
+  variant
 }: {
   title: string;
   eyebrow?: string;
   actions?: ReactNode;
   children: ReactNode;
+  variant?: 'default' | 'psy';
 }) {
   return (
-    <section className="panel-card">
+    <section className={`panel-card ${variant === 'psy' ? 'psy-content-card' : ''}`}>
       <div className="panel-head">
         <div>
           {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
