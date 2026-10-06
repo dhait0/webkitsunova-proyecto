@@ -4009,6 +4009,104 @@ body::after {
   height: 10px;
 }
 
+/* ================================================================
+   ADMIN - Dropdown
+   ================================================================ */
+.admin-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.admin-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.admin-dropdown-chevron {
+  transition: transform 120ms ease-out;
+  flex-shrink: 0;
+}
+
+.admin-dropdown-trigger[aria-expanded="true"] .admin-dropdown-chevron {
+  transform: rotate(-90deg);
+}
+
+.admin-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  min-width: 180px;
+  max-width: 240px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(1, 1, 20, 0.45);
+  padding: 6px;
+  overflow: hidden;
+}
+
+.admin-dropdown-menu-right {
+  right: 0;
+}
+
+.admin-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+
+.admin-dropdown-item:hover:not(:disabled) {
+  background: var(--admin-accent-dim);
+  color: var(--admin-accent);
+}
+
+.admin-dropdown-item:focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: -2px;
+}
+
+.admin-dropdown-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-dropdown-item-icon {
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.admin-dropdown-item-danger {
+  color: var(--admin-danger);
+}
+
+.admin-dropdown-item-danger:hover:not(:disabled) {
+  background: rgba(255, 77, 109, 0.15);
+  color: var(--admin-danger);
+}
+
+.admin-dropdown-item-primary {
+  color: var(--admin-accent);
+  font-weight: 600;
+}
+
+.admin-dropdown-item-primary:hover:not(:disabled) {
+  background: var(--admin-accent-dim);
+  color: var(--admin-accent-2);
+}
+
 .admin-badge {
   font-size: 9px;
   font-weight: 600;
