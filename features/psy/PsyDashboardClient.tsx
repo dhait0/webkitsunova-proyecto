@@ -44,16 +44,17 @@ function PsyDashboardClient({ initialData }: Props) {
   return (
     <>
       <section className="psy-stats-grid">
-        <StatCard label="Pacientes activos" value={stats.activePatients} hint="Vínculos activos" />
-        <StatCard label="Mensajes pendientes" value={stats.pendingMessages} hint="Conversaciones sin leer" />
-        <StatCard label="Sesiones de hoy" value={stats.sessionsToday} hint="Pendientes y confirmadas" />
-        <StatCard label="Próximas sesiones" value={stats.upcomingSessions} hint="Agenda futura" />
-        <StatCard label="Talleres" value={stats.workshops} hint="Creados por ti" />
-        <StatCard label="Recursos" value={stats.resources} hint="Creados por ti" />
+        <StatCard variant="psy" label="Pacientes activos" value={stats.activePatients} hint="Vínculos activos" />
+        <StatCard variant="psy" label="Mensajes pendientes" value={stats.pendingMessages} hint="Conversaciones sin leer" />
+        <StatCard variant="psy" label="Sesiones de hoy" value={stats.sessionsToday} hint="Pendientes y confirmadas" />
+        <StatCard variant="psy" label="Próximas sesiones" value={stats.upcomingSessions} hint="Agenda futura" />
+        <StatCard variant="psy" label="Talleres" value={stats.workshops} hint="Creados por ti" />
+        <StatCard variant="psy" label="Recursos" value={stats.resources} hint="Creados por ti" />
       </section>
 
       <section className="psy-dashboard-panels">
         <Panel
+          variant="psy"
           eyebrow="Agenda"
           title="Próxima sesión"
           actions={
@@ -80,6 +81,7 @@ function PsyDashboardClient({ initialData }: Props) {
         </Panel>
 
         <Panel
+          variant="psy"
           eyebrow="Perfil"
           title="Perfil profesional"
           actions={
@@ -107,7 +109,7 @@ function PsyDashboardClient({ initialData }: Props) {
         </Panel>
       </section>
 
-      <Panel eyebrow="Seguimiento" title="Pacientes recientes">
+      <Panel variant="psy" eyebrow="Seguimiento" title="Pacientes recientes">
         {recentPatients.length === 0 ? (
           <EmptyState
             title="Aún no tienes pacientes activos"
@@ -149,7 +151,7 @@ function PsyDashboardClient({ initialData }: Props) {
       </Panel>
 
       {data.todayAppointments.length > 0 ? (
-        <Panel eyebrow="Hoy" title="Sesiones programadas">
+        <Panel variant="psy" eyebrow="Hoy" title="Sesiones programadas">
           <ul className="psy-list">
             {data.todayAppointments.map((appointment) => (
               <li key={appointment.id}>
