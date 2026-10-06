@@ -27,6 +27,7 @@ import Icon from '@/components/admin/Icon';
 import { AdminLoading, AdminEmptyState, AdminErrorState } from '@/components/admin/AdminStates';
 import { getAdminPageHeading } from '@/components/admin/adminNav';
 import type { FilterOption } from '@/components/admin/types';
+import AdminDropdown from '@/components/admin/AdminDropdown';
 import { useAdminList } from '@/hooks/useAdminList';
 import { useToasts } from '@/hooks/useToasts';
 
@@ -291,81 +292,60 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
         const busy = pendingUserId === user.id;
         const isActive = user.status === 'ACTIVE';
         const isPending = user.status === 'PENDING';
+
+        const items = [
+          ...(isPending
+            ? [
+                {
+                  label: 'Aprobar',
+                  onClick: () => handleApprove(user.id),
+                  icon: 'check' as const,
+                  variant: 'primary' as const,
+                  disabled: busy,
+                },
+                {
+                  label: 'Reenviar confirmación',
+                  onClick: () => handleResendConfirmation(user.id),
+                  icon: 'mail' as const,
+                  disabled: busy,
+                },
+              ]
+            : [
+                {
+                  label: 'Editar',
+                  onClick: () => openEdit(user),
+                  icon: 'pencil' as const,
+                  disabled: busy,
+                },
+                {
+                  label: 'Resetear contraseña',
+                  onClick: () => handleResetPassword(user.id),
+                  icon: 'lock' as const,
+                  disabled: busy,
+                },
+              ]),
+          {
+            label: isActive ? 'Suspender' : 'Activar',
+            onClick: () => handleStatusChange(user.id, isActive ? 'SUSPENDED' : 'ACTIVE'),
+            icon: isActive ? ('ban' as const) : ('check' as const),
+            disabled: busy,
+          },
+          {
+            label: 'Eliminar',
+            onClick: () => setDeleteTarget(user),
+            icon: 'trash' as const,
+            variant: 'danger' as const,
+            disabled: busy,
+          },
+        ];
+
         return (
-          <div className="admin-actions">
-            <select
-              value={user.role}
-              onChange={(e) => handleRoleChange(user.id, e.target.value as 'USER' | 'PSYCHOLOGIST' | 'ADMIN')}
-              disabled={busy}
-              className="admin-select"
-            >
-              <option value="USER">Usuario</option>
-              <option value="PSYCHOLOGIST">Psicólogo</option>
-              <option value="ADMIN">Admin</option>
-            </select>
-            {isPending ? (
-              <>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-primary"
-                  onClick={() => handleApprove(user.id)}
-                  disabled={busy}
-                >
-                  <Icon name="check" size={14} />
-                  Aprobar
-                </button>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-ghost"
-                  onClick={() => handleResendConfirmation(user.id)}
-                  disabled={busy}
-                >
-                  <Icon name="mail" size={14} />
-                  Reenviar confirmación
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-ghost"
-                  onClick={() => openEdit(user)}
-                  disabled={busy}
-                >
-                  <Icon name="pencil" size={14} />
-                  Editar
-                </button>
-                <button
-                  type="button"
-                  className="admin-btn admin-btn-ghost"
-                  onClick={() => handleResetPassword(user.id)}
-                  disabled={busy}
-                >
-                  <Icon name="lock" size={14} />
-                  Reset
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              className="admin-btn admin-btn-ghost"
-              onClick={() => handleStatusChange(user.id, isActive ? 'SUSPENDED' : 'ACTIVE')}
-              disabled={busy}
-            >
-              {busy ? <span className="admin-btn-spinner" /> : <Icon name={isActive ? 'ban' : 'check'} size={14} />}
-              {isActive ? 'Suspender' : 'Activar'}
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn-danger"
-              onClick={() => setDeleteTarget(user)}
-              disabled={busy}
-              aria-label={`Eliminar a ${fullName(user)}`}
-            >
-              <Icon name="trash" size={12} />
-              Eliminar
-            </button>
-          </div>
+          <AdminDropdown
+            items={items}
+            triggerIcon="menu"
+            triggerClassName="admin-table-dropdown-trigger"
+            align="right"
+          />
         );
       },
     },
