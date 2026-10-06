@@ -1538,6 +1538,11 @@ button {
   overflow-y: auto;
   z-index: 40;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 60px;
 }
 
 .sidebar-header {
@@ -2498,6 +2503,27 @@ button {
 .sidebar.collapsed .sidebar-brand span,
 .sidebar.collapsed .sidebar-link span,
 .sidebar.collapsed .help-btn span {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-brand {
+  align-items: center;
+  padding: 0 6px 20px;
+}
+
+.sidebar.collapsed .sidebar-logo {
+  margin: 0 auto;
+}
+
+.sidebar.collapsed .sidebar-user {
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px 16px;
+  gap: 8px;
+}
+
+.sidebar.collapsed .sidebar-user strong,
+.sidebar.collapsed .sidebar-user span {
   display: none;
 }
 
