@@ -284,6 +284,21 @@ GitHub Actions reemplaza Jenkins como sistema principal de CI/CD.
 
 El proyecto antiguo se consulta para entender funcionalidad, no para copiar patrones técnicos.
 
+## Sistema de diseño por superficie
+
+DESIGN.md describe solo el landing público. Cada superficie de app vive en su
+propio mundo con tokens propios, para no mezclar lenguajes visuales:
+
+- Landing público: clases `.kb-*` (global.css)
+- Administración: tokens `--admin-*` y clases `.admin-*` (admin.css)
+- Psicólogos: tokens `--psy-*` y clases `.psy-*` (psy.css)
+- Usuarios: tokens `--user-*` y clases `.user-*` (styles/user.css), activado
+  envolviendo el árbol en `.user-root` desde `app/(user)/layout.tsx`
+
+Regla: una superficie no consume tokens de otra. El cromo global de `body`
+(fondo índigo oscuro, glows fijos con `pointer-events: none`) es compatible con
+las cuatro superficies y no requiere tratamiento especial.
+
 ---
 
 # 9. Flujos conocidos
