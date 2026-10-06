@@ -29,7 +29,14 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
     session.profile?.firstName?.trim() || session.email
   );
 
+  const isAdmin = session.role === 'ADMIN';
+
   const refreshProfile = useCallback(async () => {
+    if (isAdmin) {
+      setIsApproved(true);
+      setAccessError(null);
+      return;
+    }
     try {
       const result = await getProfileAction();
       setIsApproved(result.profile.isApproved);
@@ -49,7 +56,7 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
 
       setAccessError(error instanceof Error ? error.message : 'Error cargando el perfil');
     }
-  }, [session.email]);
+  }, [session.email, isAdmin]);
 
   useEffect(() => {
     void refreshProfile();
@@ -67,6 +74,8 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
   }
 
   const suspended = accessError !== null && isApproved === null;
+
+  const canAccess = isAdmin || isApproved === true;
 
   return (
     <div className="dashboard-layout">
@@ -107,11 +116,13 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
             <div className="dashboard-chip">
               <strong>Psicólogo</strong>
               <span>
-                {isApproved === null
-                  ? 'Verificando...'
-                  : isApproved
-                    ? 'Perfil aprobado'
-                    : 'Pendiente de aprobación'}
+                {isAdmin
+                  ? 'Administrador (acceso total)'
+                  : isApproved === null
+                    ? 'Verificando...'
+                    : isApproved
+                      ? 'Perfil aprobado'
+                      : 'Pendiente de aprobación'}
               </span>
             </div>
           </div>
@@ -125,12 +136,17 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
           ))}
         </nav>
 
-        {suspended ? (
+        {isApproved === null && !isAdmin ? (
+          <div className="psy-blocked" role="status">
+            <h2>Verificando perfil...</h2>
+            <p>Cargando información de psicólogo.</p>
+          </div>
+        ) : suspended ? (
           <div className="psy-blocked" role="alert">
             <h2>Acceso restringido</h2>
             <p>{accessError}</p>
           </div>
-        ) : isApproved === false ? (
+        ) : isApproved === false && !isAdmin ? (
           <div className="psy-blocked" role="status">
             <h2>Tu perfil está pendiente de aprobación</h2>
             <p>
@@ -142,9 +158,8 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
               publicar talleres y recursos, que quedarán en estado pendiente de revisión.
             </p>
           </div>
-        ) : null}
-
-        <PsyProvider
+        ) : !canAccess ? null : (
+          <PsyProvider
           value={
             {
               session,
@@ -160,6 +175,7 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
         >
           {children}
         </PsyProvider>
+        )}
       </main>
     </div>
   );
