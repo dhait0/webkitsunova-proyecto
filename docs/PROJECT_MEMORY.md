@@ -84,7 +84,7 @@ app/
     └── admin/*                    → /admin/*
 ```
 
-Los grupos entre paréntesis existen para conservar los nombres de carpeta de `agents.md`
+Los grupos entre paréntesis existen para conservar los nombres de carpeta de `AGENTS.md`
 (`user/`, `psychologist/`, `admin/`) sin alterar las URLs públicas, que ya estaban
 contratadas como `/dashboard/*`, `/psy/*` y `/admin/*`.
 
