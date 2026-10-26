@@ -1,14 +1,21 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { authorize, getSessionUser } from './guard';
 
 vi.mock('server-only', () => ({}));
 
 const getUser = vi.hoisted(() => vi.fn());
+const prismaUserFindUnique = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(() => ({
     auth: { getUser },
   })),
+}));
+
+vi.mock('@/lib/db/prisma', () => ({
+  prisma: {
+    user: { findUnique: prismaUserFindUnique },
+  },
 }));
 
 const adminSession = {
@@ -41,6 +48,12 @@ const expectedUserUser = {
   profile: { firstName: 'User', lastName: 'One', username: 'user' },
 };
 
+beforeEach(() => {
+  vi.clearAllMocks();
+  getUser.mockReset();
+  prismaUserFindUnique.mockReset();
+});
+
 describe('authorize()', () => {
   it('rechaza sesión anónima (sin usuario)', async () => {
     getUser.mockResolvedValue({ data: { user: null } });
@@ -52,14 +65,16 @@ describe('authorize()', () => {
 
   it('rechaza usuario con rol USER para acciones de ADMIN', async () => {
     getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'ACTIVE' });
 
     const result = await authorize(['ADMIN']);
 
     expect(result).toBeNull();
   });
 
-  it('admite usuario con rol ADMIN para acciones de ADMIN', async () => {
+  it('admite usuario ACTIVE con rol ADMIN para acciones de ADMIN', async () => {
     getUser.mockResolvedValue({ data: { user: adminSession } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'ACTIVE' });
 
     const result = await authorize(['ADMIN']);
 
@@ -67,8 +82,9 @@ describe('authorize()', () => {
     expect(result?.role).toBe('ADMIN');
   });
 
-  it('devuelve la sesión sin restricción cuando no se pasan roles', async () => {
+  it('devuelve la sesión ACTIVE sin restricción cuando no se pasan roles', async () => {
     getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'ACTIVE' });
 
     const result = await authorize();
 
@@ -79,6 +95,33 @@ describe('authorize()', () => {
     getUser.mockResolvedValue({ data: { user: null } });
 
     const result = await authorize();
+
+    expect(result).toBeNull();
+  });
+
+  it('rechaza cuenta PENDING aunque el rol coincida', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'PENDING' });
+
+    const result = await authorize(['USER']);
+
+    expect(result).toBeNull();
+  });
+
+  it('rechaza cuenta SUSPENDED aunque el rol coincida', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'SUSPENDED' });
+
+    const result = await authorize(['USER']);
+
+    expect(result).toBeNull();
+  });
+
+  it('rechaza usuario existente en Supabase pero ausente en Prisma', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue(null);
+
+    const result = await authorize(['USER']);
 
     expect(result).toBeNull();
   });
@@ -104,6 +147,7 @@ describe('getSessionUser()', () => {
         },
       },
     });
+    prismaUserFindUnique.mockResolvedValue({ status: 'ACTIVE' });
 
     const result = await getSessionUser();
 
@@ -114,32 +158,63 @@ describe('getSessionUser()', () => {
     expect(result?.profile?.username).toBe('ana');
     expect(result?.status).toBe('ACTIVE');
   });
-});
 
-describe('estado de cuenta', () => {
-  it('no rechaza cuentas con estado no activo (bloqueo: requiere rediseño para consultar Prisma)', async () => {
-    getUser.mockResolvedValue({ data: { user: userSession } });
+  it('devuelve el estado real PENDING leído de Prisma', async () => {
+    getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-2',
+          email: 'pending@example.com',
+          app_metadata: { role: 'USER' },
+          user_metadata: {},
+        },
+      },
+    });
+    prismaUserFindUnique.mockResolvedValue({ status: 'PENDING' });
 
     const result = await getSessionUser();
 
-    // El guard hardcodea status: 'ACTIVE' y nunca consulta el estado real
-    // de la cuenta en Prisma. Una cuenta PENDING o SUSPENDED no es rechazada.
-    // Rechazar cuentas no activas requiere leer el estado desde Prisma dentro
-    // de getSessionUser() o authorize(): cambio de arquitectura, no ajuste aislado.
-    expect(result?.status).toBe('ACTIVE');
+    expect(result?.status).toBe('PENDING');
+    expect(result?.id).toBe('user-2');
   });
-});
 
-describe('MFA (flujo directo)', () => {
-  it('no requiere MFA en el guard (bloqueo: requiere rediseño para integrar getMfaStatus)', async () => {
+  it('devuelve el estado real SUSPENDED leído de Prisma', async () => {
+    getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: 'user-3',
+          email: 'suspended@example.com',
+          app_metadata: { role: 'USER' },
+          user_metadata: {},
+        },
+      },
+    });
+    prismaUserFindUnique.mockResolvedValue({ status: 'SUSPENDED' });
+
+    const result = await getSessionUser();
+
+    expect(result?.status).toBe('SUSPENDED');
+    expect(result?.id).toBe('user-3');
+  });
+
+  it('devuelve null cuando el usuario no existe en Prisma', async () => {
     getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue(null);
 
-    const result = await authorize(['USER']);
+    const result = await getSessionUser();
 
-    // authorize() nunca verifica si el usuario tiene MFA habilitado.
-    // getMfaStatus() existe en lib/auth/mfa.ts pero no se integra al guard.
-    // Requerir MFA para acciones sensibles requiere rediseño del guard.
-    expect(result).not.toBeNull();
-    expect(result?.role).toBe('USER');
+    expect(result).toBeNull();
+  });
+
+  it('consulta Prisma por el id del usuario de Supabase', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'ACTIVE' });
+
+    await getSessionUser();
+
+    expect(prismaUserFindUnique).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      select: { status: true },
+    });
   });
 });
