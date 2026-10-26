@@ -90,7 +90,7 @@ Los tres comandos deben pasar antes de abrir un Pull Request. En local hacen fal
 | Psicólogo | `/psy/*` | PSYCHOLOGIST, ADMIN |
 | Administración | `/admin/*` | ADMIN |
 
-Los grupos entre paréntesis existen para mantener los nombres de carpeta de `agents.md` sin alterar las URLs públicas.
+Los grupos entre paréntesis existen para mantener los nombres de carpeta de `AGENTS.md` sin alterar las URLs públicas.
 
  ## Migraciones
 

@@ -6,7 +6,7 @@ Este documento es la propuesta revisada para abandonar `frontend/` (Vite SPA) y
 `backend/` (Express) y consolidating el proyecto en una única aplicación Next.js
 con un único `package.json`, un único pipeline y un único proyecto de Vercel.
 
-`agents.md` §5–§7 define esa arquitectura objetivo. Este documento concrete
+`AGENTS.md` §5–§7 define esa arquitectura objetivo. Este documento concrete
 qué se mueve, qué se reescribe, qué se descarta y en qué orden.
 
 > La propuesta existía solo como conversación. Este archivo es su versión
@@ -66,7 +66,7 @@ Desglose del backend:
 | `.github/workflows/pr-checks.yml` | 6 jobs × 2 `working-directory`; `paths` filtrando `backend/**` + `frontend/**` |
 | `.github/workflows/deploy-migrations.yml` | `node-version: 20`, `cache-dependency-path: backend/package-lock.json`, paths `backend/prisma/**` |
 | `docker-compose.yml` | 3 servicios (postgres, backend, frontend); inyecta `JWT_SECRET` legacy no usado |
-| `Jenkinsfile` | Jenkins como pipeline principal, contradice `agents.md` §12 |
+| `Jenkinsfile` | Jenkins como pipeline principal, contradice `AGENTS.md` §12 |
 | Versión de Node | El commit `dc84596` exige Node 22+, pero **los 3 workflows siguen en Node 20** y ningún `package.json` tiene `engines` |
 
 ---
@@ -87,7 +87,7 @@ Express ni Prisma más allá del cliente importado. 1.902 LOC sin cambios.
 
 ### 2.3 Correcto: `prisma/` sube a la raíz
 
-`agents.md` §10 lo pide y `deploy-migrations.yml` se ajusta a `prisma/**`.
+`AGENTS.md` §10 lo pide y `deploy-migrations.yml` se ajusta a `prisma/**`.
 
 ### 2.4 **Incorrecto: «middleware.ts absorbe la verificación de sesión»**
 
@@ -261,7 +261,7 @@ sesión por contexto de React.
 - Borrar `vercel.json` raíz, `frontend/vercel.json`, `backend/vercel.json`
 - `Dockerfile` único, `docker-compose.yml` a 2 servicios, sin `JWT_SECRET`
 - `pr-checks.yml`: 6 jobs → 1; `deploy-migrations.yml` → `prisma/**`, Node 22
-- Borrar `Jenkinsfile` (`agents.md` §12)
+- Borrar `Jenkinsfile` (`AGENTS.md` §12)
 - `.env.example`: `VITE_*` → `NEXT_PUBLIC_*`; quitar `CORS_ORIGIN`/`FRONTEND_URL`
 - **Borrar** `frontend/inspect*.js`, `frontend/screenshot.js`
 - `rm -rf frontend backend`
@@ -302,9 +302,9 @@ sesión por contexto de React.
 |---|---|---|
 | Línea de Next.js | **Next.js 16 + React 19.3** | Es la versión estable actual. En un portafolio, usar lo actual pesa más que minimizar fricción. |
 | Server Components | **Total: las 26 páginas reescritas** | Máximo beneficio de Next.js. Obliga a rediseñar la capa de datos (§8). |
-| Git | Rama local `nextjs-unificacion`, merge a `staging` al final | Regla de `agents.md` §14: nada de push ni PR automático |
-| Route groups de `agents.md` §7 | Sin desviación | Aquí el enrutador **sí** es Next.js, así que la estructura deja de ser makeup |
-| `services/` en la raíz, no en `lib/` | Aceptado | Es lógica de negocio, no utilidades; mantiene la frontera de `agents.md` §9 |
+| Git | Rama local `nextjs-unificacion`, merge a `staging` al final | Regla de `AGENTS.md` §14: nada de push ni PR automático |
+| Route groups de `AGENTS.md` §7 | Sin desviación | Aquí el enrutador **sí** es Next.js, así que la estructura deja de ser makeup |
+| `services/` en la raíz, no en `lib/` | Aceptado | Es lógica de negocio, no utilidades; mantiene la frontera de `AGENTS.md` §9 |
 | Una sola suite de tests | Aceptado | Un `vitest.config.ts` con `environmentMatchGlobs` cubre ambos entornos |
 
 ---
