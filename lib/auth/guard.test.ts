@@ -115,3 +115,31 @@ describe('getSessionUser()', () => {
     expect(result?.status).toBe('ACTIVE');
   });
 });
+
+describe('estado de cuenta', () => {
+  it('no rechaza cuentas con estado no activo (bloqueo: requiere rediseño para consultar Prisma)', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+
+    const result = await getSessionUser();
+
+    // El guard hardcodea status: 'ACTIVE' y nunca consulta el estado real
+    // de la cuenta en Prisma. Una cuenta PENDING o SUSPENDED no es rechazada.
+    // Rechazar cuentas no activas requiere leer el estado desde Prisma dentro
+    // de getSessionUser() o authorize(): cambio de arquitectura, no ajuste aislado.
+    expect(result?.status).toBe('ACTIVE');
+  });
+});
+
+describe('MFA (flujo directo)', () => {
+  it('no requiere MFA en el guard (bloqueo: requiere rediseño para integrar getMfaStatus)', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+
+    const result = await authorize(['USER']);
+
+    // authorize() nunca verifica si el usuario tiene MFA habilitado.
+    // getMfaStatus() existe en lib/auth/mfa.ts pero no se integra al guard.
+    // Requerir MFA para acciones sensibles requiere rediseño del guard.
+    expect(result).not.toBeNull();
+    expect(result?.role).toBe('USER');
+  });
+});
