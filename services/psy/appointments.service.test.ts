@@ -5,6 +5,7 @@ const prisma = {
   availabilitySlot: { findFirst: vi.fn() },
   appointment: { findFirst: vi.fn(), create: vi.fn(), findMany: vi.fn(), count: vi.fn() },
   psyPatient: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), create: vi.fn(), upsert: vi.fn() },
+  $transaction: vi.fn(async (fn) => fn(prisma)),
 };
 
 vi.mock('@/lib/db/prisma', () => ({ prisma }));

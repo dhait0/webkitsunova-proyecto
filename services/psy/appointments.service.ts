@@ -441,55 +441,67 @@ export async function requestAppointmentByUser(
     }
   }
 
-  const conflict = await prisma.appointment.findFirst({
-    where: {
-      psychologistId: input.psychologistId,
-      status: { in: ['PENDING', 'CONFIRMED'] },
-      startsAt: { lt: endsAt(input.startsAt, input.durationMinutes) },
-      endsAt: { gt: input.startsAt },
-    },
-    select: { id: true },
-  });
+  try {
+    const appointment = await prisma.$transaction(async (tx) => {
+      const conflict = await tx.appointment.findFirst({
+        where: {
+          psychologistId: input.psychologistId,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+          startsAt: { lt: endsAt(input.startsAt, input.durationMinutes) },
+          endsAt: { gt: input.startsAt },
+        },
+        select: { id: true },
+      });
 
-  if (conflict) {
-    throw new AppointmentConflictError('El horario ya está ocupado');
+      if (conflict) {
+        throw new AppointmentConflictError('El horario ya está ocupado');
+      }
+
+      const created = await tx.appointment.create({
+        data: {
+          psychologistId: input.psychologistId,
+          patientUserId,
+          type: input.type ?? 'FIRST_SESSION',
+          status: 'PENDING',
+          startsAt: input.startsAt,
+          endsAt: endsAt(input.startsAt, input.durationMinutes),
+          reason: input.reason ?? null,
+          patientNote: input.patientNote ?? null,
+        },
+      });
+
+      return created;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    // Apply patient link rules same as createAppointment (outside transaction for simplicity)
+    await closeOtherActiveLinks(input.psychologistId, patientUserId);
+    await ensurePatientLink(input.psychologistId, patientUserId);
+    await recalculatePatientsCount(input.psychologistId);
+
+    await createNotification({
+      userId: input.psychologistId,
+      kind: 'appointment',
+      title: 'Nueva solicitud de cita',
+      body: `Tienes una nueva solicitud de cita pendiente de confirmación.`,
+      link: '/psy/citas',
+    });
+
+    await createNotification({
+      userId: patientUserId,
+      kind: 'appointment',
+      title: 'Solicitud enviada',
+      body: `Tu solicitud de cita ha sido enviada y está pendiente de confirmación.`,
+      link: '/dashboard/citas',
+    });
+
+    return appointment;
+  } catch (error: any) {
+    // Handle serialization failures
+    if (error?.code === 'P2034') {
+      throw new AppointmentConflictError('El horario ya está ocupado o fue reservado recientemente');
+    }
+    throw error;
   }
-
-  const appointment = await prisma.appointment.create({
-    data: {
-      psychologistId: input.psychologistId,
-      patientUserId,
-      type: input.type ?? 'FIRST_SESSION',
-      status: 'PENDING',
-      startsAt: input.startsAt,
-      endsAt: endsAt(input.startsAt, input.durationMinutes),
-      reason: input.reason ?? null,
-      patientNote: input.patientNote ?? null,
-    },
-  });
-
-  // Apply patient link rules same as createAppointment
-  await closeOtherActiveLinks(input.psychologistId, patientUserId);
-  await ensurePatientLink(input.psychologistId, patientUserId);
-  await recalculatePatientsCount(input.psychologistId);
-
-  await createNotification({
-    userId: input.psychologistId,
-    kind: 'appointment',
-    title: 'Nueva solicitud de cita',
-    body: `Tienes una nueva solicitud de cita pendiente de confirmación.`,
-    link: '/psy/citas',
-  });
-
-  await createNotification({
-    userId: patientUserId,
-    kind: 'appointment',
-    title: 'Solicitud enviada',
-    body: `Tu solicitud de cita ha sido enviada y está pendiente de confirmación.`,
-    link: '/dashboard/citas',
-  });
-
-  return appointment;
 }
 
 export async function createPatientReport(
