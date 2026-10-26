@@ -2,6 +2,7 @@ import 'server-only';
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { prisma } from '@/lib/db/prisma';
 import { homeForRole, toAppRole, type AppRole } from './roles';
 import type { SessionUser } from './types';
 
@@ -21,11 +22,18 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   if (!user) return null;
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { status: true },
+  });
+
+  if (!dbUser) return null;
+
   return {
     id: user.id,
     email: user.email ?? '',
     role: toAppRole(user.app_metadata?.role as string | undefined),
-    status: 'ACTIVE',
+    status: dbUser.status,
     profile: {
       firstName: (user.user_metadata?.first_name as string | undefined) ?? null,
       lastName: (user.user_metadata?.last_name as string | undefined) ?? null,
@@ -77,6 +85,7 @@ export async function authorize(roles?: readonly AppRole[]): Promise<SessionUser
   const session = await getSessionUser();
 
   if (!session) return null;
+  if (session.status !== 'ACTIVE') return null;
   if (!roles) return session;
   if (roles.includes(toAppRole(session.role))) return session;
 

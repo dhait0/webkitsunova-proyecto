@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db/prisma';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { authorize } from '@/lib/auth/guard';
 
 export type AdminUserStats = {
   success: boolean;
@@ -78,6 +79,11 @@ export type AdminPsychologistsResponse = {
 };
 
 export async function getAdminUserStats(): Promise<AdminUserStats> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, stats: { total: 0, active: 0, suspended: 0, pending: 0 } };
+  }
+
   const [total, active, suspended, pending] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { status: 'ACTIVE' } }),
@@ -95,6 +101,11 @@ export async function getAdminUsers(params?: {
   page?: number;
   limit?: number;
 }): Promise<AdminUsersResponse> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, users: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 1 } };
+  }
+
   const page = params?.page ?? 1;
   const limit = params?.limit ?? 10;
   const skip = (page - 1) * limit;
@@ -175,6 +186,11 @@ export async function updateUserStatus(
   status: 'ACTIVE' | 'SUSPENDED',
   _reason?: string
 ): Promise<{ success: boolean; message: string }> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, message: 'No autorizado' };
+  }
+
   await prisma.user.update({
     where: { id: userId },
     data: { status: status as 'ACTIVE' | 'SUSPENDED' | 'PENDING' },
@@ -186,6 +202,11 @@ export async function updateUserStatus(
 export async function deleteUser(
   userId: string
 ): Promise<{ success: boolean; message: string }> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, message: 'No autorizado' };
+  }
+
   await prisma.user.delete({
     where: { id: userId },
   });
@@ -197,6 +218,11 @@ export async function updateUserRole(
   userId: string,
   role: 'USER' | 'PSYCHOLOGIST' | 'ADMIN'
 ): Promise<{ success: boolean; message: string }> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, message: 'No autorizado' };
+  }
+
   await prisma.user.update({
     where: { id: userId },
     data: { role: role as 'USER' | 'PSYCHOLOGIST' | 'ADMIN' },
@@ -206,6 +232,11 @@ export async function updateUserRole(
 }
 
 export async function getAdminPsyStats(): Promise<AdminPsyStats> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, stats: { total: 0, approved: 0, pending: 0, suspended: 0 } };
+  }
+
   const [total, approved, pending, suspended] = await Promise.all([
     prisma.psychologistProfile.count(),
     prisma.psychologistProfile.count({ where: { isApproved: true, isVerified: true } }),
@@ -222,6 +253,11 @@ export async function getPsychologists(params?: {
   page?: number;
   limit?: number;
 }): Promise<AdminPsychologistsResponse> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, psychologists: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 1 } };
+  }
+
   const page = params?.page ?? 1;
   const limit = params?.limit ?? 10;
   const skip = (page - 1) * limit;
@@ -324,6 +360,11 @@ export async function getPsychologists(params?: {
 export async function approvePsychologist(
   psyId: string
 ): Promise<{ success: boolean; message: string }> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, message: 'No autorizado' };
+  }
+
   const profile = await prisma.psychologistProfile.findUnique({
     where: { id: psyId },
     select: { profileId: true },
@@ -352,6 +393,11 @@ export async function updateUserProfile(
   userId: string,
   payload: AdminUserUpdatePayload
 ): Promise<{ success: boolean; message: string }> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, message: 'No autorizado' };
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true, profile: { select: { username: true, firstName: true, lastName: true } } },
@@ -388,6 +434,11 @@ export async function updateUserProfile(
 export async function resetUserPassword(
   userId: string
 ): Promise<{ success: boolean; message: string }> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, message: 'No autorizado' };
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true },
@@ -413,6 +464,11 @@ export async function resetUserPassword(
 export async function approveUser(
   userId: string
 ): Promise<{ success: boolean; message: string }> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, message: 'No autorizado' };
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true },
@@ -433,6 +489,11 @@ export async function approveUser(
 export async function resendConfirmationEmail(
   userId: string
 ): Promise<{ success: boolean; message: string }> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, message: 'No autorizado' };
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true },
@@ -469,6 +530,11 @@ export async function updatePsychologistProfile(
   psyId: string,
   payload: AdminPsychologistUpdatePayload
 ): Promise<{ success: boolean; message: string }> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, message: 'No autorizado' };
+  }
+
   const profile = await prisma.psychologistProfile.findUnique({
     where: { id: psyId },
     include: { profile: { select: { user: { select: { email: true } } } } },

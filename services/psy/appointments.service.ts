@@ -151,6 +151,69 @@ export async function listAppointments(psychologistId: string, query: Record<str
   };
 }
 
+/**
+ * Consulta las citas propias de un paciente (usuario), aisladas por titular.
+ * Reutiliza la misma paginación, alcances y filtros de estado que
+ * `listAppointments`, pero filtra por `patientUserId` en vez de
+ * `psychologistId`. Solo expone campos públicos; nunca datos privados.
+ */
+export async function listPatientAppointments(
+  patientUserId: string,
+  query: Record<string, unknown>,
+) {
+  const { page, limit, skip } = parsePagination(query);
+  const scope = (typeof query.scope === 'string' ? query.scope : 'upcoming') as AppointmentScope;
+  const status = typeof query.status === 'string' ? query.status : '';
+  const now = new Date();
+
+  const nowBounds: Prisma.AppointmentWhereInput = {
+    ...(scope === 'today'
+      ? { startsAt: { gte: startOfTodayUtc(), lt: endOfTodayUtc() } }
+      : scope === 'upcoming'
+        ? { startsAt: { gte: now } }
+        : scope === 'past'
+          ? { startsAt: { lt: now } }
+          : {}),
+  };
+
+  const where: Prisma.AppointmentWhereInput = {
+    patientUserId,
+    ...nowBounds,
+    ...(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(status)
+      ? { status: status as 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' }
+      : {}),
+  };
+
+  const orderBy: Prisma.AppointmentOrderByWithRelationInput =
+    scope === 'past' ? { startsAt: 'desc' } : { startsAt: 'asc' };
+
+  const [appointments, total] = await Promise.all([
+    prisma.appointment.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      include: { psychologist: { include: { profile: true } } },
+    }),
+    prisma.appointment.count({ where }),
+  ]);
+
+  return {
+    success: true as const,
+    appointments: appointments.map((appointment) => ({
+      id: appointment.id,
+      psychologistUserId: appointment.psychologistId,
+      psychologistName: fullName(appointment.psychologist.profile) || 'Psicólogo',
+      startsAt: appointment.startsAt.toISOString(),
+      endsAt: appointment.endsAt.toISOString(),
+      type: appointment.type,
+      status: appointment.status,
+      reason: appointment.reason ?? 'Sin motivo especificado',
+    })),
+    pagination: buildPagination(page, limit, total),
+  };
+}
+
 export async function getAppointment(psychologistId: string, id: string) {
   const appointment = await prisma.appointment.findFirst({
     where: { id, psychologistId },

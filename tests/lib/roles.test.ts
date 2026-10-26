@@ -76,7 +76,7 @@ describe('sessionUserFromSupabaseUser', () => {
         email: 'ada@example.com',
         app_metadata: { role: 'PSYCHOLOGIST' },
         user_metadata: { first_name: 'Ada', last_name: 'Lovelace', username: 'ada' },
-      })
+      }, 'ACTIVE')
     ).toEqual({
       id: 'user-1',
       email: 'ada@example.com',
@@ -92,7 +92,7 @@ describe('sessionUserFromSupabaseUser', () => {
   });
 
   it('tolerates a missing email and metadata', () => {
-    const session = sessionUserFromSupabaseUser({ id: 'user-2' });
+    const session = sessionUserFromSupabaseUser({ id: 'user-2' }, 'ACTIVE');
 
     expect(session).toEqual({
       id: 'user-2',
@@ -101,5 +101,15 @@ describe('sessionUserFromSupabaseUser', () => {
       status: 'ACTIVE',
       profile: { firstName: null, lastName: null, username: null },
     });
+  });
+
+  it('acepta un estado de cuenta personalizado', () => {
+    const session = sessionUserFromSupabaseUser(
+      { id: 'user-3', email: 'pend@example.com', app_metadata: { role: 'USER' } },
+      'PENDING'
+    );
+
+    expect(session?.status).toBe('PENDING');
+    expect(session?.role).toBe('USER');
   });
 });
