@@ -4,13 +4,17 @@ vi.mock('@/lib/db/prisma', () => ({
   prisma: {
     user: {
       findMany: vi.fn(),
+      findFirst: vi.fn(),
       count: vi.fn(),
     },
   },
 }));
 
 import { prisma } from '@/lib/db/prisma';
-import { listEligiblePsychologists } from '@/services/psy/psychologists.service';
+import {
+  getPsychologistProfile,
+  listEligiblePsychologists,
+} from '@/services/psy/psychologists.service';
 
 const allPsychologists = [
   {
@@ -35,6 +39,10 @@ const allPsychologists = [
         patientsCount: 5,
         isApproved: true,
       },
+      availabilitySlots: [
+        { weekday: 1, startMinutes: 540, endMinutes: 660 },
+        { weekday: 3, startMinutes: 840, endMinutes: 960 },
+      ],
     },
   },
   {
@@ -130,6 +138,7 @@ beforeEach(() => {
 
   ;(prisma.user.findMany as any).mockResolvedValue(allPsychologists);
   ;(prisma.user.count as any).mockResolvedValue(allPsychologists.length);
+  ;(prisma.user.findFirst as any).mockResolvedValue(allPsychologists[0]);
 });
 
 describe('listEligiblePsychologists', () => {
@@ -234,5 +243,74 @@ describe('listEligiblePsychologists', () => {
     expect(result.pagination.limit).toBe(5);
     expect(result.pagination.total).toBe(5);
     expect(result.pagination.totalPages).toBe(1);
+  });
+});
+
+describe('getPsychologistProfile', () => {
+  it('devuelve solo campos públicos y disponibilidad del psicólogo elegible', async () => {
+    const result = await getPsychologistProfile('psy-eligible');
+
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe('psy-eligible');
+    expect(result?.name).toBe('Ana Ruiz');
+    expect(result?.specialties).toEqual(['Ansiedad', 'Depresión']);
+    expect(result?.availability.length).toBeGreaterThan(0);
+    expect(result?.availability[0]).toMatchObject({
+      weekday: expect.any(Number),
+      weekdayLabel: expect.any(String),
+      start: expect.any(String),
+      end: expect.any(String),
+    });
+  });
+
+  it('no expone campos privados del perfil', async () => {
+    const result = await getPsychologistProfile('psy-eligible');
+
+    expect(result).not.toBeNull();
+    expect(result).not.toHaveProperty('email');
+    expect(result).not.toHaveProperty('phone');
+    expect(result).not.toHaveProperty('passwordHash');
+    expect(result).not.toHaveProperty('twoFactorEnabled');
+    expect(result).not.toHaveProperty('twoFactorSecret');
+  });
+
+  it('devuelve null cuando el psicólogo no existe', async () => {
+    ;(prisma.user.findFirst as any).mockResolvedValue(null);
+
+    const result = await getPsychologistProfile('no-existe');
+
+    expect(result).toBeNull();
+  });
+
+  it('devuelve null cuando el psicólogo no es elegible (no aprobado o inactivo)', async () => {
+    ;(prisma.user.findFirst as any).mockResolvedValue(null);
+
+    const notApproved = await getPsychologistProfile('psy-not-approved');
+    const suspended = await getPsychologistProfile('psy-suspended');
+
+    expect(notApproved).toBeNull();
+    expect(suspended).toBeNull();
+  });
+
+  it('ordena los slots de disponibilidad por día y hora de inicio', async () => {
+    ;(prisma.user.findFirst as any).mockResolvedValue({
+      ...allPsychologists[0],
+      profile: {
+        ...allPsychologists[0].profile,
+        availabilitySlots: [
+          { weekday: 3, startMinutes: 600, endMinutes: 720 },
+          { weekday: 1, startMinutes: 540, endMinutes: 660 },
+          { weekday: 1, startMinutes: 780, endMinutes: 900 },
+        ],
+      },
+    });
+
+    const result = await getPsychologistProfile('psy-eligible');
+
+    expect(result).not.toBeNull();
+    expect(result?.availability.map((s) => s.weekday)).toEqual([1, 1, 3]);
+    expect(result?.availability[0].start).toBe('09:00');
+    expect(result?.availability[0].end).toBe('11:00');
+    expect(result?.availability[2].weekdayLabel).toBe('Miércoles');
   });
 });

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import type { ListEligiblePsychologistsResult } from '@/services/psy/psychologists.service';
-
 type Props = {
   data: ListEligiblePsychologistsResult;
   error: string | null;
@@ -87,9 +86,14 @@ export default function PsychologistsPage({ data, error }: Props) {
               <span className="user-pill user-pill--ok">Aceptando pacientes</span>
             ) : null}
             <div>
-              <button className="user-btn user-btn--quiet" type="button">
+              <Link
+                href={`/dashboard/psicologos/${psychologist.id}`}
+                className="user-btn user-btn--quiet"
+                type="button"
+                prefetch={false}
+              >
                 Ver perfil
-              </button>
+              </Link>
             </div>
           </article>
         ))}
