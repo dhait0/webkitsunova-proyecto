@@ -1,74 +1,182 @@
-import { requireUser } from '@/lib/auth/guard';
-import { dashboardAppointmentCards } from '@/content/siteContent';
+import Link from 'next/link';
 
-export default async function Appointments() {
-  const session = await requireUser();
-  const displayName =
-    (session.profile?.firstName?.trim() ||
-      session.profile?.username?.trim() ||
-      session.email) ??
-    '';
+export type PatientAppointment = {
+  id: string;
+  psychologistUserId: string;
+  psychologistName: string;
+  startsAt: string;
+  endsAt: string;
+  type: string;
+  status: string;
+  reason: string;
+};
+
+type AppointmentsData = {
+  appointments: PatientAppointment[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+type Props = {
+  data: AppointmentsData;
+  error: string | null;
+};
+
+export default function AppointmentsPage({ data, error }: Props) {
+  const { appointments, pagination } = data;
+
+  if (error) {
+    return (
+      <section className="user-page">
+        <div className="user-page-head">
+          <div className="user-page-head-copy">
+            <span className="user-eyebrow">Citas</span>
+            <h2 className="user-headline">Tus sesiones con psicólogos</h2>
+          </div>
+        </div>
+        <div className="user-card user-raise" role="alert">
+          <p>{error}</p>
+          <div>
+            <Link
+              href="/dashboard/citas"
+              className="user-btn user-btn--primary"
+              type="button"
+              prefetch={false}
+            >
+              Reintentar
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (appointments.length === 0) {
+    return (
+      <section className="user-page">
+        <div className="user-page-head">
+          <div className="user-page-head-copy">
+            <span className="user-eyebrow">Citas</span>
+            <h2 className="user-headline">Tus sesiones con psicólogos</h2>
+          </div>
+        </div>
+        <div className="user-card user-raise">
+          <p>No tienes citas agendadas en este momento.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="user-page">
       <div className="user-page-head">
         <div className="user-page-head-copy">
-          <div className="user-example">
-            <span className="user-eyebrow">Citas</span>
-            <span className="user-example-stamp">Ejemplo</span>
-          </div>
-          <h2 className="user-headline">
-            Agenda profesional para escalar cuando el proceso lo necesite.
-          </h2>
+          <span className="user-eyebrow">Citas</span>
+          <h2 className="user-headline">Tus sesiones con psicólogos</h2>
           <p className="user-lede">
-            {displayName}, esta sección centraliza la reserva y el seguimiento
-            de sesiones con psicólogos sin romper el flujo de hábitos.
+            Lista de tus sesiones reservadas con psicólogos.
           </p>
-        </div>
-
-        <div className="user-page-head-meta">
-          <div className="user-chip">
-            <strong>Atención guiada</strong>
-            <span>Sesiones presenciales y online</span>
-          </div>
         </div>
       </div>
 
-      <div className="user-grid user-grid--duo">
-        {dashboardAppointmentCards.map((appointment) => (
-          <article key={appointment.title} className="user-card user-card-stack user-raise">
-            <div className="user-panel-head">
-              <span className="user-eyebrow">{appointment.label}</span>
-              <h2 className="user-title">{appointment.title}</h2>
-            </div>
-            <p>{appointment.text}</p>
-            <span className="user-pill user-pill--ok">{appointment.status}</span>
-          </article>
-        ))}
+      <div className="user-list">
+        {appointments.map((appointment) => {
+          const startsAt = new Date(appointment.startsAt).toLocaleString('es-CO', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
 
-        <article className="user-card user-card--accent user-card-stack user-raise">
-          <div className="user-panel-head">
-            <span className="user-eyebrow">Siguiente paso</span>
-            <h2 className="user-title">
-              Agenda una cita si el seguimiento automatizado no es suficiente.
-            </h2>
-          </div>
-          <p>
-            El sistema puede sugerir una sesión cuando detecta que un hábito
-            necesita revisión humana.
-          </p>
-          <div>
-            <button className="user-btn user-btn--primary" type="button">
-              Reservar cita
-            </button>
-          </div>
-        </article>
+          return (
+            <article key={appointment.id} className="user-card user-raise">
+              <div className="user-panel-head">
+                <span className="user-eyebrow">{appointment.type}</span>
+                <h2 className="user-title">{appointment.psychologistName}</h2>
+              </div>
+              <div className="user-profile-rows" style={{ marginTop: 16 }}>
+                <div className="user-profile-row">
+                  <span className="user-eyebrow">Fecha y hora</span>
+                  <strong>{startsAt}</strong>
+                </div>
+                <div className="user-profile-row">
+                  <span className="user-eyebrow">Estado</span>
+                  <span
+                    className={`user-pill ${
+                      appointment.status === 'CONFIRMED'
+                        ? 'user-pill--ok'
+                        : appointment.status === 'CANCELLED'
+                          ? 'user-pill--warn'
+                          : ''
+                    }`}
+                  >
+                    {appointment.status}
+                  </span>
+                </div>
+                {appointment.reason &&
+                  appointment.reason !== 'Sin motivo especificado' && (
+                    <div className="user-profile-row">
+                      <span className="user-eyebrow">Motivo</span>
+                      <strong>{appointment.reason}</strong>
+                    </div>
+                  )}
+              </div>
+            </article>
+          );
+        })}
       </div>
 
-      <p className="user-example-note">
-        Esta vista muestra datos ilustrativos mientras el módulo de usuario
-        conecta con su API.
-      </p>
+      {pagination.totalPages > 1 && (
+        <nav className="user-pagination" aria-label="Paginación de citas">
+          <span className="user-pagination-info">
+            Mostrando página {pagination.page} de {pagination.totalPages} (
+            {pagination.total} citas)
+          </span>
+          <div className="user-pagination-controls">
+            {pagination.page > 1 && (
+              <Link
+                href={`/dashboard/citas?page=${pagination.page - 1}&limit=${pagination.limit}`}
+                className="user-btn user-btn--quiet"
+                type="button"
+                aria-label="Página anterior"
+                prefetch={false}
+              >
+                Anterior
+              </Link>
+            )}
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
+              <Link
+                key={p}
+                href={`/dashboard/citas?page=${p}&limit=${pagination.limit}`}
+                className={`user-pagination-btn${p === pagination.page ? ' user-pagination-btn--active' : ''}`}
+                type="button"
+                aria-current={p === pagination.page ? 'page' : undefined}
+                aria-label={`Ir a la página ${p}`}
+                prefetch={false}
+              >
+                {p}
+              </Link>
+            ))}
+            {pagination.page < pagination.totalPages && (
+              <Link
+                href={`/dashboard/citas?page=${pagination.page + 1}&limit=${pagination.limit}`}
+                className="user-btn user-btn--quiet"
+                type="button"
+                aria-label="Página siguiente"
+                prefetch={false}
+              >
+                Siguiente
+              </Link>
+            )}
+          </div>
+        </nav>
+      )}
     </section>
   );
 }

@@ -84,6 +84,7 @@ export function sessionUserFromSupabaseUser(
     user_metadata?: Record<string, unknown> | null;
   } | null
   | undefined,
+  status: string = 'ACTIVE',
 ): SessionUser | null {
   if (!user) {
     return null;
@@ -99,7 +100,7 @@ export function sessionUserFromSupabaseUser(
     id: user.id,
     email: user.email ?? '',
     role: roleFromSupabaseUser(user),
-    status: 'ACTIVE',
+    status,
     profile: {
       firstName: metadata.first_name ?? null,
       lastName: metadata.last_name ?? null,

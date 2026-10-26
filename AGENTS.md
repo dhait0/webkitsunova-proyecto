@@ -41,12 +41,14 @@
 
 ## 5. Git y autonomía
 
-- Trabajar local-first. Inspeccionar el estado antes de editar; conservar cambios existentes del usuario. No sobrescribir, revertir ni borrar trabajo ajeno.
-- Un encargo normal autoriza los cambios locales razonablemente necesarios dentro de su alcance; no autoriza trabajo adicional, commits, pushes, merges remotos, PRs ni despliegues.
-- `staging` es parte del flujo local descrito por el proyecto; no cambiar de rama, fusionar o resolver conflictos destructivamente por iniciativa propia.
-- Al resolver conflictos autorizados, reconciliar ambas intenciones y comprobar el resultado: «conservar, combinar, mejorar» no implica mantener código incompatible o duplicado.
-- Solicitar autorización explícita antes de operaciones remotas, destructivas o de producción, o de ampliar materialmente el alcance. Si la petición ya incluye inequívocamente esa autorización, no pedir confirmación redundante.
-- Para auditorías de solo lectura: no modificar archivos, no ejecutar acciones mutantes, no usar el encargo para aplicar arreglos. Informar hallazgos con evidencia y grado de certeza.
+- `staging` **local** es la base de integración, pero toda implementación se realiza en una rama local de tarea creada desde `staging`. Prohibido trabajar directamente en `staging` o `main`.
+- Antes de iniciar o continuar una rama de tarea, incorporar los cambios vigentes de **`staging` local a la rama de tarea**, resolviendo conflictos y protegiendo trabajo ajeno. Nunca descargar o mezclar automáticamente `origin/staging` ni `origin/main`.
+- **Pruebas y commits locales son automáticos**: no pedir aprobación por cada commit. Tras cada ticket completado y validado, crear commit local con ID Sxx; usar staging selectivo para no incluir modificaciones ajenas.
+- Antes de proponer integrar la rama de trabajo **hacia `staging` local**, sincronizar desde `staging` local, resolver conflictos y pasar las pruebas necesarias. Pedir aprobación para esa integración; no hacer merge de vuelta a `staging` por iniciativa propia.
+- Preparar la rama y las evidencias para un Pull Request hacia `staging`; **el usuario aprueba el PR**. El push y la creación del PR requieren su autorización expresa. No hacerlos automáticamente.
+- El usuario gestiona posteriormente el PR hacia `main`. Prohibido intervenir `main`, `origin/main` u `origin/staging` sin autorización específica; nunca forzar push o reset.
+- Las auditorías de solo lectura no implican permiso de editar ni hacer commit. Las operaciones de producción, migraciones remotas o destructivas requieren autorización independiente.
+- El protocolo detallado, incluido el manejo de bloqueos, se encuentra en `contexto/planificacion/06_GIT_LOCAL_Y_PR.md`.
 
 ## 6. Método de trabajo
 
@@ -92,3 +94,15 @@
 - `/proyecto viejo` es referencia histórica de solo lectura; utilizarlo únicamente para resolver una necesidad concreta. Nunca copiarlo sin validar arquitectura y seguridad actuales.
 - No instalar dependencias, crear servicios ni alterar CI/CD fuera del objetivo solicitado.
 - Al concluir, comunicar: archivos editados; comportamiento cambiado y preservado; validaciones realmente realizadas; riesgos y tareas pendientes. No afirmar despliegues ni modificaciones remotas inexistentes.
+
+## 11. Ejecución enfocada por horas
+
+- Consultar `contexto/README.md` y `contexto/planificacion/01_BACKLOG_HORAS.md` solo cuando la tarea corresponda al plan Kitsunova; no cargar toda la carpeta de contexto por defecto.
+- `contexto/` describe producto, prioridades y evidencias: NO reemplaza políticas de este archivo, `.kilo/rules/` ni `DESIGN.md`.
+- Trabajar en una microtarea ID por vez; objetivo operativo 30–90 minutos, sin convertir estimaciones en garantías de entrega. Si excede alcance, registrar bloqueo y descomponer, sin ampliar silenciosamente.
+- Para ejecución, registrar evidencia real y el estado en `contexto/planificacion/02_REGISTRO.md`; no marcar como hecho lo solo inspeccionado.
+- Prioridad: controles de autorización pertinentes antes de exponer catálogos, citas, chat y datos emocionales. Reutilizar los servicios existentes de Psicólogo y Admin.
+- El plan autoriza ramas, pruebas y commits **locales** por ticket implementado; NO autoriza push, PR, merge hacia `staging` local sin aprobación, operaciones sobre `main`, migraciones aplicadas a producción ni despliegues. Ver `06_GIT_LOCAL_Y_PR.md`.
+
+## Sprint intensivo Auto Free (plan de 5 horas)
+Cuando el usuario solicite el sprint, seguir `contexto/planificacion/00_TABLERO.md`, `01_BACKLOG_HORAS.md` y `05_PROTOCOLO_AUTO_FREE.md`. Un solo ticket por ejecución; no sacrificar autorización, privacidad ni pruebas para cumplir minutos. El presupuesto de 300 minutos no implica promesa de alcance completo.
