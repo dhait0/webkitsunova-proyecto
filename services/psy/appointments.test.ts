@@ -33,6 +33,7 @@ import {
   createAppointment,
   getAppointment,
   listAppointments,
+  listPatientAppointments,
   updateAppointmentStatus,
 } from '@/services/psy/appointments.service';
 
@@ -261,5 +262,124 @@ describe('actor y pertenencia de la cita', () => {
     expect(prisma.appointment.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ psychologistId: 'psy-1' }) }),
     );
+  });
+});
+
+describe('listPatientAppointments — lista aislada por titular', () => {
+  const patientAppointments = [
+    {
+      id: 'ap-1',
+      psychologistId: 'psy-1',
+      patientUserId: 'patient-1',
+      type: 'FOLLOW_UP',
+      status: 'CONFIRMED',
+      startsAt: new Date('2026-02-10T10:00:00Z'),
+      endsAt: new Date('2026-02-10T11:00:00Z'),
+      reason: 'Ansiedad',
+      psychologist: {
+        profile: { firstName: 'Dra. Laura', lastName: 'Gómez', username: 'laura' },
+      },
+    },
+    {
+      id: 'ap-2',
+      psychologistId: 'psy-2',
+      patientUserId: 'patient-1',
+      type: 'FIRST_SESSION',
+      status: 'PENDING',
+      startsAt: new Date('2026-02-12T14:00:00Z'),
+      endsAt: new Date('2026-02-12T15:00:00Z'),
+      reason: null,
+      psychologist: {
+        profile: { firstName: 'Dr. Andrés', lastName: 'Prieto', username: null },
+      },
+    },
+  ];
+
+  beforeEach(() => {
+    ;(prisma.appointment.findMany as any).mockResolvedValue(patientAppointments);
+    ;(prisma.appointment.count as any).mockResolvedValue(patientAppointments.length);
+  });
+
+  it('filtra por patientUserId del titular, no por psychologistId', async () => {
+    await listPatientAppointments('patient-1', {});
+
+    expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ patientUserId: 'patient-1' }),
+      }),
+    );
+    const where = (prisma.appointment.findMany as any).mock.calls[0][0].where;
+    expect(where.psychologistId).toBeUndefined();
+  });
+
+  it('incluye el perfil del psicólogo para resolver el nombre público', async () => {
+    await listPatientAppointments('patient-1', {});
+
+    expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          psychologist: expect.objectContaining({ include: { profile: true } }),
+        }),
+      }),
+    );
+  });
+
+  it('devuelve solo campos públicos de la cita y del psicólogo', async () => {
+    const result = await listPatientAppointments('patient-1', {});
+
+    expect(result.appointments).toEqual([
+      {
+        id: 'ap-1',
+        psychologistUserId: 'psy-1',
+        psychologistName: 'Dra. Laura Gómez',
+        startsAt: '2026-02-10T10:00:00.000Z',
+        endsAt: '2026-02-10T11:00:00.000Z',
+        type: 'FOLLOW_UP',
+        status: 'CONFIRMED',
+        reason: 'Ansiedad',
+      },
+      {
+        id: 'ap-2',
+        psychologistUserId: 'psy-2',
+        psychologistName: 'Dr. Andrés Prieto',
+        startsAt: '2026-02-12T14:00:00.000Z',
+        endsAt: '2026-02-12T15:00:00.000Z',
+        type: 'FIRST_SESSION',
+        status: 'PENDING',
+        reason: 'Sin motivo especificado',
+      },
+    ]);
+  });
+
+  it('no expone datos privados del psicólogo ni del paciente', async () => {
+    const result = await listPatientAppointments('patient-1', {});
+
+    result.appointments.forEach((appointment) => {
+      expect(appointment).not.toHaveProperty('email');
+      expect(appointment).not.toHaveProperty('phone');
+      expect(appointment).not.toHaveProperty('passwordHash');
+      expect(appointment).not.toHaveProperty('twoFactorEnabled');
+      expect(appointment).not.toHaveProperty('patientNote');
+      expect(appointment).not.toHaveProperty('psyNote');
+    });
+  });
+
+  it('aplica paginación con page y limit', async () => {
+    await listPatientAppointments('patient-1', { page: 2, limit: 5 });
+
+    expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 5, take: 5 }),
+    );
+  });
+
+  it('devuelve lista vacía cuando el titular no tiene citas', async () => {
+    ;(prisma.appointment.findMany as any).mockResolvedValue([]);
+    ;(prisma.appointment.count as any).mockResolvedValue(0);
+
+    const result = await listPatientAppointments('patient-1', {});
+
+    expect(result.appointments).toEqual([]);
+    expect(result.pagination.total).toBe(0);
+    expect(result.pagination.totalPages).toBe(0);
   });
 });
