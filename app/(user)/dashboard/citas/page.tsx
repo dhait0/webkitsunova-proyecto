@@ -1,37 +1,15 @@
 import { requireUser } from '@/lib/auth/guard';
-import { listPatientAppointments } from '@/services/psy/appointments.service';
-import AppointmentsPage from '@/features/user/AppointmentsPage';
+import AppointmentsClient from '@/features/user/AppointmentsClient';
+import { getMyAppointmentsAction } from './actions';
 
-export default async function AppointmentsRoute({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    page?: string;
-    limit?: string;
-    scope?: string;
-    status?: string;
-  }>;
-}) {
+export default async function Appointments() {
   const session = await requireUser();
-  const params = await searchParams;
-
-  let data;
-  let error: string | null = null;
-
+  let appointments: Awaited<ReturnType<typeof getMyAppointmentsAction>> | null = null;
   try {
-    data = await listPatientAppointments(session.id, {
-      page: params.page ?? '1',
-      limit: params.limit ?? '10',
-      scope: params.scope ?? 'upcoming',
-      status: params.status ?? '',
-    });
-  } catch (caught) {
-    error = caught instanceof Error ? caught.message : 'No se pudieron cargar las citas';
-    data = {
-      appointments: [],
-      pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
-    };
+    appointments = await getMyAppointmentsAction({ scope: 'upcoming', page: 1, limit: 50 });
+  } catch (error) {
+    appointments = null;
   }
 
-  return <AppointmentsPage data={data} error={error} />;
+  return <AppointmentsClient session={{ ...session, status: session.status ?? 'PENDING' } as any} initialAppointments={appointments} />;
 }

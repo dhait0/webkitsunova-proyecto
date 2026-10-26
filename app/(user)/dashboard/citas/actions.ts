@@ -1,123 +1,67 @@
 'use server';
 
-import { requireUser } from '@/lib/auth/guard';
-import { prisma } from '@/lib/db/prisma';
+import { getSessionUser, requireUser } from '@/lib/auth/guard';
 import {
+  listPatientAppointments,
+  requestAppointmentByUser,
   AppointmentConflictError,
-  createAppointment,
 } from '@/services/psy/appointments.service';
-import { getPsychologistProfile } from '@/services/psy/psychologists.service';
+import { z } from 'zod';
 
-export type CreateAppointmentActionInput = {
-  psychologistId: string;
-  startsAt: string | Date;
-  durationMinutes: number;
-  type: 'FIRST_SESSION' | 'FOLLOW_UP' | 'URGENT';
-  reason?: string | null;
-};
+const requestSchema = z.object({
+  psychologistId: z.string().min(1),
+  startsAt: z.string().datetime(),
+  durationMinutes: z.coerce.number().int().min(30).max(120),
+  type: z.enum(['FIRST_SESSION', 'FOLLOW_UP', 'URGENT']).optional(),
+  reason: z.string().max(500).optional().nullable(),
+  patientNote: z.string().max(500).optional().nullable(),
+});
 
-type OkResult = {
-  ok: true;
-  appointment: {
-    id: string;
-    status: string;
-    startsAt: string;
+export async function getMyAppointmentsAction(query: Record<string, unknown> = {}) {
+  const session = await getSessionUser();
+  if (!session) throw new Error('No autenticado');
+  if (session.role !== 'USER') throw new Error('No autorizado');
+  if (session.status !== 'ACTIVE') throw new Error('Cuenta no activa');
+  return listPatientAppointments(session.id, query);
+}
+
+export async function requestAppointmentAction(formData: FormData) {
+  const session = await requireUser();
+  if (session.role !== 'USER') {
+    return { success: false, message: 'No autorizado' };
+  }
+  if (session.status !== 'ACTIVE') {
+    return { success: false, message: 'Cuenta no activa' };
+  }
+
+  const raw = {
+    psychologistId: formData.get('psychologistId'),
+    startsAt: formData.get('startsAt'),
+    durationMinutes: formData.get('durationMinutes'),
+    type: formData.get('type') || undefined,
+    reason: formData.get('reason') || null,
+    patientNote: formData.get('patientNote') || null,
   };
-};
 
-type FailResult = {
-  ok: false;
-  error: string;
-};
-
-export type CreateAppointmentActionResult = OkResult | FailResult;
-
-/**
- * Crea una reserva desde el área de Usuario.
- *
- * Reglas de seguridad (S09):
- * - El paciente se identifica exclusivamente desde la sesión autenticada
- *   (`requireUser()`); nunca se acepta un `patientId` del cliente.
- * - Se valida la elegibilidad actual del psicólogo (rol PSYCHOLOGIST,
-   status ACTIVE, psychologistProfile.isApproved = true) reutilizando
-   `getPsychologistProfile`, que solo expone campos públicos.
- * - Se valida el estado real del paciente leyéndolo de Prisma (no del
-   `ACTIVE` hardcodeado del guard).
- * - La colisión de horario se rechaza mediante el servicio existente
-   `createAppointment` (`AppointmentConflictError`).
- * - El resultado expone solo campos públicos de la cita; nunca datos
-   privados del profesional ni del paciente.
- *
- * Nota: la prevención de doble asignación se basa en la detección de
-   conflicto existente del servicio (check-then-act). No se afirma como
-   una garantía atómica sin una restricción de base de datos; esa
-   limitación se preserva sin rediseñar la aplicación.
- */
-export async function createAppointmentAction(
-  input: CreateAppointmentActionInput,
-): Promise<CreateAppointmentActionResult> {
-  let session: Awaited<ReturnType<typeof requireUser>>;
-
-  try {
-    session = await requireUser();
-  } catch {
-    return { ok: false, error: 'No autenticado' };
-  }
-
-  const patientUserId = session.id;
-
-  // Elegibilidad actual del psicólogo (solo campos públicos).
-  const psychologist = await getPsychologistProfile(input.psychologistId);
-  if (!psychologist) {
-    return {
-      ok: false,
-      error: 'El psicólogo no está disponible para reservas.',
-    };
-  }
-
-  // Estado real del paciente leído de la base de datos.
-  const patient = await prisma.user.findUnique({
-    where: { id: patientUserId },
-    select: { id: true, role: true, status: true },
-  });
-
-  if (!patient || patient.role !== 'USER') {
-    return { ok: false, error: 'Cuenta de paciente no válida.' };
-  }
-
-  if (patient.status !== 'ACTIVE') {
-    return { ok: false, error: 'La cuenta del paciente no está activa.' };
-  }
-
-  const startsAt =
-    typeof input.startsAt === 'string' ? new Date(input.startsAt) : input.startsAt;
-  const now = new Date();
-
-  if (!Number.isFinite(startsAt.getTime()) || startsAt <= now) {
-    return { ok: false, error: 'El horario solicitado no es válido.' };
+  const parsed = requestSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { success: false, message: 'Datos inválidos' };
   }
 
   try {
-    const appointment = await createAppointment(input.psychologistId, {
-      patientUserId,
-      type: input.type,
-      startsAt,
-      durationMinutes: input.durationMinutes,
-      reason: input.reason ?? null,
+    const appointment = await requestAppointmentByUser(session.id, {
+      psychologistId: parsed.data.psychologistId,
+      startsAt: new Date(parsed.data.startsAt),
+      durationMinutes: parsed.data.durationMinutes,
+      type: parsed.data.type,
+      reason: parsed.data.reason,
+      patientNote: parsed.data.patientNote,
     });
-
-    return {
-      ok: true,
-      appointment: {
-        id: appointment.id,
-        status: appointment.status,
-        startsAt: appointment.startsAt.toISOString(),
-      },
-    };
+    return { success: true, appointmentId: appointment.id };
   } catch (error) {
     if (error instanceof AppointmentConflictError) {
-      return { ok: false, error: error.message };
+      return { success: false, message: error.message };
     }
-    throw error;
+    return { success: false, message: 'No se pudo solicitar la cita' };
   }
 }
