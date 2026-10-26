@@ -1,5 +1,12 @@
-import Psychologists from '@/features/user/PsychologistsPage';
+import Psychologists from '@/features/user/PsychologistsClient';
+import { getAvailablePsychologistsAction } from './actions';
 
-export default function PsychologistsRoute() {
-  return <Psychologists />;
+export default async function PsychologistsRoute() {
+  let psychologists: Awaited<ReturnType<typeof getAvailablePsychologistsAction>> = [];
+  try {
+    psychologists = await getAvailablePsychologistsAction();
+  } catch (error) {
+    psychologists = [];
+  }
+  return <Psychologists psychologists={psychologists} />;
 }

@@ -307,6 +307,191 @@ export async function saveAppointmentNote(psychologistId: string, id: string, ps
   return updated;
 }
 
+export async function listPatientAppointments(
+  patientUserId: string,
+  query: Record<string, unknown>,
+) {
+  const { page, limit, skip } = parsePagination(query);
+  const scope = (typeof query.scope === 'string' ? query.scope : 'upcoming') as AppointmentScope;
+  const status = typeof query.status === 'string' ? query.status : '';
+  const now = new Date();
+
+  const nowBounds: Prisma.AppointmentWhereInput = {
+    ...(scope === 'today'
+      ? { startsAt: { gte: startOfTodayUtc(), lt: endOfTodayUtc() } }
+      : scope === 'upcoming'
+        ? { startsAt: { gte: now } }
+        : scope === 'past'
+          ? { startsAt: { lt: now } }
+          : {}),
+  };
+
+  const where: Prisma.AppointmentWhereInput = {
+    patientUserId,
+    ...nowBounds,
+    ...(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(status)
+      ? { status: status as 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW' }
+      : {}),
+  };
+
+  const orderBy: Prisma.AppointmentOrderByWithRelationInput =
+    scope === 'past' ? { startsAt: 'desc' } : { startsAt: 'asc' };
+
+  const [appointments, total] = await Promise.all([
+    prisma.appointment.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      include: { psychologist: { include: { profile: true } } },
+    }),
+    prisma.appointment.count({ where }),
+  ]);
+
+  return {
+    success: true as const,
+    appointments: appointments.map((appointment) => ({
+      id: appointment.id,
+      psychologistUserId: appointment.psychologistId,
+      psychologistName: fullName((appointment.psychologist as any).profile) || 'Psicólogo',
+      startsAt: appointment.startsAt.toISOString(),
+      endsAt: appointment.endsAt.toISOString(),
+      type: appointment.type,
+      status: appointment.status,
+      reason: appointment.reason ?? 'Sin motivo especificado',
+      patientNote: appointment.patientNote,
+    })),
+    pagination: buildPagination(page, limit, total),
+  };
+}
+
+export async function requestAppointmentByUser(
+  patientUserId: string,
+  input: {
+    psychologistId: string;
+    startsAt: Date;
+    durationMinutes: number;
+    type?: 'FIRST_SESSION' | 'FOLLOW_UP' | 'URGENT';
+    reason?: string | null;
+    patientNote?: string | null;
+  },
+) {
+  const patient = await prisma.user.findUnique({
+    where: { id: patientUserId },
+    select: { id: true, role: true, status: true },
+  });
+
+  if (!patient) {
+    throw new AppointmentConflictError('El paciente no existe');
+  }
+
+  if (patient.role !== 'USER') {
+    throw new AppointmentConflictError('Solo los usuarios pueden solicitar citas');
+  }
+
+  if (patient.status !== 'ACTIVE') {
+    throw new AppointmentConflictError('La cuenta del paciente no está activa');
+  }
+
+  if (input.startsAt <= new Date()) {
+    throw new AppointmentConflictError('La fecha debe ser futura');
+  }
+
+  const psychologist = await prisma.user.findUnique({
+    where: { id: input.psychologistId },
+    select: {
+      id: true,
+      role: true,
+      status: true,
+      profile: { include: { psychologistProfile: true } },
+    },
+  });
+
+  if (!psychologist || psychologist.role !== 'PSYCHOLOGIST') {
+    throw new AppointmentConflictError('El psicólogo no existe');
+  }
+
+  if (psychologist.status !== 'ACTIVE') {
+    throw new AppointmentConflictError('El psicólogo no está activo');
+  }
+
+  const psyProfile = psychologist.profile?.psychologistProfile;
+  if (!psyProfile?.isApproved || !psyProfile?.isVerified) {
+    throw new AppointmentConflictError('El psicólogo no está aprobado para recibir citas');
+  }
+
+  // Validate against availability slots if they exist
+  const profileId = psychologist.profile?.id;
+  if (profileId) {
+    const weekday = ((input.startsAt.getDay() + 6) % 7) + 1; // convert Sunday=0 to Monday=1
+    const startMinutes = input.startsAt.getHours() * 60 + input.startsAt.getMinutes();
+    const endMinutes = startMinutes + input.durationMinutes;
+
+    const availability = await prisma.availabilitySlot.findFirst({
+      where: {
+        profileId,
+        weekday,
+        startMinutes: { lte: startMinutes },
+        endMinutes: { gte: endMinutes },
+      },
+    });
+
+    if (!availability) {
+      throw new AppointmentConflictError('El horario seleccionado no está dentro de la disponibilidad del psicólogo');
+    }
+  }
+
+  const conflict = await prisma.appointment.findFirst({
+    where: {
+      psychologistId: input.psychologistId,
+      status: { in: ['PENDING', 'CONFIRMED'] },
+      startsAt: { lt: endsAt(input.startsAt, input.durationMinutes) },
+      endsAt: { gt: input.startsAt },
+    },
+    select: { id: true },
+  });
+
+  if (conflict) {
+    throw new AppointmentConflictError('El horario ya está ocupado');
+  }
+
+  const appointment = await prisma.appointment.create({
+    data: {
+      psychologistId: input.psychologistId,
+      patientUserId,
+      type: input.type ?? 'FIRST_SESSION',
+      status: 'PENDING',
+      startsAt: input.startsAt,
+      endsAt: endsAt(input.startsAt, input.durationMinutes),
+      reason: input.reason ?? null,
+      patientNote: input.patientNote ?? null,
+    },
+  });
+
+  // Apply patient link rules same as createAppointment
+  await closeOtherActiveLinks(input.psychologistId, patientUserId);
+  await ensurePatientLink(input.psychologistId, patientUserId);
+  await recalculatePatientsCount(input.psychologistId);
+
+  await createNotification({
+    userId: input.psychologistId,
+    kind: 'appointment',
+    title: 'Nueva solicitud de cita',
+    body: `Tienes una nueva solicitud de cita pendiente de confirmación.`,
+    link: '/psy/citas',
+  });
+
+  await createNotification({
+    userId: patientUserId,
+    kind: 'appointment',
+    title: 'Solicitud enviada',
+    body: `Tu solicitud de cita ha sido enviada y está pendiente de confirmación.`,
+    link: '/dashboard/citas',
+  });
+
+  return appointment;
+}
+
 export async function createPatientReport(
   psychologistId: string,
   input: { patientUserId: string; appointmentId?: string | null; summary: string; moodScore?: number | null },
