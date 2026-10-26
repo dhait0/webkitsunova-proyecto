@@ -22,7 +22,7 @@ export function toAppRole(role: string | undefined | null): AppRole {
 /**
  * Reads the role off a Supabase user, defaulting to `USER`.
  *
- * `app_metadata` is the only source of truth (see agents.md §22): `user.role`
+ * `app_metadata` is the only source of truth (see AGENTS.md §22): `user.role`
  * holds Supabase's own auth role ('authenticated', 'anon') and must never grant
  * an area.
  */
@@ -67,7 +67,7 @@ export function availableViews(role: string | undefined | null): AppView[] {
 
 /**
  * Reads the role from a Supabase user. `app_metadata.role` is the only source of
- * truth (see agents.md §22); `user.role` holds the Supabase auth role and must be
+ * truth (see AGENTS.md §22); `user.role` holds the Supabase auth role and must be
  * ignored.
  */
 export function roleFromSupabaseUser(
