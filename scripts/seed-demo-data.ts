@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { PrismaClient, Role, AccountStatus, AppointmentType, AppointmentStatus } from '@prisma/client';
+import { PrismaClient, Role, AccountStatus, AppointmentType, AppointmentStatus, PatientLinkStatus } from '@prisma/client';
 
 const isProd = process.env.NODE_ENV === 'production' || process.env.DEMO_SEED_PROD === 'true';
 const allow = process.env.ALLOW_DEMO_SEED === 'true';
@@ -63,7 +63,6 @@ async function ensureAuthUser(email: string, role: Role) {
 }
 
 async function main() {
-  // Never create or modify admin
   const admin = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } });
   if (admin) {
     console.log('Preserving existing ADMIN:', admin.email);
@@ -72,6 +71,7 @@ async function main() {
   }
 
   const psyIds: string[] = [];
+  const psyProfiles: string[] = [];
   for (const p of PSYS) {
     const uid = await ensureAuthUser(p.email, Role.PSYCHOLOGIST);
     const user = await prisma.user.upsert({
@@ -93,11 +93,30 @@ async function main() {
     });
     const profile = await prisma.profile.findUnique({ where: { userId: user.id } });
     if (profile) {
+      psyProfiles.push(profile.id);
       await prisma.psychologistProfile.upsert({
         where: { profileId: profile.id },
         create: { profileId: profile.id, isApproved: true, approvedAt: new Date(), specialties: p.spec },
         update: { isApproved: true, approvedAt: new Date(), specialties: p.spec },
       });
+      // Availability Mon-Fri 09:00-17:00 (slots in minutes)
+      const slots = [
+        { weekday: 1, start: 540, end: 1020 },
+        { weekday: 2, start: 540, end: 1020 },
+        { weekday: 3, start: 540, end: 1020 },
+        { weekday: 4, start: 540, end: 1020 },
+        { weekday: 5, start: 540, end: 1020 },
+      ];
+      for (const s of slots) {
+        const existing = await prisma.availabilitySlot.findFirst({
+          where: { profileId: profile.id, weekday: s.weekday, startMinutes: s.start, endMinutes: s.end },
+        });
+        if (!existing) {
+          await prisma.availabilitySlot.create({
+            data: { profileId: profile.id, weekday: s.weekday, startMinutes: s.start, endMinutes: s.end },
+          });
+        }
+      }
     }
     psyIds.push(user.id);
   }
@@ -125,21 +144,24 @@ async function main() {
     userIds.push(user.id);
   }
 
-  for (let i = 0; i < Math.min(6, userIds.length, psyIds.length); i++) {
+  // Links and appointments
+  for (let i = 0; i < Math.min(8, userIds.length, psyIds.length); i++) {
     try {
       await prisma.psyPatient.upsert({
-        where: { id: `demo-link-${i}` },
-        create: { id: `demo-link-${i}`, psychologistId: psyIds[i % psyIds.length], patientUserId: userIds[i], status: 'ACTIVE', startedAt: new Date() },
+        where: { psychologistId_patientUserId: { psychologistId: psyIds[i % psyIds.length], patientUserId: userIds[i] } },
+        create: { psychologistId: psyIds[i % psyIds.length], patientUserId: userIds[i], status: PatientLinkStatus.ACTIVE, startedAt: new Date() },
         update: {},
       });
-    } catch {}
+    } catch (e) {
+      // ignore if constraint differs
+    }
     try {
       await prisma.appointment.create({
         data: {
           psychologistId: psyIds[i % psyIds.length],
           patientUserId: userIds[i],
           type: AppointmentType.FIRST_SESSION,
-          status: AppointmentStatus.CONFIRMED,
+          status: i < 4 ? AppointmentStatus.CONFIRMED : AppointmentStatus.PENDING,
           startsAt: new Date(Date.now() + i * 86400000),
           endsAt: new Date(Date.now() + i * 86400000 + 3600000),
           reason: 'Consulta de demostración',
@@ -148,8 +170,40 @@ async function main() {
     } catch {}
   }
 
+  // Conversations
+  for (let i = 0; i < Math.min(4, userIds.length, psyIds.length); i++) {
+    try {
+      const conv = await prisma.conversation.create({
+        data: {
+          isGroup: false,
+          createdById: userIds[i],
+          members: {
+            create: [
+              { userId: userIds[i], role: Role.USER },
+              { userId: psyIds[i % psyIds.length], role: Role.PSYCHOLOGIST },
+            ],
+          },
+        },
+      });
+      await prisma.message.create({
+        data: {
+          conversationId: conv.id,
+          senderId: userIds[i],
+          body: 'Hola, me gustaría agendar una consulta de demostración.',
+        },
+      });
+      await prisma.message.create({
+        data: {
+          conversationId: conv.id,
+          senderId: psyIds[i % psyIds.length],
+          body: 'Hola, con gusto te ayudo. ¿Qué día prefieres?',
+        },
+      });
+    } catch {}
+  }
+
   console.log('Demo data ready');
-  console.log(`Psychologists: ${psyIds.length}, Users: ${userIds.length}`);
+  console.log(`Psychologists: ${psyIds.length}, Users: ${userIds.length}, Availability slots added, Links/Appointments/Conversations/Messages created`);
 }
 
 main()
