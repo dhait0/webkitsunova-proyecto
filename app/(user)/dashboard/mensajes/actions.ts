@@ -39,7 +39,7 @@ export async function getConversationsAction(query: Record<string, unknown>) {
   try {
     session = await requireUser();
   } catch {
-    return { success: false, error: 'No autenticado', conversations: [] };
+    return { success: false as const, error: 'No autenticado', conversations: [] };
   }
 
   return listConversations(session.id, query);
@@ -51,7 +51,7 @@ export async function getMessagesAction(conversationId: string) {
   try {
     session = await requireUser();
   } catch {
-    return { success: false, error: 'No autenticado', messages: [] };
+    return { success: false as const, error: 'No autenticado', messages: [] };
   }
 
   return listMessages(session.id, conversationId);
