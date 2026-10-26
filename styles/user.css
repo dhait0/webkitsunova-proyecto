@@ -1244,6 +1244,59 @@
   }
 }
 
+/* Paginación de catálogo */
+
+.user-pagination {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.user-pagination-info {
+  font-size: 0.8125rem;
+  color: var(--user-text-muted);
+}
+
+.user-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.user-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--user-r-control);
+  border: 1px solid var(--user-hairline);
+  background: transparent;
+  color: var(--user-text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background-color 0.2s var(--user-ease), border-color 0.2s var(--user-ease), color 0.2s var(--user-ease);
+}
+
+.user-pagination-btn:hover:not([aria-current='page']) {
+  background: rgba(124, 108, 255, 0.1);
+  border-color: var(--user-hairline-hot);
+  color: var(--user-text);
+}
+
+.user-pagination-btn--active {
+  background: var(--user-accent);
+  border-color: var(--user-accent);
+  color: var(--user-ground-2);
+}
+
+.user-pagination-btn[aria-current='page'] {
+  pointer-events: none;
+}
+
 /* ---------- Motion ---------- */
 
 .user-raise {

@@ -1,41 +1,91 @@
-import { requireUser } from '@/lib/auth/guard';
-import { dashboardPsychologistCards } from '@/content/siteContent';
+import Link from 'next/link';
+import type { ListEligiblePsychologistsResult } from '@/services/psy/psychologists.service';
 
-export default async function Psychologists() {
-  const session = await requireUser();
+type Props = {
+  data: ListEligiblePsychologistsResult;
+  error: string | null;
+};
+
+export default function PsychologistsPage({ data, error }: Props) {
+  const { psychologists, pagination } = data;
+
+  if (error) {
+    return (
+      <section className="user-page">
+        <div className="user-page-head">
+          <div className="user-page-head-copy">
+            <span className="user-eyebrow">Psicólogos</span>
+            <h2 className="user-headline">Red clínica visible para elegir apoyo con criterio.</h2>
+          </div>
+        </div>
+        <div className="user-card user-raise" role="alert">
+          <p>{error}</p>
+          <div>
+            <Link
+              href="/dashboard/psicologos"
+              className="user-btn user-btn--primary"
+              type="button"
+              prefetch={false}
+            >
+              Reintentar
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (psychologists.length === 0) {
+    return (
+      <section className="user-page">
+        <div className="user-page-head">
+          <div className="user-page-head-copy">
+            <span className="user-eyebrow">Psicólogos</span>
+            <h2 className="user-headline">Red clínica visible para elegir apoyo con criterio.</h2>
+          </div>
+        </div>
+        <div className="user-card user-raise">
+          <p>
+            No se encontraron psicólogos disponibles en este momento. Inténtalo de nuevo más tarde.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="user-page">
       <div className="user-page-head">
         <div className="user-page-head-copy">
-          <div className="user-example">
-            <span className="user-eyebrow">Psicólogos</span>
-            <span className="user-example-stamp">Ejemplo</span>
-          </div>
+          <span className="user-eyebrow">Psicólogos</span>
           <h2 className="user-headline">Red clínica visible para elegir apoyo con criterio.</h2>
           <p className="user-lede">
-            Tu cuenta tiene acceso a profesionales que pueden tomar el relevo
-            cuando el proceso necesite acompañamiento humano.
+            Profesionales disponibles para acompañamiento cuando el proceso lo requiera.
           </p>
-        </div>
-
-        <div className="user-page-head-meta">
-          <div className="user-chip">
-            <strong>{session.role}</strong>
-            <span>Acceso a red especializada</span>
-          </div>
         </div>
       </div>
 
       <div className="user-grid">
-        {dashboardPsychologistCards.map((psychologist) => (
-          <article key={psychologist.name} className="user-card user-card-stack user-raise">
+        {psychologists.map((psychologist) => (
+          <article key={psychologist.id} className="user-card user-card-stack user-raise">
             <div className="user-panel-head">
-              <span className="user-eyebrow">{psychologist.specialty}</span>
+              {psychologist.specialties.length > 0 ? (
+                <span className="user-eyebrow">{psychologist.specialties.join(', ')}</span>
+              ) : null}
               <h2 className="user-title">{psychologist.name}</h2>
             </div>
-            <span className="user-pill">{psychologist.mode}</span>
-            <p>{psychologist.availability}</p>
+            {psychologist.bio ? <p>{psychologist.bio}</p> : null}
+            {psychologist.sessionPrice != null ? (
+              <span className="user-pill">
+                {psychologist.sessionPrice.toLocaleString('es-CO')} {psychologist.currency} / sesión
+              </span>
+            ) : null}
+            {psychologist.isVerified ? (
+              <span className="user-pill user-pill--ok">Verificado</span>
+            ) : null}
+            {psychologist.isAcceptingNew ? (
+              <span className="user-pill user-pill--ok">Aceptando pacientes</span>
+            ) : null}
             <div>
               <button className="user-btn user-btn--quiet" type="button">
                 Ver perfil
@@ -45,10 +95,44 @@ export default async function Psychologists() {
         ))}
       </div>
 
-      <p className="user-example-note">
-        Esta vista muestra datos ilustrativos mientras el módulo de usuario
-        conecta con su API.
-      </p>
+      {pagination.totalPages > 1 && (
+        <nav className="user-pagination" aria-label="Paginación de psicólogos">
+          <span className="user-pagination-info">
+            Mostrando página {pagination.page} de {pagination.totalPages} ({pagination.total} profesionales)
+          </span>
+          <div className="user-pagination-controls">
+            {pagination.page > 1 && (
+              <Link
+                href={`/dashboard/psicologos?page=${pagination.page - 1}&limit=${pagination.limit}`}
+                className="user-btn user-btn--quiet"
+                aria-label="Página anterior"
+              >
+                Anterior
+              </Link>
+            )}
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
+              <Link
+                key={p}
+                href={`/dashboard/psicologos?page=${p}&limit=${pagination.limit}`}
+                className={`user-pagination-btn${p === pagination.page ? ' user-pagination-btn--active' : ''}`}
+                aria-current={p === pagination.page ? 'page' : undefined}
+                aria-label={`Ir a la página ${p}`}
+              >
+                {p}
+              </Link>
+            ))}
+            {pagination.page < pagination.totalPages && (
+              <Link
+                href={`/dashboard/psicologos?page=${pagination.page + 1}&limit=${pagination.limit}`}
+                className="user-btn user-btn--quiet"
+                aria-label="Página siguiente"
+              >
+                Siguiente
+              </Link>
+            )}
+          </div>
+        </nav>
+      )}
     </section>
   );
 }
