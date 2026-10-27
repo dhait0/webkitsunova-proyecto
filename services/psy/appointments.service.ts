@@ -370,6 +370,142 @@ export async function saveAppointmentNote(psychologistId: string, id: string, ps
   return updated;
 }
 
+export async function requestAppointmentByUser(
+  patientUserId: string,
+  input: {
+    psychologistId: string;
+    startsAt: Date;
+    durationMinutes: number;
+    type?: 'FIRST_SESSION' | 'FOLLOW_UP' | 'URGENT';
+    reason?: string | null;
+    patientNote?: string | null;
+  },
+) {
+  const patient = await prisma.user.findUnique({
+    where: { id: patientUserId },
+    select: { id: true, role: true, status: true },
+  });
+
+  if (!patient) {
+    throw new AppointmentConflictError('El paciente no existe');
+  }
+
+  if (patient.role !== 'USER') {
+    throw new AppointmentConflictError('Solo los usuarios pueden solicitar citas');
+  }
+
+  if (patient.status !== 'ACTIVE') {
+    throw new AppointmentConflictError('La cuenta del paciente no está activa');
+  }
+
+  if (input.startsAt <= new Date()) {
+    throw new AppointmentConflictError('La fecha debe ser futura');
+  }
+
+  const psychologist = await prisma.user.findUnique({
+    where: { id: input.psychologistId },
+    select: {
+      id: true,
+      role: true,
+      status: true,
+      profile: { include: { psychologistProfile: true } },
+    },
+  });
+
+  if (!psychologist || psychologist.role !== 'PSYCHOLOGIST') {
+    throw new AppointmentConflictError('El psicólogo no existe');
+  }
+
+  if (psychologist.status !== 'ACTIVE') {
+    throw new AppointmentConflictError('El psicólogo no está activo');
+  }
+
+  const psyProfile = psychologist.profile?.psychologistProfile;
+  if (!psyProfile?.isApproved || !psyProfile?.isVerified) {
+    throw new AppointmentConflictError('El psicólogo no está aprobado para recibir citas');
+  }
+
+  const profileId = psychologist.profile?.id;
+  if (profileId) {
+    const weekday = ((input.startsAt.getDay() + 6) % 7) + 1;
+    const startMinutes = input.startsAt.getHours() * 60 + input.startsAt.getMinutes();
+    const endMinutes = startMinutes + input.durationMinutes;
+
+    const availability = await prisma.availabilitySlot.findFirst({
+      where: {
+        profileId,
+        weekday,
+        startMinutes: { lte: startMinutes },
+        endMinutes: { gte: endMinutes },
+      },
+    });
+
+    if (!availability) {
+      throw new AppointmentConflictError('El horario seleccionado no está dentro de la disponibilidad del psicólogo');
+    }
+  }
+
+  try {
+    const appointment = await prisma.$transaction(async (tx: any) => {
+      const conflict = await tx.appointment.findFirst({
+        where: {
+          psychologistId: input.psychologistId,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+          startsAt: { lt: endsAt(input.startsAt, input.durationMinutes) },
+          endsAt: { gt: input.startsAt },
+        },
+        select: { id: true },
+      });
+
+      if (conflict) {
+        throw new AppointmentConflictError('El horario ya está ocupado');
+      }
+
+      const created = await tx.appointment.create({
+        data: {
+          psychologistId: input.psychologistId,
+          patientUserId,
+          type: input.type ?? 'FIRST_SESSION',
+          status: 'PENDING',
+          startsAt: input.startsAt,
+          endsAt: endsAt(input.startsAt, input.durationMinutes),
+          reason: input.reason ?? null,
+          patientNote: input.patientNote ?? null,
+        },
+      });
+
+      return created;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    await closeOtherActiveLinks(input.psychologistId, patientUserId);
+    await ensurePatientLink(input.psychologistId, patientUserId);
+    await recalculatePatientsCount(input.psychologistId);
+
+    await createNotification({
+      userId: input.psychologistId,
+      kind: 'appointment',
+      title: 'Nueva solicitud de cita',
+      body: `Tienes una nueva solicitud de cita pendiente de confirmación.`,
+      link: '/psy/citas',
+    });
+
+    await createNotification({
+      userId: patientUserId,
+      kind: 'appointment',
+      title: 'Solicitud enviada',
+      body: `Tu solicitud de cita ha sido enviada y está pendiente de confirmación.`,
+      link: '/dashboard/citas',
+    });
+
+    return appointment;
+  } catch (error: any) {
+    if (error?.code === 'P2034') {
+      throw new AppointmentConflictError('El horario ya está ocupado o fue reservado recientemente');
+    }
+    throw error;
+  }
+}
+
 export async function createPatientReport(
   psychologistId: string,
   input: { patientUserId: string; appointmentId?: string | null; summary: string; moodScore?: number | null },
