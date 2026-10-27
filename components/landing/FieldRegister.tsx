@@ -110,25 +110,32 @@ export function FieldRegister({ initialMode = 'register', onSuccess, redirectTo 
         {isRegister && (
           <>
             <div className="kb-field">
-              <span>Tipo de cuenta</span>
-              <div className="kb-modes" role="radiogroup" aria-label="Tipo de cuenta">
+              <span>Tipo de cuenta *</span>
+              <div className="kb-modes" role="radiogroup" aria-label="Selecciona el tipo de cuenta">
                 <button
                   type="button"
                   role="radio"
                   aria-checked={(formData.role || 'USER') === 'USER'}
                   onClick={() => setFormData((prev: any) => ({ ...prev, role: 'USER' }))}
+                  className={(formData.role || 'USER') === 'USER' ? 'is-active' : ''}
                 >
-                  Usuario
+                  Soy usuario
                 </button>
                 <button
                   type="button"
                   role="radio"
                   aria-checked={formData.role === 'PSYCHOLOGIST'}
                   onClick={() => setFormData((prev: any) => ({ ...prev, role: 'PSYCHOLOGIST' }))}
+                  className={formData.role === 'PSYCHOLOGIST' ? 'is-active' : ''}
                 >
-                  Psicólogo
+                  Soy psicólogo
                 </button>
               </div>
+              {formData.role === 'PSYCHOLOGIST' && (
+                <p className="kb-note" style={{marginTop: '0.5rem'}}>
+                  Los psicólogos requieren aprobación administrativa antes de poder atender pacientes.
+                </p>
+              )}
             </div>
             <label className="kb-field">
               <span>Nombre de usuario</span>
