@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { createHabitAction, deleteHabitAction, registerHabitProgressAction } from '@/app/(user)/dashboard/habitos/actions';
 
 type UserHabit = {
   id: string;
@@ -28,11 +27,16 @@ export default function HabitsPage({ data, error }: Props) {
   const handleCreate = (formData: FormData) => {
     setMessage(null);
     startTransition(async () => {
-      const result = await createHabitAction(formData);
-      if (result.success) {
-        setMessage('Hábito creado');
-      } else {
-        setMessage(result.message || 'Error');
+      try {
+        const { createHabitAction } = await import('@/app/(user)/dashboard/habitos/actions');
+        const result = await createHabitAction(formData);
+        if (result.success) {
+          setMessage('Hábito creado');
+        } else {
+          setMessage(result.message || 'Error');
+        }
+      } catch (e) {
+        setMessage('Error');
       }
     });
   };
@@ -43,9 +47,14 @@ export default function HabitsPage({ data, error }: Props) {
     formData.append('habitId', habitId);
     formData.append('delta', '10');
     startTransition(async () => {
-      const result = await registerHabitProgressAction(formData);
-      if (!result.success && result.message) {
-        setMessage(result.message);
+      try {
+        const { registerHabitProgressAction } = await import('@/app/(user)/dashboard/habitos/actions');
+        const result = await registerHabitProgressAction(formData);
+        if (!result.success && result.message) {
+          setMessage(result.message);
+        }
+      } catch (e) {
+        // ignore
       }
     });
   };
@@ -55,9 +64,14 @@ export default function HabitsPage({ data, error }: Props) {
     const formData = new FormData();
     formData.append('habitId', habitId);
     startTransition(async () => {
-      const result = await deleteHabitAction(formData);
-      if (!result.success && result.message) {
-        setMessage(result.message);
+      try {
+        const { deleteHabitAction } = await import('@/app/(user)/dashboard/habitos/actions');
+        const result = await deleteHabitAction(formData);
+        if (!result.success && result.message) {
+          setMessage(result.message);
+        }
+      } catch (e) {
+        // ignore
       }
     });
   };

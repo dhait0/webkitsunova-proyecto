@@ -1,9 +1,4 @@
-'use client';
-
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import type { PsychologistProfilePublic } from '@/services/psy/psychologists.service';
-import { startConversationFromPsychologistAction } from '@/app/(user)/dashboard/mensajes/actions';
 
 type Props = {
   profile: PsychologistProfilePublic | null;
@@ -11,10 +6,6 @@ type Props = {
 };
 
 export default function PsychologistProfilePage({ profile, error }: Props) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
-
   if (error) {
     return (
       <section className="user-page">
@@ -50,18 +41,6 @@ export default function PsychologistProfilePage({ profile, error }: Props) {
     );
   }
 
-  const handleStartChat = () => {
-    setMessage(null);
-    startTransition(async () => {
-      const result = await startConversationFromPsychologistAction(profile.id);
-      if (result.success) {
-        router.push(`/dashboard/chats?conversationId=${result.conversationId}`);
-      } else {
-        setMessage(result.error);
-      }
-    });
-  };
-
   return (
     <section className="user-page">
       <div className="user-page-head">
@@ -85,27 +64,6 @@ export default function PsychologistProfilePage({ profile, error }: Props) {
             <span className="user-pill user-pill--ok">Aceptando pacientes</span>
           ) : null}
         </div>
-      </div>
-
-      <div className="user-card user-raise">
-        <div className="user-panel-head">
-          <span className="user-eyebrow">Contacto</span>
-          <h2 className="user-title">Iniciar conversación</h2>
-        </div>
-        <div className="user-actions">
-          <button
-            className="user-btn user-btn--primary"
-            onClick={handleStartChat}
-            disabled={isPending}
-          >
-            {isPending ? 'Iniciando...' : 'Enviar mensaje'}
-          </button>
-        </div>
-        {message ? (
-          <p className="user-hint" role="alert">
-            {message}
-          </p>
-        ) : null}
       </div>
 
       <div className="user-card user-raise">
