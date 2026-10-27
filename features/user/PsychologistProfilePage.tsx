@@ -5,10 +5,7 @@ type Props = {
   error: string | null;
 };
 
-export default function PsychologistProfilePage({
-  profile,
-  error,
-}: Props) {
+export default function PsychologistProfilePage({ profile, error }: Props) {
   if (error) {
     return (
       <section className="user-page">

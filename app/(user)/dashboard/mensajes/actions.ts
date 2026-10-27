@@ -92,3 +92,38 @@ export async function sendMessageAction(
 
   return { ok: true };
 }
+
+
+export async function startConversationFromPsychologistAction(psychologistUserId: string) {
+  let session: Awaited<ReturnType<typeof requireUser>>;
+
+  try {
+    session = await requireUser();
+  } catch {
+    return { success: false as const, error: 'No autenticado' };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.id },
+    select: { id: true, role: true, status: true },
+  });
+
+  if (!user || user.role !== 'USER') {
+    return { success: false as const, error: 'Cuenta de usuario no válida.' };
+  }
+
+  if (user.status !== 'ACTIVE') {
+    return { success: false as const, error: 'La cuenta de usuario no está activa.' };
+  }
+
+  try {
+    const { startDirectConversation } = await import('@/services/psy/messaging.service');
+    const conversation = await startDirectConversation(session.id, psychologistUserId);
+    return { success: true as const, conversationId: conversation.id };
+  } catch (error) {
+    if (error instanceof Error) {
+      return { success: false as const, error: error.message };
+    }
+    return { success: false as const, error: 'No se pudo iniciar la conversación' };
+  }
+}
