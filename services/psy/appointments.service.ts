@@ -403,3 +403,105 @@ export async function createPatientReport(
 
   return report;
 }
+
+
+export type AppointmentRequestInput = {
+  psychologistId: string;
+  startsAt: Date;
+  durationMinutes: number;
+  type?: 'FIRST_SESSION' | 'FOLLOW_UP' | 'URGENT';
+  reason?: string | null;
+  patientNote?: string | null;
+};
+
+export async function requestAppointmentByUser(
+  patientUserId: string,
+  input: AppointmentRequestInput,
+) {
+  try {
+    const appointment = await prisma.$transaction(
+      async (tx) => {
+        const patient = await tx.user.findUnique({
+          where: { id: patientUserId },
+          select: { id: true, role: true, status: true },
+        });
+
+        if (!patient || patient.role !== 'USER') {
+          throw new AppointmentConflictError('Usuario no válido');
+        }
+
+        if (patient.status !== 'ACTIVE') {
+          throw new AppointmentConflictError('La cuenta del usuario no está activa');
+        }
+
+        const psychologist = await tx.user.findFirst({
+          where: {
+            id: input.psychologistId,
+            role: 'PSYCHOLOGIST',
+            status: 'ACTIVE',
+            profile: { psychologistProfile: { isApproved: true, isAcceptingNew: true } },
+          },
+          select: { id: true },
+        });
+
+        if (!psychologist) {
+          throw new AppointmentConflictError('El psicólogo no está disponible para nuevas solicitudes');
+        }
+
+        const conflict = await tx.appointment.findFirst({
+          where: {
+            psychologistId: input.psychologistId,
+            status: { in: ['PENDING', 'CONFIRMED'] },
+            startsAt: { lt: endsAt(input.startsAt, input.durationMinutes) },
+            endsAt: { gt: input.startsAt },
+          },
+          select: { id: true },
+        });
+
+        if (conflict) {
+          throw new AppointmentConflictError('El horario ya está ocupado');
+        }
+
+        const appointment = await tx.appointment.create({
+          data: {
+            psychologistId: input.psychologistId,
+            patientUserId,
+            type: input.type ?? 'FIRST_SESSION',
+            status: 'PENDING',
+            startsAt: input.startsAt,
+            endsAt: endsAt(input.startsAt, input.durationMinutes),
+            reason: input.reason ?? null,
+            patientNote: input.patientNote ?? null,
+          },
+        });
+
+        await createNotification({
+          userId: input.psychologistId,
+          kind: 'appointment',
+          title: 'Nueva solicitud de cita',
+          body: `Tienes una nueva solicitud de cita pendiente de confirmación.`,
+          link: '/psy/citas',
+        });
+
+        await createNotification({
+          userId: patientUserId,
+          kind: 'appointment',
+          title: 'Solicitud enviada',
+          body: `Tu solicitud de cita ha sido enviada y está pendiente de confirmación.`,
+          link: '/dashboard/citas',
+        });
+
+        return appointment;
+      },
+      {
+        isolationLevel: 'Serializable' as any,
+      },
+    );
+    return appointment;
+  } catch (error: any) {
+    if (error?.code === 'P2034') {
+      throw new AppointmentConflictError('El horario ya está ocupado o fue reservado recientemente');
+    }
+    throw error;
+  }
+}
