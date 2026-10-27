@@ -10,7 +10,7 @@ export type AuthMode = 'login' | 'register';
 
 export type AuthSuccessHandler = (mode: AuthMode, session: Session) => void;
 
-const emptyForm = { email: '', password: '', confirmPassword: '', username: '' };
+const emptyForm = { email: '', password: '', confirmPassword: '', username: '', role: 'USER' as 'USER' | 'PSYCHOLOGIST' };
 
 export function useAuthForm(initialMode: AuthMode, options?: { onSuccess?: AuthSuccessHandler; redirectTo?: string }) {
   const router = useRouter();
@@ -74,6 +74,7 @@ export function useAuthForm(initialMode: AuthMode, options?: { onSuccess?: AuthS
           email: formData.email,
           password: formData.password,
           username: formData.username || undefined,
+          role: formData.role,
         });
 
         if (!result.success) {
@@ -135,6 +136,7 @@ export function useAuthForm(initialMode: AuthMode, options?: { onSuccess?: AuthS
     changeMode,
     handleChange,
     handleSubmit,
-    handleGoogleAuth
+    handleGoogleAuth,
+    setFormData,
   };
 }

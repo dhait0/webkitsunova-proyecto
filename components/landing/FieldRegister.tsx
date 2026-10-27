@@ -73,8 +73,9 @@ export function FieldRegister({ initialMode = 'register', onSuccess, redirectTo 
     changeMode,
     handleChange,
     handleSubmit,
-    handleGoogleAuth
-  } = useAuthForm(initialMode, { onSuccess, redirectTo });
+    handleGoogleAuth,
+    setFormData,
+  } = useAuthForm(initialMode, { onSuccess, redirectTo }) as any;
 
   return (
     <section id="registro" className="kb-register" aria-labelledby="registro-titulo">
@@ -107,18 +108,41 @@ export function FieldRegister({ initialMode = 'register', onSuccess, redirectTo 
         </label>
 
         {isRegister && (
-          <label className="kb-field">
-            <span>Nombre de usuario</span>
-            <input
-              type="text"
-              name="username"
-              autoComplete="username"
-              placeholder="tu_usuario"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
-          </label>
+          <>
+            <div className="kb-field">
+              <span>Tipo de cuenta</span>
+              <div className="kb-modes" role="radiogroup" aria-label="Tipo de cuenta">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={(formData.role || 'USER') === 'USER'}
+                  onClick={() => setFormData((prev: any) => ({ ...prev, role: 'USER' }))}
+                >
+                  Usuario
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={formData.role === 'PSYCHOLOGIST'}
+                  onClick={() => setFormData((prev: any) => ({ ...prev, role: 'PSYCHOLOGIST' }))}
+                >
+                  Psicólogo
+                </button>
+              </div>
+            </div>
+            <label className="kb-field">
+              <span>Nombre de usuario</span>
+              <input
+                type="text"
+                name="username"
+                autoComplete="username"
+                placeholder="tu_usuario"
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
+            </label>
+          </>
         )}
 
         <div className="kb-field">
