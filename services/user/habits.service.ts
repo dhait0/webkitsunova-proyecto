@@ -45,3 +45,65 @@ export async function listUserHabits(userId: string): Promise<{
     };
   }
 }
+
+export async function createHabit(userId: string, input: { title: string; description?: string | null }) {
+  if (!input.title || input.title.trim().length === 0) {
+    throw new Error('El título es obligatorio');
+  }
+  const habit = await prisma.habit.create({
+    data: {
+      userId,
+      title: input.title.trim(),
+      description: input.description?.trim() || null,
+      progress: 0,
+      status: 'active',
+    },
+  });
+  return habit;
+}
+
+export async function updateHabit(userId: string, habitId: string, input: { title?: string; description?: string | null; status?: string }) {
+  const existing = await prisma.habit.findFirst({
+    where: { id: habitId, userId },
+  });
+  if (!existing) {
+    throw new Error('Hábito no encontrado');
+  }
+  const habit = await prisma.habit.update({
+    where: { id: habitId },
+    data: {
+      title: input.title?.trim(),
+      description: input.description === undefined ? undefined : input.description?.trim() || null,
+      status: input.status,
+    },
+  });
+  return habit;
+}
+
+export async function registerHabitProgress(userId: string, habitId: string, delta: number = 10) {
+  const existing = await prisma.habit.findFirst({
+    where: { id: habitId, userId },
+  });
+  if (!existing) {
+    throw new Error('Hábito no encontrado');
+  }
+  const progress = Math.min(100, Math.max(0, (existing.progress || 0) + delta));
+  const habit = await prisma.habit.update({
+    where: { id: habitId },
+    data: { progress, updatedAt: new Date() },
+  });
+  return habit;
+}
+
+export async function deleteHabit(userId: string, habitId: string) {
+  const existing = await prisma.habit.findFirst({
+    where: { id: habitId, userId },
+  });
+  if (!existing) {
+    throw new Error('Hábito no encontrado');
+  }
+  await prisma.habit.delete({
+    where: { id: habitId },
+  });
+  return { success: true };
+}
