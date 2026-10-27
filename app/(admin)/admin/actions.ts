@@ -382,6 +382,31 @@ export async function approvePsychologist(
   return { success: true, message: 'Psicólogo aprobado correctamente' };
 }
 
+export async function rejectPsychologist(
+  psyId: string
+): Promise<{ success: boolean; message: string }> {
+  const session = await authorize(['ADMIN']);
+  if (!session) {
+    return { success: false, message: 'No autorizado' };
+  }
+
+  const profile = await prisma.psychologistProfile.findUnique({
+    where: { id: psyId },
+    select: { profileId: true },
+  });
+
+  if (!profile) {
+    return { success: false, message: 'Psicólogo no encontrado' };
+  }
+
+  await prisma.psychologistProfile.update({
+    where: { id: psyId },
+    data: { isApproved: false, isVerified: false },
+  });
+
+  return { success: true, message: 'Solicitud de psicólogo rechazada' };
+}
+
 export type AdminUserUpdatePayload = {
   email?: string;
   username?: string | null;

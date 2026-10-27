@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import {
   getPsychologists,
   approvePsychologist,
+  rejectPsychologist,
   updatePsychologistProfile,
   type AdminPsychologist,
   type AdminPsychologistsResponse,
@@ -87,9 +88,28 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
       if (res.success) {
         updateRow(psy.id, { verified: true, status: 'activo' });
         toasts.success(psy.verified ? 'Verificación renovada' : 'Psicólogo aprobado correctamente');
+      } else if (res.message) {
+        toasts.error(res.message);
       }
     } catch (err) {
       toasts.error((err as Error).message || 'Error al aprobar psicólogo');
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  async function handleReject(psy: AdminPsychologist) {
+    setPendingId(psy.id);
+    try {
+      const res = await rejectPsychologist(psy.id);
+      if (res.success) {
+        updateRow(psy.id, { verified: false, status: 'pendiente' });
+        toasts.success('Solicitud de psicólogo rechazada');
+      } else if (res.message) {
+        toasts.error(res.message);
+      }
+    } catch (err) {
+      toasts.error((err as Error).message || 'Error al rechazar psicólogo');
     } finally {
       setPendingId(null);
     }
@@ -167,15 +187,28 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
               Ver
             </button>
             {psy.status !== 'suspendido' ? (
-              <button
-                type="button"
-                className="admin-btn admin-btn-primary"
-                onClick={() => handleApprove(psy)}
-                disabled={busy}
-              >
-                {busy ? <span className="admin-btn-spinner" /> : <Icon name="check" size={14} />}
-                {psy.verified ? 'Re-verificar' : 'Aprobar'}
-              </button>
+              <>
+                {(!psy.verified || psy.status === 'pendiente') && (
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-ghost"
+                    onClick={() => handleReject(psy)}
+                    disabled={busy}
+                  >
+                    <Icon name="close" size={14} />
+                    Rechazar
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-primary"
+                  onClick={() => handleApprove(psy)}
+                  disabled={busy}
+                >
+                  {busy ? <span className="admin-btn-spinner" /> : <Icon name="check" size={14} />}
+                  {psy.verified ? 'Re-verificar' : 'Aprobar'}
+                </button>
+              </>
             ) : null}
           </div>
         );
