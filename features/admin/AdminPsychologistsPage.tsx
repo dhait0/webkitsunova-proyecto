@@ -24,6 +24,7 @@ import { getAdminPageHeading } from '@/components/admin/adminNav';
 import type { FilterOption } from '@/components/admin/types';
 import { useAdminList } from '@/hooks/useAdminList';
 import { useToasts } from '@/hooks/useToasts';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 
 const STATUS_OPTIONS: FilterOption[] = [
   { value: 'all', label: 'Todos los estados' },
@@ -46,6 +47,7 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
 
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [detailTarget, setDetailTarget] = useState<AdminPsychologist | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<AdminPsychologist | null>(null);
 
   const fetchPsychologists = useCallback(
     (query: { search: string; status: string; page: number; limit: number }) =>
@@ -99,6 +101,12 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
   }
 
   async function handleReject(psy: AdminPsychologist) {
+    setRejectTarget(psy);
+  }
+
+  async function confirmReject() {
+    if (!rejectTarget) return;
+    const psy = rejectTarget;
     setPendingId(psy.id);
     try {
       const res = await rejectPsychologist(psy.id);
@@ -112,6 +120,7 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
       toasts.error((err as Error).message || 'Error al rechazar psicólogo');
     } finally {
       setPendingId(null);
+      setRejectTarget(null);
     }
   }
 
@@ -255,7 +264,21 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
         />
       )}
 
-      <AdminPagination pagination={pagination} onPageChange={setPage} noun="psicólogos" />
+      <ConfirmDialog
+        open={rejectTarget !== null}
+        title="Rechazar solicitud"
+        message={
+          rejectTarget
+            ? `¿Rechazar la solicitud de ${fullName(rejectTarget)} (${rejectTarget.email})? Esta acción marcará el perfil como no aprobado y no verificado.`
+            : ''
+        }
+        confirmLabel="Rechazar"
+        cancelLabel="Cancelar"
+        danger
+        busy={pendingId === rejectTarget?.id}
+        onConfirm={confirmReject}
+        onCancel={() => setRejectTarget(null)}
+      />
 
       <AdminModal
         open={detailTarget !== null}
