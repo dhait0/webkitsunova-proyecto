@@ -191,6 +191,23 @@ export async function updateUserStatus(
     return { success: false, message: 'No autorizado' };
   }
 
+  if (session.id === userId) {
+    return { success: false, message: 'No puedes modificar tu propia cuenta' };
+  }
+
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  if (!target) {
+    return { success: false, message: 'Usuario no encontrado' };
+  }
+
+  if (target.role === 'ADMIN') {
+    return { success: false, message: 'No puedes suspender a otro administrador' };
+  }
+
   await prisma.user.update({
     where: { id: userId },
     data: { status: status as 'ACTIVE' | 'SUSPENDED' | 'PENDING' },
@@ -207,6 +224,23 @@ export async function deleteUser(
     return { success: false, message: 'No autorizado' };
   }
 
+  if (session.id === userId) {
+    return { success: false, message: 'No puedes eliminar tu propia cuenta' };
+  }
+
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  if (!target) {
+    return { success: false, message: 'Usuario no encontrado' };
+  }
+
+  if (target.role === 'ADMIN') {
+    return { success: false, message: 'No puedes eliminar a otro administrador' };
+  }
+
   await prisma.user.delete({
     where: { id: userId },
   });
@@ -221,6 +255,27 @@ export async function updateUserRole(
   const session = await authorize(['ADMIN']);
   if (!session) {
     return { success: false, message: 'No autorizado' };
+  }
+
+  if (session.id === userId) {
+    return { success: false, message: 'No puedes modificar tu propio rol' };
+  }
+
+  if (role === 'ADMIN') {
+    return { success: false, message: 'No está permitido asignar rol administrador' };
+  }
+
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  if (!target) {
+    return { success: false, message: 'Usuario no encontrado' };
+  }
+
+  if (target.role === 'ADMIN') {
+    return { success: false, message: 'No puedes modificar a otro administrador' };
   }
 
   await prisma.user.update({

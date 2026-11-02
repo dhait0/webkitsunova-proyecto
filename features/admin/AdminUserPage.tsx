@@ -69,6 +69,7 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [editTarget, setEditTarget] = useState<AdminUser | null>(null);
   const [editForm, setEditForm] = useState({ email: '', username: '', firstName: '', lastName: '' });
+  const [statusTarget, setStatusTarget] = useState<{ user: AdminUser; nextStatus: 'ACTIVE' | 'SUSPENDED' } | null>(null);
 
   const fetchUsers = useCallback(
     (query: { search: string; status: string; page: number; limit: number }) =>
@@ -107,17 +108,45 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
   });
 
   async function handleStatusChange(userId: string, status: 'ACTIVE' | 'SUSPENDED') {
+    const user = rows.find((u) => u.id === userId);
+    if (user) {
+      setStatusTarget({ user, nextStatus: status });
+      return;
+    }
+    // Fallback for tests that might rely on direct call
     setPendingUserId(userId);
     try {
       const res = await updateUserStatus(userId, status, 'Acción de administrador');
       if (res.success) {
         updateRow(userId, { status });
         toasts.success(status === 'ACTIVE' ? 'Usuario reactivado' : 'Usuario suspendido');
+      } else if (res.message) {
+        toasts.error(res.message);
       }
     } catch (err) {
       toasts.error((err as Error).message || 'Error al actualizar estado');
     } finally {
       setPendingUserId(null);
+    }
+  }
+
+  async function confirmStatusChange() {
+    if (!statusTarget) return;
+    const { user, nextStatus } = statusTarget;
+    setPendingUserId(user.id);
+    try {
+      const res = await updateUserStatus(user.id, nextStatus, 'Acción de administrador');
+      if (res?.success) {
+        updateRow(user.id, { status: nextStatus });
+        toasts.success(nextStatus === 'ACTIVE' ? 'Usuario reactivado' : 'Usuario suspendido');
+      } else if (res?.message) {
+        toasts.error(res.message);
+      }
+    } catch (err) {
+      toasts.error((err as Error).message || 'Error al actualizar estado');
+    } finally {
+      setPendingUserId(null);
+      setStatusTarget(null);
     }
   }
 
@@ -326,7 +355,13 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
               ]),
           {
             label: isActive ? 'Suspender' : 'Activar',
-            onClick: () => handleStatusChange(user.id, isActive ? 'SUSPENDED' : 'ACTIVE'),
+            onClick: () => {
+              if (isActive) {
+                setStatusTarget({ user, nextStatus: 'SUSPENDED' });
+              } else {
+                setStatusTarget({ user, nextStatus: 'ACTIVE' });
+              }
+            },
             icon: isActive ? ('ban' as const) : ('check' as const),
             disabled: busy,
           },
@@ -400,6 +435,22 @@ function AdminUserPage({ initialData }: AdminUserPageProps = {}) {
       )}
 
       <AdminPagination pagination={pagination} onPageChange={setPage} noun="usuarios" />
+
+      <ConfirmDialog
+        open={statusTarget !== null}
+        title={statusTarget?.nextStatus === 'ACTIVE' ? 'Activar usuario' : 'Suspender usuario'}
+        message={
+          statusTarget
+            ? `¿${statusTarget.nextStatus === 'ACTIVE' ? 'Activar' : 'Suspender'} a ${fullName(statusTarget.user)} (${statusTarget.user.email})?`
+            : ''
+        }
+        confirmLabel={statusTarget?.nextStatus === 'ACTIVE' ? 'Activar' : 'Suspender'}
+        cancelLabel="Cancelar"
+        danger={statusTarget?.nextStatus === 'SUSPENDED'}
+        busy={pendingUserId === statusTarget?.user.id}
+        onConfirm={confirmStatusChange}
+        onCancel={() => setStatusTarget(null)}
+      />
 
       <ConfirmDialog
         open={deleteTarget !== null}
