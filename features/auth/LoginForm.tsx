@@ -21,14 +21,15 @@ export default function LoginForm() {
     const currentLevel = aalData?.currentLevel ?? 'aal1';
     const nextLevel = aalData?.nextLevel ?? null;
 
-    // `refresh()` lets the server re-read the cookies the sign-in just wrote.
+    // Refresh server components so guards/readers see the newly written cookies.
     router.refresh();
 
     if (currentLevel === 'aal1' && nextLevel === 'aal2') {
-      router.push(`/mfa/verify?from=${encodeURIComponent(home)}`);
-    } else {
-      router.push(home);
+      router.replace(`/mfa/verify?from=${encodeURIComponent(home)}`);
+      return;
     }
+
+    router.replace(home);
   };
 
   return (
