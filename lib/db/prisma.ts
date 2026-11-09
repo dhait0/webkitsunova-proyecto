@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { withPoolerFlags } from './datasource-url';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -6,6 +7,7 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient(): PrismaClient {
   return new PrismaClient({
+    datasourceUrl: withPoolerFlags(process.env.DATABASE_URL),
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
 }
