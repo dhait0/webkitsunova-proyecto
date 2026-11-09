@@ -107,3 +107,17 @@ describe('changePasswordAction', () => {
     );
   });
 });
+
+describe('configuración — cualquier rol gestiona su propia cuenta', () => {
+  it('autoriza USER, PSYCHOLOGIST y ADMIN, y rechaza si no hay sesión', async () => {
+    mockAuthorize.mockResolvedValue(null);
+    await updateProfileAction(fd({ username: 'valido1' }));
+    await changePasswordAction(fd({ currentPassword: 'a', newPassword: 'abcdefgh', confirmPassword: 'abcdefgh' }));
+
+    for (const call of mockAuthorize.mock.calls) {
+      expect(call[0]).toEqual(['USER', 'PSYCHOLOGIST', 'ADMIN']);
+    }
+    expect(mockAuthorize).toHaveBeenCalledTimes(2);
+  });
+});
+

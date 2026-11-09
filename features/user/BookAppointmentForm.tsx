@@ -85,7 +85,7 @@ export default function BookAppointmentForm({ profile }: Props) {
       if (result.ok) {
         setMessage({
           kind: 'success',
-          text: 'Cita reservada. Quedó confirmada en tu agenda.',
+          text: 'Solicitud enviada. Tu psicólogo la revisará y verás su respuesta en tus citas.',
         });
         setDate('');
         setTime('');

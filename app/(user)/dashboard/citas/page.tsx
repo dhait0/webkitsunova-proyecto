@@ -22,7 +22,7 @@ export default async function AppointmentsRoute({
     data = await listPatientAppointments(session.id, {
       page: params.page ?? '1',
       limit: params.limit ?? '10',
-      scope: params.scope ?? 'upcoming',
+      scope: params.scope === 'past' ? 'past' : 'upcoming',
       status: params.status ?? '',
     });
   } catch (caught) {
@@ -33,5 +33,5 @@ export default async function AppointmentsRoute({
     };
   }
 
-  return <AppointmentsPage data={data} error={error} />;
+  return <AppointmentsPage data={data} error={error} scope={params.scope === 'past' ? 'past' : 'upcoming'} />;
 }

@@ -59,6 +59,7 @@ export async function getProfessionalProfile(userId: string) {
       sessionPrice: psychologistProfile?.sessionPrice ?? null,
       currency: psychologistProfile?.currency ?? 'COP',
       isApproved: psychologistProfile?.isApproved ?? false,
+      isRejected: Boolean(psychologistProfile?.rejectedAt),
       isVerified: psychologistProfile?.isVerified ?? false,
       isAcceptingNew: psychologistProfile?.isAcceptingNew ?? true,
       rating: psychologistProfile?.rating ?? 0,

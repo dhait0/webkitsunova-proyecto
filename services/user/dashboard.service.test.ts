@@ -1,11 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
+const getHabitsOverview = vi.hoisted(() => vi.fn());
+
+vi.mock('./habits.service', () => ({ getHabitsOverview }));
+
 vi.mock('@/lib/db/prisma', () => ({
   prisma: {
-    habit: {
-      findMany: vi.fn(),
-      findFirst: vi.fn(),
-    },
     appointment: {
       findFirst: vi.fn(),
       count: vi.fn(),
@@ -21,6 +21,14 @@ import { getUserDashboardSummary } from './dashboard.service';
 
 const userId = 'user-123';
 const memberSince = new Date('2026-03-15T10:00:00Z');
+const emptyOverview = {
+  today: '2026-11-09',
+  habits: [],
+  summary: {
+    active: 0, paused: 0, completed: 0, doneToday: 0, pendingToday: 0,
+    bestCurrentStreak: null, averageProgress: null,
+  },
+};
 const nextStartsAt = new Date('2026-11-20T14:00:00Z');
 
 beforeEach(() => {
@@ -28,35 +36,32 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-11-09T12:00:00Z'));
 
-  (prisma.habit.findMany as any).mockResolvedValue([]);
-  (prisma.habit.findFirst as any).mockResolvedValue(null);
+  getHabitsOverview.mockResolvedValue(emptyOverview);
   (prisma.appointment.findFirst as any).mockResolvedValue(null);
   (prisma.appointment.count as any).mockResolvedValue(0);
   (prisma.user.findUnique as any).mockResolvedValue({ createdAt: memberSince });
 });
 
 describe('getUserDashboardSummary', () => {
-  it('calcula promedio de progreso de hábitos activos (redondeado)', async () => {
-    (prisma.habit.findMany as any).mockResolvedValue([
-      { progress: 10 },
-      { progress: 20 },
-      { progress: 31 },
-    ]);
-    (prisma.habit.findFirst as any).mockResolvedValue({ title: 'Respirar', progress: 10 });
+  it('incluye los hábitos calculados a partir de los registros, sin recalcularlos', async () => {
+    const overview = {
+      ...emptyOverview,
+      habits: [{ id: 'h1', title: 'Respirar' }],
+      summary: { ...emptyOverview.summary, active: 1, averageProgress: 43 },
+    };
+    getHabitsOverview.mockResolvedValue(overview);
 
     const result = await getUserDashboardSummary(userId);
 
-    expect(result.activeHabits).toBe(3);
-    expect(result.averageProgress).toBe(20); // (10+20+31)/3 = 20.33 -> 20
-    expect(result.nextHabit).toEqual({ title: 'Respirar', progress: 10 });
+    expect(result.habits).toBe(overview);
+    expect(getHabitsOverview).toHaveBeenCalledWith(userId);
   });
 
   it('devuelve ceros/null cuando no hay hábitos ni citas', async () => {
     const result = await getUserDashboardSummary(userId);
 
-    expect(result.activeHabits).toBe(0);
-    expect(result.averageProgress).toBe(0);
-    expect(result.nextHabit).toBeNull();
+    expect(result.habits.summary.active).toBe(0);
+    expect(result.habits.summary.averageProgress).toBeNull();
     expect(result.nextAppointment).toBeNull();
     expect(result.pendingAppointments).toBe(0);
     expect(result.memberSince).toEqual(memberSince);
@@ -65,12 +70,7 @@ describe('getUserDashboardSummary', () => {
   it('filtra todas las consultas por el userId del titular (ownership)', async () => {
     await getUserDashboardSummary(userId);
 
-    expect(prisma.habit.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId, status: 'active' } }),
-    );
-    expect(prisma.habit.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId, status: 'active' } }),
-    );
+    expect(getHabitsOverview).toHaveBeenCalledWith(userId);
     expect(prisma.appointment.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ patientUserId: userId }),

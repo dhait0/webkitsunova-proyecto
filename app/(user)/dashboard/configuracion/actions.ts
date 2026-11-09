@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { authorize } from '@/lib/auth/guard';
 import { changeUserPassword, updateUserProfile } from '@/services/user/settings.service';
 
+/** Personal data and password belong to the signed-in account, whatever its role. */
 export type SettingsActionResult = { success: boolean; message: string };
 
 const profileSchema = z.object({
@@ -30,7 +31,7 @@ const passwordSchema = z
   });
 
 export async function updateProfileAction(formData: FormData): Promise<SettingsActionResult> {
-  const session = await authorize(['USER']);
+  const session = await authorize(['USER', 'PSYCHOLOGIST', 'ADMIN']);
   if (!session) {
     return { success: false, message: 'No autorizado' };
   }
@@ -63,7 +64,7 @@ export async function updateProfileAction(formData: FormData): Promise<SettingsA
 }
 
 export async function changePasswordAction(formData: FormData): Promise<SettingsActionResult> {
-  const session = await authorize(['USER']);
+  const session = await authorize(['USER', 'PSYCHOLOGIST', 'ADMIN']);
   if (!session) {
     return { success: false, message: 'No autorizado' };
   }

@@ -1,12 +1,7 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth/guard';
 import { getUserDashboardSummary } from '@/services/user/dashboard.service';
-import {
-  dashboardActivityItems,
-  dashboardFocusItems,
-  dashboardQuickActions,
-  dashboardStatusItems,
-} from '@/content/siteContent';
+import { dashboardQuickActions } from '@/content/siteContent';
 
 function formatMemberSince(date: Date): string {
   return new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(date);
@@ -30,22 +25,38 @@ export default async function DashboardHomePage() {
     session.profile?.username?.trim() ||
     session.email;
 
+  const { habits, summary: habitSummary } = summary.habits;
+  const activeHabits = habits.filter((h) => h.status === 'active');
+  const pendingHabit = activeHabits.find((h) => !h.stats.loggedToday) ?? null;
+  const streak = habitSummary.bestCurrentStreak;
+
   const stats = [
     {
-      label: 'Hábitos activos',
-      value: String(summary.activeHabits),
+      label: 'Hábitos de hoy',
+      value: habitSummary.active === 0 ? '—' : `${habitSummary.doneToday}/${habitSummary.active}`,
       caption:
-        summary.activeHabits === 0
+        habitSummary.active === 0
           ? 'Crea tu primer hábito para empezar'
-          : `${summary.activeHabits} en seguimiento`,
+          : habitSummary.pendingToday === 0
+            ? 'Todo registrado hoy'
+            : `${habitSummary.pendingToday} por registrar`,
     },
     {
-      label: 'Progreso promedio',
-      value: `${summary.averageProgress}%`,
+      label: 'Racha actual',
+      value: streak ? String(streak.value) : '0',
+      caption: streak
+        ? streak.unit === 'days'
+          ? 'días seguidos en tu mejor hábito'
+          : 'semanas cumpliendo la meta'
+        : 'Aún sin racha',
+    },
+    {
+      label: 'Últimos 7 días',
+      value: habitSummary.averageProgress === null ? '—' : `${habitSummary.averageProgress}%`,
       caption:
-        summary.activeHabits === 0
+        habitSummary.averageProgress === null
           ? 'Sin hábitos activos'
-          : 'Promedio de tus hábitos activos',
+          : 'Cumplimiento medio de tus metas',
     },
     {
       label: 'Citas pendientes',
@@ -93,8 +104,12 @@ export default async function DashboardHomePage() {
           </div>
           <div className="user-side-card">
             <span className="user-eyebrow">Siguiente paso</span>
-            {summary.nextHabit ? (
-              <strong>{summary.nextHabit.title}</strong>
+            {pendingHabit ? (
+              <Link className="user-btn user-btn--quiet" href="/dashboard/habitos">
+                Marcar «{pendingHabit.title}»
+              </Link>
+            ) : activeHabits.length > 0 ? (
+              <strong>Todo al día por hoy</strong>
             ) : (
               <Link className="user-btn user-btn--quiet" href="/dashboard/habitos">
                 Crea tu primer hábito
@@ -210,65 +225,65 @@ export default async function DashboardHomePage() {
       <div className="user-panels">
         <article className="user-card user-panel-card user-raise">
           <div className="user-panel-head">
-            <span className="user-eyebrow">Actividad</span>
-            <h2 className="user-title">Lo último en tu proceso</h2>
+            <span className="user-eyebrow">Hoy</span>
+            <h2 className="user-title">Tus hábitos de hoy</h2>
           </div>
-          <div className="user-list">
-            {dashboardActivityItems.map((item) => (
-              <div key={item.title} className="user-list-item">
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.text}</p>
+          {activeHabits.length === 0 ? (
+            <p>No tienes hábitos activos. Crea uno para empezar tu seguimiento.</p>
+          ) : (
+            <div className="user-list">
+              {activeHabits.map((habit) => (
+                <div key={habit.id} className="user-list-item">
+                  <div>
+                    <strong>{habit.title}</strong>
+                    <p>
+                      {habit.stats.loggedToday
+                        ? 'Registrado hoy'
+                        : habit.stats.lastLoggedOn
+                          ? 'Pendiente de hoy'
+                          : 'Aún sin registros'}
+                    </p>
+                  </div>
+                  <span className={`user-pill ${habit.stats.loggedToday ? 'user-pill--ok' : 'user-pill--warn'}`}>
+                    {habit.stats.loggedToday ? 'Hecho' : 'Pendiente'}
+                  </span>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </article>
 
         <article className="user-card user-panel-card user-raise">
           <div className="user-panel-head">
-            <span className="user-eyebrow">Enfoque</span>
-            <h2 className="user-title">Prioridad del día</h2>
+            <span className="user-eyebrow">Constancia</span>
+            <h2 className="user-title">Últimas 4 semanas</h2>
           </div>
-          <div className="user-list">
-            {dashboardFocusItems.map((item) => (
-              <div key={item.title} className="user-list-item">
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.text}</p>
+          {activeHabits.length === 0 ? (
+            <p>Aquí verás tu constancia cuando registres tus primeros días.</p>
+          ) : (
+            <div className="user-status-list">
+              {activeHabits.map((habit) => (
+                <div key={habit.id} className="user-status-item">
+                  <div className="user-status-topline">
+                    <strong>{habit.title}</strong>
+                    <span className="user-numeral">{habit.stats.consistency4w}%</span>
+                  </div>
+                  <div
+                    className="user-bar"
+                    role="progressbar"
+                    aria-label={`Constancia de ${habit.title}`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={habit.stats.consistency4w}
+                  >
+                    <div className="user-bar-fill" style={{ width: `${habit.stats.consistency4w}%` }} />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </article>
       </div>
-
-      <article className="user-card user-raise">
-        <div className="user-panel-head">
-          <span className="user-eyebrow">Estado</span>
-          <h2 className="user-title">Dónde estás hoy</h2>
-        </div>
-        <div className="user-status-grid">
-          {dashboardStatusItems.map((item) => (
-            <div key={item.label} className="user-status-item">
-              <div className="user-status-topline">
-                <strong>{item.label}</strong>
-                <span className="user-numeral">{item.value}</span>
-              </div>
-              <div
-                className="user-bar"
-                role="progressbar"
-                aria-valuenow={item.progress}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={`${item.label}: ${item.value}`}
-              >
-                <div className="user-bar-fill" style={{ width: `${item.progress}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </article>
     </section>
   );
 }

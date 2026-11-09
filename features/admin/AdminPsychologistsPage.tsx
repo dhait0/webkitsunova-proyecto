@@ -29,7 +29,8 @@ import ConfirmDialog from '@/components/admin/ConfirmDialog';
 const STATUS_OPTIONS: FilterOption[] = [
   { value: 'all', label: 'Todos los estados' },
   { value: 'active', label: 'Activo' },
-  { value: 'revision', label: 'En revisión' },
+  { value: 'revision', label: 'Pendientes de revisión' },
+  { value: 'rechazado', label: 'Rechazados' },
   { value: 'suspendido', label: 'Suspendido' },
 ];
 
@@ -111,7 +112,7 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
     try {
       const res = await rejectPsychologist(psy.id);
       if (res.success) {
-        updateRow(psy.id, { verified: false, status: 'pendiente' });
+        updateRow(psy.id, { verified: false, status: 'rechazado' });
         toasts.success('Solicitud de psicólogo rechazada');
       } else if (res.message) {
         toasts.error(res.message);
@@ -197,7 +198,7 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
             </button>
             {psy.status !== 'suspendido' ? (
               <>
-                {(!psy.verified || psy.status === 'pendiente') && (
+                {psy.status === 'pendiente' && (
                   <button
                     type="button"
                     className="admin-btn admin-btn-ghost"
@@ -215,7 +216,7 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
                   disabled={busy}
                 >
                   {busy ? <span className="admin-btn-spinner" /> : <Icon name="check" size={14} />}
-                  {psy.verified ? 'Re-verificar' : 'Aprobar'}
+                  {psy.verified ? 'Re-verificar' : psy.status === 'rechazado' ? 'Aprobar de nuevo' : 'Aprobar'}
                 </button>
               </>
             ) : null}

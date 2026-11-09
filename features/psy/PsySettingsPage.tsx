@@ -6,6 +6,7 @@ import { getProfileAction, updateProfileAction, updateAvailabilityAction } from 
 import { useAsync } from '@/hooks/useAsync';
 import { ErrorBlock, LoadingBlock, Panel, PsyBadge, SuccessBlock } from '@/components/psy/PsyUi';
 import { psyWeekdayLabels } from '@/content/siteContent';
+import PsyPasswordForm from './PsyPasswordForm';
 import type { PsyProfile, PsyAvailabilitySlot } from '@/lib/api';
 
 type ProfileResponse = {
@@ -80,13 +81,23 @@ function PsySettingsPage({ initialData }: Props) {
     setFormError(null);
     setMessage(null);
 
+    const invalid = currentAvailability.find((slot) => !slot.start || !slot.end || slot.end <= slot.start);
+    if (invalid) {
+      setFormError(
+        `El horario del ${psyWeekdayLabels[invalid.weekday]} no es válido: la hora de fin debe ser posterior a la de inicio.`
+      );
+      setSavingAvailability(false);
+      return;
+    }
+
     try {
       await updateAvailabilityAction(
         currentAvailability.map((slot) => ({
           weekday: slot.weekday,
           start: slot.start,
           end: slot.end,
-          enabled: Boolean(slot.id)
+          // Every slot in the list is an active day; unchecked days are removed from it.
+          enabled: true,
         }))
       );
       setAvailability(null);
@@ -311,9 +322,10 @@ function PsySettingsPage({ initialData }: Props) {
       </Panel>
 
       <Panel eyebrow="Cuenta" title="Seguridad">
+        <PsyPasswordForm />
         <ul className="psy-list">
           <li>
-            <span>Cambiar contraseña</span>
+            <span>Verificación en dos pasos</span>
             <Link href="/mfa/settings" className="psy-table-link">
               Administrar seguridad
             </Link>

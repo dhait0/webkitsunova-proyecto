@@ -5,8 +5,10 @@ import { requireUser } from '@/lib/auth/guard';
 import { prisma } from '@/lib/db/prisma';
 import {
   AppointmentConflictError,
-  createAppointment,
+  cancelAppointmentByUser,
+  requestAppointmentByUser,
 } from '@/services/psy/appointments.service';
+import { revalidatePath } from 'next/cache';
 import { getPsychologistProfile } from '@/services/psy/psychologists.service';
 
 const createAppointmentInputSchema = z.object({
@@ -42,7 +44,8 @@ type FailResult = {
 export type CreateAppointmentActionResult = OkResult | FailResult;
 
 /**
- * Crea una reserva desde el área de Usuario.
+ * Envía una solicitud de cita desde el área de Usuario. Queda PENDING hasta que
+ * el psicólogo la confirme o la rechace; el horario se bloquea mientras tanto.
  *
  * Reglas de seguridad (S09):
  * - El paciente se identifica exclusivamente desde la sesión autenticada
@@ -112,8 +115,8 @@ export async function createAppointmentAction(
   }
 
   try {
-    const appointment = await createAppointment(input.psychologistId, {
-      patientUserId,
+    const appointment = await requestAppointmentByUser(patientUserId, {
+      psychologistId: input.psychologistId,
       type: input.type,
       startsAt,
       durationMinutes: input.durationMinutes,
@@ -128,6 +131,46 @@ export async function createAppointmentAction(
         startsAt: appointment.startsAt.toISOString(),
       },
     };
+  } catch (error) {
+    if (error instanceof AppointmentConflictError) {
+      return { ok: false, error: error.message };
+    }
+    throw error;
+  }
+}
+
+const cancelInputSchema = z.object({
+  appointmentId: z.string().trim().min(1),
+  reason: z.string().trim().max(300).nullish(),
+});
+
+/** Cancela una cita propia (pendiente o confirmada) que aún no ha comenzado. */
+export async function cancelMyAppointmentAction(
+  appointmentId: string,
+  reason?: string | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let session: Awaited<ReturnType<typeof requireUser>>;
+
+  try {
+    session = await requireUser();
+  } catch {
+    return { ok: false, error: 'No autenticado' };
+  }
+
+  const parsed = cancelInputSchema.safeParse({ appointmentId, reason });
+  if (!parsed.success) {
+    return { ok: false, error: 'Datos de cancelación no válidos.' };
+  }
+
+  if (session.role !== 'USER') {
+    return { ok: false, error: 'No autorizado' };
+  }
+
+  try {
+    await cancelAppointmentByUser(session.id, parsed.data.appointmentId, parsed.data.reason ?? null);
+    revalidatePath('/dashboard/citas');
+    revalidatePath('/dashboard');
+    return { ok: true };
   } catch (error) {
     if (error instanceof AppointmentConflictError) {
       return { ok: false, error: error.message };

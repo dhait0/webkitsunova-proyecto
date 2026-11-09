@@ -2,7 +2,8 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const requireUser = vi.hoisted(() => vi.fn());
 const getPsychologistProfile = vi.hoisted(() => vi.fn());
-const createAppointment = vi.hoisted(() => vi.fn());
+const requestAppointmentByUser = vi.hoisted(() => vi.fn());
+const cancelAppointmentByUser = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/auth/guard', () => ({
   requireUser: () => requireUser(),
@@ -25,12 +26,15 @@ vi.mock('@/services/psy/appointments.service', () => ({
       this.name = 'AppointmentConflictError';
     }
   },
-  createAppointment,
+  requestAppointmentByUser,
+  cancelAppointmentByUser,
 }));
+
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
 import { prisma } from '@/lib/db/prisma';
 import { AppointmentConflictError } from '@/services/psy/appointments.service';
-import { createAppointmentAction } from './actions';
+import { cancelMyAppointmentAction, createAppointmentAction } from './actions';
 
 const sessionUser = {
   id: 'patient-1',
@@ -64,9 +68,9 @@ beforeEach(() => {
     role: 'USER',
     status: 'ACTIVE',
   });
-  ;(createAppointment as any).mockResolvedValue({
+  ;(requestAppointmentByUser as any).mockResolvedValue({
     id: 'appointment-1',
-    status: 'CONFIRMED',
+    status: 'PENDING',
     startsAt,
   });
 });
@@ -85,12 +89,9 @@ describe('createAppointmentAction — autorización y sesión', () => {
 
     await createAppointmentAction(inputWithoutPatientId);
 
-    expect(createAppointment).toHaveBeenCalledWith(
-      'psy-1',
-      expect.objectContaining({ patientUserId: 'patient-1' }),
-    );
-    expect((createAppointment as any).mock.calls[0][1].patientUserId).not.toContain(
-      'patientId',
+    expect(requestAppointmentByUser).toHaveBeenCalledWith(
+      'patient-1',
+      expect.objectContaining({ psychologistId: 'psy-1' }),
     );
   });
 
@@ -111,7 +112,7 @@ describe('createAppointmentAction — validación de psicólogo y paciente', () 
       ok: false,
       error: 'El psicólogo no está disponible para reservas.',
     });
-    expect(createAppointment).not.toHaveBeenCalled();
+    expect(requestAppointmentByUser).not.toHaveBeenCalled();
   });
 
   it('rechaza paciente inactivo (estado leído de BD, no hardcodeado)', async () => {
@@ -150,7 +151,7 @@ describe('createAppointmentAction — validación de entrada (zod)', () => {
   it('rechaza datos inválidos (psychologistId vacío)', async () => {
     const result = await createAppointmentAction({ ...baseInput, psychologistId: '' });
     expect(result).toEqual({ ok: false, error: 'Datos de reserva no válidos.' });
-    expect(createAppointment).not.toHaveBeenCalled();
+    expect(requestAppointmentByUser).not.toHaveBeenCalled();
   });
 
   it('rechaza tipo fuera del enum', async () => {
@@ -159,28 +160,25 @@ describe('createAppointmentAction — validación de entrada (zod)', () => {
       type: 'INVALID' as any,
     });
     expect(result).toEqual({ ok: false, error: 'Datos de reserva no válidos.' });
-    expect(createAppointment).not.toHaveBeenCalled();
+    expect(requestAppointmentByUser).not.toHaveBeenCalled();
   });
 
   it('rechaza durationMinutes no permitido', async () => {
     const result = await createAppointmentAction({ ...baseInput, durationMinutes: 15 });
     expect(result).toEqual({ ok: false, error: 'Datos de reserva no válidos.' });
-    expect(createAppointment).not.toHaveBeenCalled();
+    expect(requestAppointmentByUser).not.toHaveBeenCalled();
   });
 
   it('rechaza reason mayor a 500 caracteres', async () => {
     const result = await createAppointmentAction({ ...baseInput, reason: 'x'.repeat(501) });
     expect(result).toEqual({ ok: false, error: 'Datos de reserva no válidos.' });
-    expect(createAppointment).not.toHaveBeenCalled();
+    expect(requestAppointmentByUser).not.toHaveBeenCalled();
   });
 
   it('no acepta patientUserId del cliente (usa siempre el de la sesión)', async () => {
     await createAppointmentAction({ ...baseInput, patientUserId: 'otro' } as any);
-    expect(createAppointment).toHaveBeenCalledWith(
-      'psy-1',
-      expect.objectContaining({ patientUserId: 'patient-1' }),
-    );
-    expect((createAppointment as any).mock.calls[0][1].patientUserId).toBe('patient-1');
+    expect((requestAppointmentByUser as any).mock.calls[0][0]).toBe('patient-1');
+    expect((requestAppointmentByUser as any).mock.calls[0][1]).not.toHaveProperty('patientUserId');
   });
 });
 
@@ -191,12 +189,12 @@ describe('createAppointmentAction — horario y colisión', () => {
     const result = await createAppointmentAction(pastInput);
 
     expect(result).toEqual({ ok: false, error: 'El horario solicitado no es válido.' });
-    expect(createAppointment).not.toHaveBeenCalled();
+    expect(requestAppointmentByUser).not.toHaveBeenCalled();
   });
 
   it('rechaza colisión de horario (cita PENDING/CONFIRMED existente)', async () => {
     const conflictError = new AppointmentConflictError('El horario ya está ocupado');
-    ;(createAppointment as any).mockRejectedValue(conflictError);
+    ;(requestAppointmentByUser as any).mockRejectedValue(conflictError);
 
     const result = await createAppointmentAction(baseInput);
 
@@ -206,24 +204,55 @@ describe('createAppointmentAction — horario y colisión', () => {
     });
   });
 
-  it('crea la cita con el paciente de la sesión y devuelve solo campos públicos', async () => {
+  it('envía una solicitud PENDING con el paciente de la sesión y devuelve solo campos públicos', async () => {
     const result = await createAppointmentAction(baseInput);
 
     expect(result).toEqual({
       ok: true,
       appointment: {
         id: 'appointment-1',
-        status: 'CONFIRMED',
+        status: 'PENDING',
         startsAt: startsAt.toISOString(),
       },
     });
 
-    expect(createAppointment).toHaveBeenCalledWith('psy-1', {
-      patientUserId: 'patient-1',
+    expect(requestAppointmentByUser).toHaveBeenCalledWith('patient-1', {
+      psychologistId: 'psy-1',
       type: 'FOLLOW_UP',
       startsAt,
       durationMinutes: 60,
       reason: null,
+    });
+  });
+});
+
+describe('cancelMyAppointmentAction', () => {
+  it('exige sesión y rol USER', async () => {
+    ;(requireUser as any).mockRejectedValue(new Error('redirect'));
+    expect(await cancelMyAppointmentAction('appointment-1')).toEqual({ ok: false, error: 'No autenticado' });
+
+    ;(requireUser as any).mockResolvedValue({ ...sessionUser, role: 'PSYCHOLOGIST' });
+    expect(await cancelMyAppointmentAction('appointment-1')).toEqual({ ok: false, error: 'No autorizado' });
+    expect(cancelAppointmentByUser).not.toHaveBeenCalled();
+  });
+
+  it('valida el identificador y la longitud del motivo', async () => {
+    expect((await cancelMyAppointmentAction('')).ok).toBe(false);
+    expect((await cancelMyAppointmentAction('appointment-1', 'x'.repeat(301))).ok).toBe(false);
+    expect(cancelAppointmentByUser).not.toHaveBeenCalled();
+  });
+
+  it('cancela con la identidad de la sesión', async () => {
+    ;(cancelAppointmentByUser as any).mockResolvedValue({});
+    expect(await cancelMyAppointmentAction('appointment-1', 'Imprevisto')).toEqual({ ok: true });
+    expect(cancelAppointmentByUser).toHaveBeenCalledWith('patient-1', 'appointment-1', 'Imprevisto');
+  });
+
+  it('devuelve el mensaje de negocio del servicio', async () => {
+    ;(cancelAppointmentByUser as any).mockRejectedValue(new AppointmentConflictError('La cita ya comenzó y no se puede cancelar'));
+    expect(await cancelMyAppointmentAction('appointment-1')).toEqual({
+      ok: false,
+      error: 'La cita ya comenzó y no se puede cancelar',
     });
   });
 });

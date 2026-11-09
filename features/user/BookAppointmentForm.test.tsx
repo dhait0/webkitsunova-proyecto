@@ -94,7 +94,7 @@ describe('BookAppointmentForm', () => {
       }),
     );
     expect(
-      await screen.findByText(/Cita reservada\. Quedó confirmada en tu agenda\./i),
+      await screen.findByText(/Solicitud enviada\. Tu psicólogo la revisará/i),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Ver mis citas/i })).toHaveAttribute(
       'href',

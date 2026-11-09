@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import CancelAppointmentButton from './CancelAppointmentButton';
 
 export type PatientAppointment = {
   id: string;
@@ -37,9 +38,39 @@ const STATUS_LABELS: Record<string, string> = {
 type Props = {
   data: AppointmentsData;
   error: string | null;
+  scope?: 'upcoming' | 'past';
 };
 
-export default function AppointmentsPage({ data, error }: Props) {
+const STATUS_NOTES: Record<string, string> = {
+  PENDING: 'Esperando la respuesta de tu psicólogo.',
+  CANCELLED: 'Esta cita fue cancelada.',
+  NO_SHOW: 'No se registró asistencia.',
+};
+
+function ScopeTabs({ scope }: { scope: 'upcoming' | 'past' }) {
+  return (
+    <nav className="user-scope-tabs" aria-label="Filtrar citas">
+      <Link
+        href="/dashboard/citas?scope=upcoming"
+        className={`user-pagination-btn${scope === 'upcoming' ? ' user-pagination-btn--active' : ''}`}
+        aria-current={scope === 'upcoming' ? 'page' : undefined}
+        prefetch={false}
+      >
+        Próximas
+      </Link>
+      <Link
+        href="/dashboard/citas?scope=past"
+        className={`user-pagination-btn${scope === 'past' ? ' user-pagination-btn--active' : ''}`}
+        aria-current={scope === 'past' ? 'page' : undefined}
+        prefetch={false}
+      >
+        Historial
+      </Link>
+    </nav>
+  );
+}
+
+export default function AppointmentsPage({ data, error, scope = 'upcoming' }: Props) {
   const { appointments, pagination } = data;
 
   if (error) {
@@ -77,8 +108,20 @@ export default function AppointmentsPage({ data, error }: Props) {
             <h2 className="user-headline">Tus sesiones con psicólogos</h2>
           </div>
         </div>
+        <ScopeTabs scope={scope} />
         <div className="user-card user-raise">
-          <p>No tienes citas agendadas en este momento.</p>
+          <p>
+            {scope === 'past'
+              ? 'Todavía no tienes citas pasadas.'
+              : 'No tienes citas próximas. Elige un psicólogo y solicita una sesión.'}
+          </p>
+          {scope === 'upcoming' ? (
+            <div>
+              <Link className="user-btn user-btn--primary" href="/dashboard/psicologos" prefetch={false}>
+                Ver psicólogos
+              </Link>
+            </div>
+          ) : null}
         </div>
       </section>
     );
@@ -91,10 +134,12 @@ export default function AppointmentsPage({ data, error }: Props) {
           <span className="user-eyebrow">Citas</span>
           <h2 className="user-headline">Tus sesiones con psicólogos</h2>
           <p className="user-lede">
-            Lista de tus sesiones reservadas con psicólogos.
+            Tus solicitudes y sesiones con psicólogos. Una solicitud queda pendiente hasta que tu psicólogo la confirme.
           </p>
         </div>
       </div>
+
+      <ScopeTabs scope={scope} />
 
       <div className="user-list user-list--cards">
         {appointments.map((appointment) => {
@@ -122,9 +167,9 @@ export default function AppointmentsPage({ data, error }: Props) {
                   <span className="user-eyebrow">Estado</span>
                   <span
                     className={`user-pill ${
-                      appointment.status === 'CONFIRMED'
+                      appointment.status === 'CONFIRMED' || appointment.status === 'COMPLETED'
                         ? 'user-pill--ok'
-                        : appointment.status === 'CANCELLED'
+                        : appointment.status === 'PENDING' || appointment.status === 'CANCELLED'
                           ? 'user-pill--warn'
                           : ''
                     }`}
@@ -140,6 +185,19 @@ export default function AppointmentsPage({ data, error }: Props) {
                     </div>
                   )}
               </div>
+              {STATUS_NOTES[appointment.status] ? (
+                <p className="user-habit-note">{STATUS_NOTES[appointment.status]}</p>
+              ) : null}
+              {(appointment.status === 'PENDING' || appointment.status === 'CONFIRMED') &&
+              new Date(appointment.startsAt).getTime() > Date.now() ? (
+                <div className="user-appointment-actions">
+                  <CancelAppointmentButton
+                    appointmentId={appointment.id}
+                    psychologistName={appointment.psychologistName}
+                    pending={appointment.status === 'PENDING'}
+                  />
+                </div>
+              ) : null}
             </article>
           );
         })}
@@ -154,7 +212,7 @@ export default function AppointmentsPage({ data, error }: Props) {
           <div className="user-pagination-controls">
             {pagination.page > 1 && (
               <Link
-                href={`/dashboard/citas?page=${pagination.page - 1}&limit=${pagination.limit}`}
+                href={`/dashboard/citas?scope=${scope}&page=${pagination.page - 1}&limit=${pagination.limit}`}
                 className="user-btn user-btn--quiet"
                 type="button"
                 aria-label="Página anterior"
@@ -166,7 +224,7 @@ export default function AppointmentsPage({ data, error }: Props) {
             {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
               <Link
                 key={p}
-                href={`/dashboard/citas?page=${p}&limit=${pagination.limit}`}
+                href={`/dashboard/citas?scope=${scope}&page=${p}&limit=${pagination.limit}`}
                 className={`user-pagination-btn${p === pagination.page ? ' user-pagination-btn--active' : ''}`}
                 type="button"
                 aria-current={p === pagination.page ? 'page' : undefined}
@@ -178,7 +236,7 @@ export default function AppointmentsPage({ data, error }: Props) {
             ))}
             {pagination.page < pagination.totalPages && (
               <Link
-                href={`/dashboard/citas?page=${pagination.page + 1}&limit=${pagination.limit}`}
+                href={`/dashboard/citas?scope=${scope}&page=${pagination.page + 1}&limit=${pagination.limit}`}
                 className="user-btn user-btn--quiet"
                 type="button"
                 aria-label="Página siguiente"

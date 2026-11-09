@@ -24,6 +24,7 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isApproved, setIsApproved] = useState<boolean | null>(null);
+  const [isRejected, setIsRejected] = useState(false);
   const [accessError, setAccessError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState(
     session.profile?.firstName?.trim() || session.email
@@ -40,6 +41,7 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
     try {
       const result = await getProfileAction();
       setIsApproved(result.profile.isApproved);
+      setIsRejected(Boolean(result.profile.isRejected));
       setDisplayName(result.profile.name || session.email);
       setAccessError(null);
     } catch (error) {
@@ -122,7 +124,9 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
                     ? 'Verificando...'
                     : isApproved
                       ? 'Perfil aprobado'
-                      : 'Pendiente de aprobación'}
+                      : isRejected
+                        ? 'Solicitud rechazada'
+                        : 'Pendiente de aprobación'}
               </span>
             </div>
           </div>
@@ -148,14 +152,19 @@ function PsyLayout({ session, children }: PsyLayoutProps) {
           </div>
         ) : isApproved === false && !isAdmin ? (
           <div className="psy-blocked" role="status">
-            <h2>Tu perfil está pendiente de aprobación</h2>
+            <h2>{isRejected ? 'Tu solicitud fue rechazada' : 'Tu perfil está pendiente de aprobación'}</h2>
             <p>
               {accessError ??
-                'Un administrador debe aprobar tu perfil profesional antes de que puedas atender pacientes.'}
+                (isRejected
+                  ? 'Un administrador rechazó tu solicitud como psicólogo. Actualiza tu información profesional y escribe al equipo para que la vuelva a revisar.'
+                  : 'Un administrador debe aprobar tu perfil profesional antes de que puedas atender pacientes.')}
             </p>
             <p>
-              Mientras tanto puedes completar tu <Link href="/psy/configuracion">información profesional</Link> y
-              publicar talleres y recursos, que quedarán en estado pendiente de revisión.
+              {isRejected ? 'Puedes revisar y mejorar tu ' : 'Mientras tanto puedes completar tu '}
+              <Link href="/psy/configuracion">información profesional</Link>
+              {isRejected
+                ? '.'
+                : ' y publicar talleres y recursos, que quedarán en estado pendiente de revisión.'}
             </p>
           </div>
         ) : !canAccess ? null : (
