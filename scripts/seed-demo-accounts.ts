@@ -1,15 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { PrismaClient, Role, AccountStatus } from '@prisma/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '';
-const supabaseSecretKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY ?? '';
+import { randomBytes } from 'node:crypto';
+import { resolveDemoTarget } from './lib/demo-target';
 
-if (!supabaseUrl || !supabaseSecretKey) {
-  console.error('Missing Supabase local env vars');
-  process.exit(1);
-}
+// Local stack only; the password comes from DEMO_PASSWORD or is generated and printed once.
+const target = resolveDemoTarget({ allowRemote: false });
+const generatedPassword = !process.env.DEMO_PASSWORD;
+const PASSWORD = process.env.DEMO_PASSWORD ?? `Demo-${randomBytes(9).toString('base64url')}`;
 
-const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
+const supabaseAdmin = createClient(target.supabaseUrl, target.serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
@@ -18,7 +18,7 @@ const prisma = new PrismaClient();
 const ACCOUNTS = [
   {
     email: 'user.demo@kitsunova.local',
-    password: 'DemoUser123!',
+    password: PASSWORD,
     role: Role.USER,
     firstName: 'Usuario',
     lastName: 'Demo',
@@ -26,7 +26,7 @@ const ACCOUNTS = [
   },
   {
     email: 'psy.demo@kitsunova.local',
-    password: 'DemoPsy123!',
+    password: PASSWORD,
     role: Role.PSYCHOLOGIST,
     firstName: 'Psicóloga',
     lastName: 'Demo',
@@ -34,7 +34,7 @@ const ACCOUNTS = [
   },
   {
     email: 'admin.demo@kitsunova.local',
-    password: 'DemoAdmin123!',
+    password: PASSWORD,
     role: Role.ADMIN,
     firstName: 'Admin',
     lastName: 'Demo',
@@ -132,6 +132,7 @@ async function main() {
     await ensureUser(account);
   }
   console.log('Demo accounts ready');
+  if (generatedPassword) console.log(`Generated password for all accounts (shown once): ${PASSWORD}`);
 }
 
 main()

@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 const seedSchema = z.object({
   SEED_ADMIN_EMAIL: z.string().email().default('admin@kitsunova.local'),
-  SEED_ADMIN_PASSWORD: z.string().min(8).default('Admin1234!'),
+  SEED_ADMIN_PASSWORD: z.string().min(12, 'Set SEED_ADMIN_PASSWORD (at least 12 characters); there is no default'),
   SEED_ADMIN_USERNAME: z.string().min(3).default('admin'),
   SEED_ADMIN_FIRST_NAME: z.string().min(1).default('Admin'),
   SEED_ADMIN_LAST_NAME: z.string().min(1).default('Kitsunova')
@@ -15,6 +15,12 @@ const seedSchema = z.object({
 
 async function main() {
   const seedEnv = seedSchema.parse(process.env);
+  const existing = await prisma.user.findUnique({ where: { email: seedEnv.SEED_ADMIN_EMAIL }, select: { id: true } });
+  if (existing) {
+    console.log(`${seedEnv.SEED_ADMIN_EMAIL} already exists; nothing was changed.`);
+    return;
+  }
+
   const passwordHash = await bcrypt.hash(seedEnv.SEED_ADMIN_PASSWORD, 12);
 
   const user = await prisma.user.upsert({
@@ -60,7 +66,6 @@ async function main() {
 
   console.log('Admin seed completed (LEGACY AUTH)');
   console.log(`Email: ${user.email}`);
-  console.log(`Password: ${seedEnv.SEED_ADMIN_PASSWORD}`);
   console.log('');
   console.log('LEGACY AUTH MIGRATION REQUIRED');
   console.log('Este usuario usa passwordHash legacy. Para Supabase Auth:');

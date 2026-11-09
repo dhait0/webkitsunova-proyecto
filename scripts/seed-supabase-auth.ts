@@ -20,7 +20,12 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
 const prisma = new PrismaClient();
 
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'admin@kitsunova.local';
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'Admin1234!';
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? '';
+
+if (ADMIN_PASSWORD.length < 12) {
+  console.error('Set SEED_ADMIN_PASSWORD (at least 12 characters). There is no default password.');
+  process.exit(1);
+}
 const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME ?? 'admin';
 const ADMIN_FIRST_NAME = process.env.SEED_ADMIN_FIRST_NAME ?? 'Admin';
 const ADMIN_LAST_NAME = process.env.SEED_ADMIN_LAST_NAME ?? 'Kitsunova';
@@ -44,25 +49,9 @@ async function main() {
     if (error) {
       const msg = (error as { message?: string }).message ?? '';
       if (msg.includes('already') || msg.includes('duplicate')) {
-        const { data: listData } = await supabaseAdmin.auth.admin.listUsers({
-          perPage: 100,
-        });
-        const existing = listData.users.find((u) => u.email === ADMIN_EMAIL);
-
-        if (!existing) {
-          throw new Error(`Usuario ${ADMIN_EMAIL} no encontrado en Supabase Auth`);
-        }
-
-        supabaseUserId = existing.id;
-        await supabaseAdmin.auth.admin.updateUserById(supabaseUserId, {
-          app_metadata: { role: 'ADMIN' },
-          user_metadata: {
-            first_name: ADMIN_FIRST_NAME,
-            last_name: ADMIN_LAST_NAME,
-            username: ADMIN_USERNAME,
-          },
-        });
-        console.log('✓ Usuario admin actualizado en Supabase Auth');
+        // Never touch an account that already exists: its password, role, MFA and
+        // profile are not this script's to change.
+        throw new Error(`${ADMIN_EMAIL} already exists in Supabase Auth; this script only creates new administrators.`);
       } else {
         throw error;
       }
@@ -122,7 +111,6 @@ async function main() {
   console.log('');
   console.log('Admin seed completed (Supabase Auth)');
   console.log(`Email: ${ADMIN_EMAIL}`);
-  console.log(`Password: ${ADMIN_PASSWORD}`);
 }
 
 main()
