@@ -4,10 +4,11 @@
  * status and profile, plus appointments, conversations, habits, workshops,
  * reviews, reports and notifications that make every dashboard show data.
  *
- * Local only. It refuses to run unless both the Supabase API and the database
- * resolve to this machine. Idempotent: every row has a deterministic id or
- * natural key, so running it again updates in place and shifts the dates
- * relative to "today".
+ * Run directly it is local only: it refuses unless both the Supabase API and the
+ * database resolve to this machine. A remote project can only be seeded through
+ * scripts/replace-with-demo-data.ts, which adds its own confirmations.
+ * Idempotent: every row has a deterministic id or natural key, so running it
+ * again updates in place and shifts the dates relative to "today".
  *
  *   DEMO_PASSWORD='...' npx tsx scripts/seed-demo-scenario.ts
  *
@@ -15,7 +16,7 @@
  * is stored in the repository.
  */
 import { randomBytes } from 'node:crypto';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import {
   AccountStatus,
   AppointmentStatus,
@@ -29,49 +30,21 @@ import {
   Role,
 } from '@prisma/client';
 import { fitsAvailability } from '../services/psy/availability';
+import { resolveDemoTarget, type DemoTarget } from './lib/demo-target';
 
-const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+let supabaseAdmin: SupabaseClient;
+let prisma: PrismaClient;
+let PASSWORD = '';
+let generatedPassword = false;
 
-function hostOf(value: string | undefined): string | null {
-  if (!value) return null;
-  try {
-    return new URL(value).hostname;
-  } catch {
-    return null;
-  }
+function initSeed(target: DemoTarget, password?: string) {
+  supabaseAdmin = createClient(target.supabaseUrl, target.serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  prisma = new PrismaClient();
+  generatedPassword = !password;
+  PASSWORD = password ?? `Demo-${randomBytes(9).toString('base64url')}`;
 }
-
-function assertLocalTarget(): { supabaseUrl: string; serviceKey: string } {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '';
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY ?? '';
-  const apiHost = hostOf(supabaseUrl);
-  const dbHost = hostOf(process.env.DATABASE_URL);
-
-  if (!supabaseUrl || !serviceKey || !process.env.DATABASE_URL) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL, the service key or DATABASE_URL.');
-  }
-
-  if (!apiHost || !LOCAL_HOSTS.has(apiHost) || !dbHost || !LOCAL_HOSTS.has(dbHost)) {
-    throw new Error(
-      `Refusing to seed: API host "${apiHost}" and database host "${dbHost}" must both be local.`,
-    );
-  }
-
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('Refusing to seed with NODE_ENV=production.');
-  }
-
-  return { supabaseUrl, serviceKey };
-}
-
-const { supabaseUrl, serviceKey } = assertLocalTarget();
-const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
-const prisma = new PrismaClient();
-
-const generatedPassword = !process.env.DEMO_PASSWORD;
-const PASSWORD = process.env.DEMO_PASSWORD ?? `Demo-${randomBytes(9).toString('base64url')}`;
 
 // --- Time helpers ---------------------------------------------------------
 // Availability is interpreted in America/Bogota (UTC-5, no daylight saving).
@@ -697,32 +670,51 @@ async function summary() {
   console.table(counts);
 }
 
-async function main() {
-  await seedAccounts();
-  await seedAppointments();
-  await seedLinks();
-  await seedReportsAndReviews();
-  await seedConversations();
-  await seedHabits();
-  await seedWorkshopsAndResources();
-  await seedReferralAndNotifications();
-  await summary();
-
-  console.log('Accounts (same password for all):');
-  for (const p of PEOPLE) console.log(`  ${p.role.padEnd(12)} ${p.email}`);
-  if (generatedPassword) {
-    console.log(`Generated password (shown once): ${PASSWORD}`);
-  } else {
-    console.log('Password: taken from DEMO_PASSWORD.');
+/**
+ * Seeds the scenario into the project `target` points at. The caller is
+ * responsible for having validated the target with `resolveDemoTarget`.
+ * Returns the password that was set on the seven accounts.
+ */
+export async function seedDemoScenario(
+  target: DemoTarget,
+  password?: string,
+): Promise<{ password: string; generated: boolean }> {
+  initSeed(target, password);
+  try {
+    await seedAccounts();
+    await seedAppointments();
+    await seedLinks();
+    await seedReportsAndReviews();
+    await seedConversations();
+    await seedHabits();
+    await seedWorkshopsAndResources();
+    await seedReferralAndNotifications();
+    await summary();
+    return { password: PASSWORD, generated: generatedPassword };
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
-main()
-  .catch((error) => {
+export const DEMO_ACCOUNT_EMAILS = PEOPLE.map((p) => p.email);
+
+const isEntrypoint = /seed-demo-scenario\.[cm]?[tj]s$/.test(process.argv[1] ?? '');
+
+if (isEntrypoint) {
+  (async () => {
+    const target = resolveDemoTarget({ allowRemote: false });
+    const result = await seedDemoScenario(target, process.env.DEMO_PASSWORD);
+
+    console.log('Accounts (same password for all):');
+    for (const p of PEOPLE) console.log(`  ${p.role.padEnd(12)} ${p.email}`);
+    if (result.generated) {
+      console.log(`Generated password (shown once): ${result.password}`);
+    } else {
+      console.log('Password: taken from DEMO_PASSWORD.');
+    }
+  })().catch((error) => {
     console.error('Demo scenario seed failed');
     console.error(error);
     process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });
+}
