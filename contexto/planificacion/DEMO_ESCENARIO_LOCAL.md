@@ -28,7 +28,7 @@ Sin `DEMO_PASSWORD` se genera una contraseña aleatoria y se muestra una sola ve
 | Citas (4 COMPLETED, 3 CONFIRMED, 3 PENDING, 1 CANCELLED, 1 NO_SHOW) | 12 (+1 de hoy si aún es posible) |
 | Vínculos paciente–psicólogo (1 ACTIVE por usuario, 1 ENDED) | 4 |
 | Conversaciones / mensajes bidireccionales | 3 / 9 |
-| Hábitos | 9 |
+| Hábitos (con meta semanal) / registros de cumplimiento (28 días) | 9 / ~144 |
 | Talleres (2 APPROVED, 1 PENDING) / inscripciones | 3 / 5 |
 | Recursos (2 APPROVED, 1 PENDING) | 3 |
 | Reseñas / reportes de paciente | 3 / 4 |
@@ -37,7 +37,7 @@ Sin `DEMO_PASSWORD` se genera una contraseña aleatoria y se muestra una sola ve
 Reglas respetadas: cada cita cabe en la disponibilidad del psicólogo y no se solapa con otra viva (el script lo comprueba antes de escribir); un usuario nunca tiene dos vínculos ACTIVE; los contadores `rating`, `reviewsCount` y `patientsCount` se recalculan a partir de las filas.
 
 ## Limitaciones del modelo
-- **No existe una tabla de registros de cumplimiento de hábitos**: `Habit` solo guarda `progress` y `status`. Por eso no se siembran registros diarios.
+- Los registros de cumplimiento (`HabitLog`) son datos sintéticos deterministas para mostrar rachas y constancia; en uso real los crea la persona al marcar sus días.
 - Los scripts anteriores (`seed-demo-accounts.ts`, `seed-demo-data.ts`, `seed-supabase-auth.ts`) siguen en el repositorio con contraseñas de demostración fijas y no son idempotentes con citas y conversaciones; este escenario no depende de ellos.
 
 ## Para replicarlo en otro entorno

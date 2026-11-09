@@ -390,7 +390,7 @@ export async function getAdminPsyStats(): Promise<AdminPsyStats> {
   const [total, approved, pending, suspended] = await Promise.all([
     prisma.psychologistProfile.count(),
     prisma.psychologistProfile.count({ where: { isApproved: true, isVerified: true } }),
-    prisma.psychologistProfile.count({ where: { isApproved: false } }),
+    prisma.psychologistProfile.count({ where: { isApproved: false, rejectedAt: null } }),
     prisma.psychologistProfile.count({ where: { isApproved: true, isVerified: false } }),
   ]);
 
@@ -418,6 +418,10 @@ export async function getPsychologists(params?: {
       where.isVerified = true;
     } else if (params.status === 'revision') {
       where.isApproved = false;
+      where.rejectedAt = null;
+    } else if (params.status === 'rechazado') {
+      where.isApproved = false;
+      where.rejectedAt = { not: null };
     } else if (params.status === 'suspendido') {
       where.isApproved = true;
       where.isVerified = false;
@@ -479,7 +483,13 @@ export async function getPsychologists(params?: {
       name,
       specialty: p.specialties?.[0] ?? '',
       specialties: p.specialties ?? [],
-      status: p.isApproved ? (p.isVerified ? 'activo' : 'revisión') : 'pendiente',
+      status: p.isApproved
+        ? p.isVerified
+          ? 'activo'
+          : 'suspendido'
+        : p.rejectedAt
+          ? 'rechazado'
+          : 'pendiente',
       verified: p.isVerified,
       patients: p.patientsCount,
       rating: p.rating,
@@ -526,7 +536,7 @@ export async function approvePsychologist(
 
   await prisma.psychologistProfile.update({
     where: { id: psyId },
-    data: { isApproved: true, isVerified: true },
+    data: { isApproved: true, isVerified: true, rejectedAt: null },
   });
 
   return { success: true, message: 'Psicólogo aprobado correctamente' };
@@ -553,7 +563,7 @@ export async function rejectPsychologist(
 
   await prisma.psychologistProfile.update({
     where: { id: psyId },
-    data: { isApproved: false, isVerified: false },
+    data: { isApproved: false, isVerified: false, rejectedAt: new Date() },
   });
 
   return { success: true, message: 'Solicitud de psicólogo rechazada' };

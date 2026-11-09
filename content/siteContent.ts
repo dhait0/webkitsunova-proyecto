@@ -300,35 +300,3 @@ export const dashboardPsychologistCards = [
   }
 ] as const;
 
-export const dashboardStatusItems = [
-  { label: 'Rutina', value: '78%', progress: 78 },
-  { label: 'Enfoque', value: '64%', progress: 64 },
-  { label: 'Sueño', value: '82%', progress: 82 },
-  { label: 'Ánimo', value: '91%', progress: 91 }
-] as const;
-
-export const dashboardActivityItems = [
-  {
-    title: 'Revisión de hábitos',
-    text: 'Hoy registraste 4 acciones completadas y 1 pendiente.'
-  },
-  {
-    title: 'Conversación pendiente',
-    text: 'Un psicólogo respondió tu mensaje y espera continuidad.'
-  },
-  {
-    title: 'Próxima cita',
-    text: 'Tienes una sesión agendada para el jueves a las 16:00.'
-  }
-] as const;
-
-export const dashboardFocusItems = [
-  {
-    title: 'Prioridad del día',
-    text: 'Reducir procrastinación en la franja de la mañana.'
-  },
-  {
-    title: 'Siguiente acción',
-    text: 'Abrir el chat y confirmar el seguimiento semanal.'
-  }
-] as const;

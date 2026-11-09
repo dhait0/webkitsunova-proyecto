@@ -555,3 +555,86 @@ describe('updatePsychologistProfile - validación y email', () => {
     });
   });
 });
+
+describe('approvePsychologist / rejectPsychologist - estado de la solicitud', () => {
+  beforeEach(() => {
+    authorize.mockResolvedValue(adminSession);
+    prisma.psychologistProfile.findUnique.mockResolvedValue({ profileId: 'p1' });
+    prisma.psychologistProfile.update.mockResolvedValue({});
+  });
+
+  it('rechazar marca la fecha de rechazo y quita aprobación y verificación', async () => {
+    const result = await actions.rejectPsychologist('psy-1');
+
+    expect(result.success).toBe(true);
+    expect(prisma.psychologistProfile.update).toHaveBeenCalledWith({
+      where: { id: 'psy-1' },
+      data: { isApproved: false, isVerified: false, rejectedAt: expect.any(Date) },
+    });
+  });
+
+  it('aprobar limpia un rechazo anterior', async () => {
+    const result = await actions.approvePsychologist('psy-1');
+
+    expect(result.success).toBe(true);
+    expect(prisma.psychologistProfile.update).toHaveBeenCalledWith({
+      where: { id: 'psy-1' },
+      data: { isApproved: true, isVerified: true, rejectedAt: null },
+    });
+  });
+
+  it('un administrador no autorizado no modifica nada', async () => {
+    authorize.mockResolvedValue(null);
+    await actions.rejectPsychologist('psy-1');
+    await actions.approvePsychologist('psy-1');
+    expect(prisma.psychologistProfile.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('getPsychologists - estados pendiente y rechazado', () => {
+  const row = (over: Record<string, unknown>) => ({
+    id: 'p1',
+    isApproved: false,
+    isVerified: false,
+    rejectedAt: null,
+    specialties: [],
+    patientsCount: 0,
+    rating: 0,
+    reviewsCount: 0,
+    sessionPrice: null,
+    profile: { firstName: 'A', lastName: 'B', user: { email: 'a@b.test' } },
+    ...over,
+  });
+
+  beforeEach(() => {
+    authorize.mockResolvedValue(adminSession);
+    prisma.psychologistProfile.count.mockResolvedValue(0);
+  });
+
+  it('distingue pendiente, rechazado, activo y suspendido', async () => {
+    prisma.psychologistProfile.findMany.mockResolvedValue([
+      row({ id: 'a' }),
+      row({ id: 'b', rejectedAt: new Date() }),
+      row({ id: 'c', isApproved: true, isVerified: true }),
+      row({ id: 'd', isApproved: true, isVerified: false }),
+    ]);
+
+    const result = await actions.getPsychologists({});
+
+    expect(result.psychologists.map((p) => p.status)).toEqual(['pendiente', 'rechazado', 'activo', 'suspendido']);
+  });
+
+  it('filtra pendientes sin incluir rechazados, y rechazados aparte', async () => {
+    prisma.psychologistProfile.findMany.mockResolvedValue([]);
+
+    await actions.getPsychologists({ status: 'revision' });
+    expect(prisma.psychologistProfile.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ where: { isApproved: false, rejectedAt: null } }),
+    );
+
+    await actions.getPsychologists({ status: 'rechazado' });
+    expect(prisma.psychologistProfile.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ where: { isApproved: false, rejectedAt: { not: null } } }),
+    );
+  });
+});

@@ -167,15 +167,22 @@ export async function listPatientAppointments(
   const status = typeof query.status === 'string' ? query.status : '';
   const now = new Date();
 
-  const nowBounds: Prisma.AppointmentWhereInput = {
-    ...(scope === 'today'
+  // "Próximas" are the live ones still ahead; anything closed or already started
+  // belongs to the history, so a cancelled future session does not linger in
+  // the upcoming list.
+  const nowBounds: Prisma.AppointmentWhereInput =
+    scope === 'today'
       ? { startsAt: { gte: startOfTodayUtc(), lt: endOfTodayUtc() } }
       : scope === 'upcoming'
-        ? { startsAt: { gte: now } }
+        ? { startsAt: { gte: now }, status: { in: ['PENDING', 'CONFIRMED'] } }
         : scope === 'past'
-          ? { startsAt: { lt: now } }
-          : {}),
-  };
+          ? {
+              OR: [
+                { startsAt: { lt: now } },
+                { status: { in: ['CANCELLED', 'COMPLETED', 'NO_SHOW'] } },
+              ],
+            }
+          : {};
 
   const where: Prisma.AppointmentWhereInput = {
     patientUserId,
@@ -378,6 +385,12 @@ export async function createAppointment(psychologistId: string, input: Appointme
   return appointment;
 }
 
+/** Status changes a psychologist may make; everything else is refused. */
+const PSY_TRANSITIONS: Record<string, Array<'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW'>> = {
+  PENDING: ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED: ['COMPLETED', 'CANCELLED', 'NO_SHOW'],
+};
+
 export async function updateAppointmentStatus(
   psychologistId: string,
   id: string,
@@ -396,6 +409,14 @@ export async function updateAppointmentStatus(
     throw new AppointmentConflictError('La sesión ya no admite cambios de estado');
   }
 
+  if (!PSY_TRANSITIONS[appointment.status]?.includes(status)) {
+    throw new AppointmentConflictError('Esta sesión no admite ese cambio de estado');
+  }
+
+  if ((status === 'COMPLETED' || status === 'NO_SHOW') && appointment.startsAt.getTime() > Date.now()) {
+    throw new AppointmentConflictError('La sesión aún no ha comenzado');
+  }
+
   const updated = await prisma.appointment.update({
     where: { id },
     data: {
@@ -404,12 +425,30 @@ export async function updateAppointmentStatus(
     },
   });
 
-  if (status === 'CANCELLED') {
+  if (status === 'CONFIRMED') {
+    // Decision D2: confirming opens the link and closes the previous one.
+    await closeOtherActiveLinks(psychologistId, appointment.patientUserId);
+    await ensurePatientLink(psychologistId, appointment.patientUserId);
+    await recalculatePatientsCount(psychologistId);
+
     await createNotification({
       userId: appointment.patientUserId,
       kind: 'appointment',
-      title: 'Sesión cancelada',
-      body: cancelReason ?? 'Tu psicólogo canceló la sesión.',
+      title: 'Solicitud confirmada',
+      body: `Tu psicólogo confirmó la sesión del ${appointment.startsAt.toISOString()}.`,
+      link: '/dashboard/citas',
+    });
+  }
+
+  if (status === 'CANCELLED') {
+    const wasRequest = appointment.status === 'PENDING';
+    await createNotification({
+      userId: appointment.patientUserId,
+      kind: 'appointment',
+      title: wasRequest ? 'Solicitud rechazada' : 'Sesión cancelada',
+      body:
+        cancelReason ??
+        (wasRequest ? 'Tu psicólogo no pudo aceptar la solicitud.' : 'Tu psicólogo canceló la sesión.'),
       link: '/dashboard/citas',
     });
   }
@@ -427,6 +466,48 @@ export async function updateAppointmentStatus(
     });
     await recalculatePatientsCount(psychologistId);
   }
+
+  return updated;
+}
+
+/**
+ * A patient cancels one of their own appointments while it is still pending or
+ * confirmed and has not started. The psychologist is notified.
+ */
+export async function cancelAppointmentByUser(
+  patientUserId: string,
+  id: string,
+  reason?: string | null,
+) {
+  const appointment = await prisma.appointment.findFirst({
+    where: { id, patientUserId },
+  });
+
+  if (!appointment) {
+    throw new AppointmentConflictError('Cita no encontrada');
+  }
+
+  if (appointment.status !== 'PENDING' && appointment.status !== 'CONFIRMED') {
+    throw new AppointmentConflictError('Esta cita ya no se puede cancelar');
+  }
+
+  if (appointment.startsAt.getTime() <= Date.now()) {
+    throw new AppointmentConflictError('La cita ya comenzó y no se puede cancelar');
+  }
+
+  const cancelReason = reason?.trim() || null;
+  const updated = await prisma.appointment.update({
+    where: { id },
+    data: { status: 'CANCELLED', cancelReason },
+  });
+
+  await createNotification({
+    userId: appointment.psychologistId,
+    kind: 'appointment',
+    title: appointment.status === 'PENDING' ? 'Solicitud retirada' : 'Sesión cancelada por el paciente',
+    body: cancelReason ?? 'El paciente canceló la cita.',
+    link: '/psy/sesiones',
+  });
 
   return updated;
 }

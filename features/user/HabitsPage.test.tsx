@@ -1,187 +1,193 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import HabitsPage from '@/features/user/HabitsPage';
+import { computeHabitStats } from '@/services/user/habit-stats';
+import { summarizeHabits, type HabitsOverview, type UserHabit } from '@/services/user/habits.service';
+
+// summarizeHabits lives next to the Prisma queries; the page tests only need the pure helper.
+vi.mock('@/lib/db/prisma', () => ({ prisma: {} }));
 
 const mockRefresh = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: mockRefresh }),
 }));
 
-const mockCreateHabitAction = vi.fn();
-const mockUpdateHabitAction = vi.fn();
-const mockRegisterHabitProgressAction = vi.fn();
-const mockDeleteHabitAction = vi.fn();
+const mockCreate = vi.fn();
+const mockUpdate = vi.fn();
+const mockSetCompletion = vi.fn();
+const mockDelete = vi.fn();
 
 vi.mock('@/app/(user)/dashboard/habitos/actions', () => ({
-  createHabitAction: (...args: unknown[]) => mockCreateHabitAction(...args),
-  updateHabitAction: (...args: unknown[]) => mockUpdateHabitAction(...args),
-  registerHabitProgressAction: (...args: unknown[]) => mockRegisterHabitProgressAction(...args),
-  deleteHabitAction: (...args: unknown[]) => mockDeleteHabitAction(...args),
+  createHabitAction: (...args: unknown[]) => mockCreate(...args),
+  updateHabitAction: (...args: unknown[]) => mockUpdate(...args),
+  setHabitCompletionAction: (...args: unknown[]) => mockSetCompletion(...args),
+  deleteHabitAction: (...args: unknown[]) => mockDelete(...args),
 }));
+
+const TODAY = '2026-11-11';
+
+function habit(over: Partial<UserHabit> & { logged?: string[] } = {}): UserHabit {
+  const target = over.targetPerWeek ?? 7;
+  return {
+    id: 'h1',
+    title: 'Caminar',
+    description: 'Veinte minutos al día',
+    status: 'active',
+    targetPerWeek: target,
+    createdAt: '2026-10-01T00:00:00.000Z',
+    stats: computeHabitStats(over.logged ?? [], target, TODAY),
+    ...over,
+  } as UserHabit;
+}
+
+function overview(habits: UserHabit[]): HabitsOverview {
+  return { today: TODAY, habits, summary: summarizeHabits(habits) };
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mockSetCompletion.mockResolvedValue({ success: true });
+  mockUpdate.mockResolvedValue({ success: true });
+  mockCreate.mockResolvedValue({ success: true });
+  mockDelete.mockResolvedValue({ success: true });
 });
 
-const baseData = {
-  habits: [
-    {
-      id: 'hab-1',
-      title: 'Sueño',
-      description: 'Bloquea pantallas antes de dormir y completa tu rutina nocturna.',
-      progress: 82,
-      status: 'Estable',
-    },
-    {
-      id: 'hab-2',
-      title: 'Movimiento',
-      description: 'Camina 20 minutos y registra pausas activas durante el día.',
-      progress: 64,
-      status: 'En curso',
-    },
-    {
-      id: 'hab-3',
-      title: 'Respiración',
-      description: 'Usa la herramienta de pausa guiada cuando suba el nivel de estrés.',
-      progress: 91,
-      status: 'Muy bien',
-    },
-  ],
-};
-
 describe('HabitsPage', () => {
-  it('renderiza hábitos reales con datos públicos únicamente', () => {
-    render(<HabitsPage data={baseData} error={null} />);
-
-    expect(screen.getByText('Sueño')).toBeInTheDocument();
-    expect(screen.getByText('Movimiento')).toBeInTheDocument();
-    expect(screen.getByText('Respiración')).toBeInTheDocument();
-    expect(screen.getByText('Bloquea pantallas antes de dormir y completa tu rutina nocturna.')).toBeInTheDocument();
-    expect(screen.getByText('Camina 20 minutos y registra pausas activas durante el día.')).toBeInTheDocument();
-    expect(screen.getByText('Usa la herramienta de pausa guiada cuando suba el nivel de estrés.')).toBeInTheDocument();
-    expect(screen.getByText('Estable')).toBeInTheDocument();
-    expect(screen.getByText('En curso')).toBeInTheDocument();
-    expect(screen.getByText('Muy bien')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'Progreso de Sueño' })).toHaveAttribute('aria-valuenow', '82');
-    expect(screen.getByRole('progressbar', { name: 'Progreso de Movimiento' })).toHaveAttribute('aria-valuenow', '64');
-    expect(screen.getByRole('progressbar', { name: 'Progreso de Respiración' })).toHaveAttribute('aria-valuenow', '91');
-  });
-
-  it('no expone datos privados del usuario', () => {
-    render(<HabitsPage data={baseData} error={null} />);
-
-    const pageContent = screen.getByText('Sueño').closest('section')?.textContent ?? '';
-    expect(pageContent).not.toContain('email');
-    expect(pageContent).not.toContain('phone');
-    expect(pageContent).not.toContain('password');
-    expect(pageContent).not.toContain('twoFactor');
-    expect(pageContent).not.toContain('userId');
-  });
-
-  it('no muestra datos ilustrativos ni sello de ejemplo', () => {
-    render(<HabitsPage data={baseData} error={null} />);
-
-    expect(screen.queryByText('Ejemplo')).not.toBeInTheDocument();
-    expect(screen.queryByText(/datos ilustrativos/)).not.toBeInTheDocument();
-  });
-
-  it('muestra estado vacío cuando no hay hábitos', () => {
-    render(
-      <HabitsPage
-        data={{ habits: [] }}
-        error={null}
-      />,
-    );
+  it('muestra un estado vacío sin cifras inventadas', () => {
+    render(<HabitsPage data={overview([])} error={null} />);
 
     expect(screen.getByText(/No tienes hábitos registrados todavía/)).toBeInTheDocument();
-    expect(screen.queryByText('Sueño')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Resumen de hábitos')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Crear hábito' })).toBeInTheDocument();
   });
 
-  it('muestra estado de error cuando la consulta falla', () => {
-    render(<HabitsPage data={baseData} error='No se pudieron cargar los hábitos' />);
-
-    expect(screen.getByText('No se pudieron cargar los hábitos')).toBeInTheDocument();
-    expect(screen.queryByText('Sueño')).not.toBeInTheDocument();
+  it('muestra el error cuando falla la carga', () => {
+    render(<HabitsPage data={overview([])} error="No se pudieron cargar los hábitos" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('No se pudieron cargar los hábitos');
   });
 
-  it('muestra formulario de nuevo hábito también en estado vacío', () => {
-    render(<HabitsPage data={{ habits: [] }} error={null} />);
+  it('presenta racha, constancia y resumen calculados con los registros', () => {
+    const data = overview([habit({ logged: [TODAY, '2026-11-10', '2026-11-09'] })]);
+    render(<HabitsPage data={data} error={null} />);
 
-    expect(screen.getByLabelText('Título del nuevo hábito')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /crear hábito/i })).toBeInTheDocument();
+    const summary = screen.getByLabelText('Resumen de hábitos');
+    expect(summary).toHaveTextContent('1/1'); // hoy
+    expect(summary).toHaveTextContent('Todo registrado hoy');
+    expect(screen.getByText('Racha').nextElementSibling).toHaveTextContent('3 días');
+    expect(screen.getByText('Mejor racha').nextElementSibling).toHaveTextContent('3 días');
+    expect(screen.getByRole('progressbar', { name: 'Constancia de Caminar' })).toHaveAttribute('aria-valuenow', '11');
   });
 
-  it('crea un hábito y limpia el formulario al tener éxito', async () => {
-    mockCreateHabitAction.mockResolvedValue({ success: true });
-    render(<HabitsPage data={{ habits: [] }} error={null} />);
+  it('marca hoy con la fecha del día del usuario y refresca', async () => {
+    render(<HabitsPage data={overview([habit()])} error={null} />);
 
-    fireEvent.change(screen.getByLabelText('Título del nuevo hábito'), { target: { value: 'Leer' } });
-    fireEvent.change(screen.getByLabelText('Descripción del nuevo hábito'), { target: { value: '10 min' } });
-    fireEvent.click(screen.getByRole('button', { name: /crear hábito/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar hoy' }));
 
-    await waitFor(() => expect(mockCreateHabitAction).toHaveBeenCalled());
-    const fd = mockCreateHabitAction.mock.calls[0][0] as FormData;
-    expect(fd.get('title')).toBe('Leer');
-    expect(fd.get('description')).toBe('10 min');
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Hábito creado'));
-    expect((screen.getByLabelText('Título del nuevo hábito') as HTMLInputElement).value).toBe('');
+    await waitFor(() => expect(mockSetCompletion).toHaveBeenCalledWith('h1', TODAY, true));
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalled());
+    expect(await screen.findByText(/Registraste "Caminar" hoy/)).toBeInTheDocument();
   });
 
-  it('registra progreso (+10) para un hábito', async () => {
-    mockRegisterHabitProgressAction.mockResolvedValue({ success: true });
-    render(<HabitsPage data={{ habits: [baseData.habits[0]] }} error={null} />);
+  it('deshace el registro de hoy cuando ya estaba hecho', async () => {
+    render(<HabitsPage data={overview([habit({ logged: [TODAY] })])} error={null} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Registrar progreso de Sueño/i }));
+    const button = screen.getByRole('button', { name: /Hecho hoy/ });
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(button);
 
-    await waitFor(() => expect(mockRegisterHabitProgressAction).toHaveBeenCalled());
-    const fd = mockRegisterHabitProgressAction.mock.calls[0][0] as FormData;
-    expect(fd.get('habitId')).toBe('hab-1');
-    expect(fd.get('delta')).toBe('10');
+    await waitFor(() => expect(mockSetCompletion).toHaveBeenCalledWith('h1', TODAY, false));
   });
 
-  it('edita un hábito en línea con Guardar/Cancelar', async () => {
-    mockUpdateHabitAction.mockResolvedValue({ success: true });
-    render(<HabitsPage data={{ habits: [baseData.habits[0]] }} error={null} />);
+  it('permite marcar un día anterior desde la tira de siete días', async () => {
+    render(<HabitsPage data={overview([habit()])} error={null} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Editar Sueño' }));
-    const titleInput = screen.getByLabelText('Título de Sueño') as HTMLInputElement;
-    fireEvent.change(titleInput, { target: { value: 'Sueño nuevo' } });
+    const strip = screen.getByRole('group', { name: 'Últimos 7 días de Caminar' });
+    expect(strip.querySelectorAll('button')).toHaveLength(7);
+
+    fireEvent.click(screen.getByRole('button', { name: /martes, 10 de noviembre.*sin registrar/ }));
+    await waitFor(() => expect(mockSetCompletion).toHaveBeenCalledWith('h1', '2026-11-10', true));
+  });
+
+  it('no deja registrar días de un hábito pausado', () => {
+    render(<HabitsPage data={overview([habit({ status: 'paused' })])} error={null} />);
+
+    expect(screen.queryByRole('button', { name: 'Marcar hoy' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Hábito en pausa/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reactivar Caminar' })).toBeEnabled();
+  });
+
+  it('muestra el mensaje del servidor cuando el registro falla', async () => {
+    mockSetCompletion.mockResolvedValue({ success: false, message: 'No se puede registrar un día futuro' });
+    render(<HabitsPage data={overview([habit()])} error={null} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar hoy' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se puede registrar un día futuro');
+    expect(mockRefresh).not.toHaveBeenCalled();
+  });
+
+  it('crea un hábito con su meta semanal', async () => {
+    render(<HabitsPage data={overview([])} error={null} />);
+
+    fireEvent.change(screen.getByLabelText('Título'), { target: { value: 'Leer' } });
+    fireEvent.change(screen.getByLabelText('Meta semanal'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear hábito' }));
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
+    const form = mockCreate.mock.calls[0][0] as FormData;
+    expect(form.get('title')).toBe('Leer');
+    expect(form.get('targetPerWeek')).toBe('3');
+  });
+
+  it('pausa y termina un hábito mediante el estado', async () => {
+    render(<HabitsPage data={overview([habit()])} error={null} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pausar Caminar' }));
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+    expect((mockUpdate.mock.calls[0][0] as FormData).get('status')).toBe('paused');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Terminar Caminar' })).toBeEnabled());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Terminar Caminar' }));
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(2));
+    expect((mockUpdate.mock.calls[1][0] as FormData).get('status')).toBe('completed');
+  });
+
+  it('edita título y meta, y cancela sin guardar', async () => {
+    render(<HabitsPage data={overview([habit()])} error={null} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar Caminar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(mockUpdate).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Editar Caminar' }));
+    fireEvent.change(screen.getByLabelText('Título', { selector: '#edit-title-h1' }), { target: { value: 'Caminar más' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
-    await waitFor(() => expect(mockUpdateHabitAction).toHaveBeenCalled());
-    const fd = mockUpdateHabitAction.mock.calls[0][0] as FormData;
-    expect(fd.get('habitId')).toBe('hab-1');
-    expect(fd.get('title')).toBe('Sueño nuevo');
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalled());
+    const form = mockUpdate.mock.calls[0][0] as FormData;
+    expect(form.get('habitId')).toBe('h1');
+    expect(form.get('title')).toBe('Caminar más');
   });
 
-  it('completa un hábito activo', async () => {
-    mockUpdateHabitAction.mockResolvedValue({ success: true });
-    const activeHabit = { ...baseData.habits[0], status: 'active' };
-    render(<HabitsPage data={{ habits: [activeHabit] }} error={null} />);
+  it('pide confirmación antes de eliminar y avisa de que se borra el historial', async () => {
+    render(<HabitsPage data={overview([habit()])} error={null} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Completar Sueño' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Caminar' }));
+    expect(mockDelete).not.toHaveBeenCalled();
+    expect(screen.getByRole('note')).toHaveTextContent('todo su historial');
 
-    await waitFor(() => expect(mockUpdateHabitAction).toHaveBeenCalled());
-    const fd = mockUpdateHabitAction.mock.calls[0][0] as FormData;
-    expect(fd.get('habitId')).toBe('hab-1');
-    expect(fd.get('status')).toBe('completed');
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar eliminación de Caminar' }));
+    await waitFor(() => expect(mockDelete).toHaveBeenCalled());
+    expect((mockDelete.mock.calls[0][0] as FormData).get('habitId')).toBe('h1');
   });
 
-  it('elimina con confirmación en la UI (sin window.confirm)', async () => {
-    mockDeleteHabitAction.mockResolvedValue({ success: true });
-    const confirmSpy = vi.spyOn(window, 'confirm');
-    render(<HabitsPage data={{ habits: [baseData.habits[0]] }} error={null} />);
+  it('despliega el historial de 28 días', () => {
+    render(<HabitsPage data={overview([habit({ logged: [TODAY] })])} error={null} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Sueño' }));
-    expect(mockDeleteHabitAction).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Confirmar eliminación de Sueño' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Cancelar eliminación de Sueño' })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmar eliminación de Sueño' }));
-    await waitFor(() => expect(mockDeleteHabitAction).toHaveBeenCalled());
-    const fd = mockDeleteHabitAction.mock.calls[0][0] as FormData;
-    expect(fd.get('habitId')).toBe('hab-1');
-    expect(confirmSpy).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
+    expect(screen.queryByRole('img', { name: /Historial de 28 días/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver historial' }));
+    const heat = screen.getByRole('img', { name: 'Historial de 28 días de Caminar' });
+    expect(heat.querySelectorAll('.user-heat-cell')).toHaveLength(28);
+    expect(heat.querySelectorAll('.is-done')).toHaveLength(1);
   });
 });

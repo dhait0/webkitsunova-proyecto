@@ -1,17 +1,30 @@
 'use server';
 
 import { requireUser } from '@/lib/auth/guard';
-import { createHabit, deleteHabit, registerHabitProgress, updateHabit } from '@/services/user/habits.service';
+import {
+  HABIT_STATUSES,
+  createHabit,
+  deleteHabit,
+  setHabitCompletion,
+  updateHabit,
+} from '@/services/user/habits.service';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 const habitTitleSchema = z.string().trim().min(1, 'El título es obligatorio').max(80, 'El título debe tener máximo 80 caracteres');
 const habitDescriptionSchema = z.string().max(500, 'La descripción debe tener máximo 500 caracteres').optional();
-const habitStatusSchema = z.enum(['active', 'completed'], {
-  errorMap: () => ({ message: "El estado debe ser 'active' o 'completed'" }),
+const habitStatusSchema = z.enum(HABIT_STATUSES, {
+  errorMap: () => ({ message: 'El estado no es válido' }),
 });
-const habitDeltaSchema = z.number().int('El progreso debe ser un número entero').min(1, 'El progreso debe ser entre 1 y 100').max(100, 'El progreso debe ser entre 1 y 100');
+const targetSchema = z.coerce
+  .number({ invalid_type_error: 'La meta semanal debe ser un número' })
+  .int('La meta semanal debe ser un número entero')
+  .min(1, 'La meta semanal debe estar entre 1 y 7 días')
+  .max(7, 'La meta semanal debe estar entre 1 y 7 días');
 const habitIdSchema = z.string().trim().min(1, 'Identificador de hábito no válido');
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha no válida');
+
+export type HabitActionResult = { success: boolean; message?: string };
 
 async function requireActiveUser() {
   const session = await requireUser();
@@ -28,18 +41,30 @@ function zodMessage(error: z.ZodError) {
   return error.errors[0]?.message ?? 'Datos no válidos';
 }
 
-export async function createHabitAction(formData: FormData) {
+function text(formData: FormData, name: string): string | undefined {
+  const value = formData.get(name);
+  return typeof value === 'string' ? value : undefined;
+}
+
+function failure(error: unknown, fallback: string): HabitActionResult {
+  return { success: false, message: error instanceof Error ? error.message : fallback };
+}
+
+const refresh = () => {
+  revalidatePath('/dashboard/habitos');
+  revalidatePath('/dashboard');
+};
+
+export async function createHabitAction(formData: FormData): Promise<HabitActionResult> {
   const auth = await requireActiveUser();
   if (!auth.success) return { success: false, message: auth.message };
 
   const parsed = z
-    .object({
-      title: habitTitleSchema,
-      description: habitDescriptionSchema,
-    })
+    .object({ title: habitTitleSchema, description: habitDescriptionSchema, targetPerWeek: targetSchema })
     .safeParse({
       title: formData.get('title'),
-      description: typeof formData.get('description') === 'string' ? (formData.get('description') as string) : undefined,
+      description: text(formData, 'description'),
+      targetPerWeek: text(formData, 'targetPerWeek') ?? '7',
     });
   if (!parsed.success) return { success: false, message: zodMessage(parsed.error) };
 
@@ -47,105 +72,96 @@ export async function createHabitAction(formData: FormData) {
     await createHabit(auth.session.id, {
       title: parsed.data.title,
       description: parsed.data.description?.trim() || null,
+      targetPerWeek: parsed.data.targetPerWeek,
     });
-    revalidatePath('/dashboard/habitos');
+    refresh();
     return { success: true };
   } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
-    return { success: false, message: 'No se pudo crear el hábito' };
+    return failure(error, 'No se pudo crear el hábito');
   }
 }
 
-export async function updateHabitAction(formData: FormData) {
+export async function updateHabitAction(formData: FormData): Promise<HabitActionResult> {
   const auth = await requireActiveUser();
   if (!auth.success) return { success: false, message: auth.message };
 
-  const habitIdParsed = habitIdSchema.safeParse(formData.get('habitId'));
-  if (!habitIdParsed.success) return { success: false, message: zodMessage(habitIdParsed.error) };
+  const habitId = habitIdSchema.safeParse(formData.get('habitId'));
+  if (!habitId.success) return { success: false, message: zodMessage(habitId.error) };
 
-  const titleRaw = formData.get('title');
-  const descriptionRaw = formData.get('description');
-  const statusRaw = formData.get('status');
+  const title = text(formData, 'title');
+  const description = text(formData, 'description');
+  const status = text(formData, 'status');
+  const target = text(formData, 'targetPerWeek');
 
-  if (statusRaw !== null && typeof statusRaw === 'string') {
-    const statusParsed = habitStatusSchema.safeParse(statusRaw);
-    if (!statusParsed.success) return { success: false, message: zodMessage(statusParsed.error) };
+  if (title !== undefined) {
+    const parsed = habitTitleSchema.safeParse(title);
+    if (!parsed.success) return { success: false, message: zodMessage(parsed.error) };
   }
-  if (titleRaw !== null && typeof titleRaw === 'string') {
-    const titleParsed = habitTitleSchema.safeParse(titleRaw);
-    if (!titleParsed.success) return { success: false, message: zodMessage(titleParsed.error) };
+  if (description !== undefined) {
+    const parsed = habitDescriptionSchema.safeParse(description);
+    if (!parsed.success) return { success: false, message: zodMessage(parsed.error) };
   }
-  if (descriptionRaw !== null && typeof descriptionRaw === 'string') {
-    const descParsed = habitDescriptionSchema.safeParse(descriptionRaw);
-    if (!descParsed.success) return { success: false, message: zodMessage(descParsed.error) };
+  if (status !== undefined) {
+    const parsed = habitStatusSchema.safeParse(status);
+    if (!parsed.success) return { success: false, message: zodMessage(parsed.error) };
   }
-
-  const status = statusRaw !== null && typeof statusRaw === 'string' ? statusRaw : undefined;
-  const title = titleRaw !== null && typeof titleRaw === 'string' ? titleRaw.trim() : undefined;
-  const description =
-    descriptionRaw === null
-      ? undefined
-      : typeof descriptionRaw === 'string'
-        ? descriptionRaw.trim() || null
-        : undefined;
+  if (target !== undefined) {
+    const parsed = targetSchema.safeParse(target);
+    if (!parsed.success) return { success: false, message: zodMessage(parsed.error) };
+  }
 
   try {
-    await updateHabit(auth.session.id, habitIdParsed.data, {
-      title,
-      description,
+    await updateHabit(auth.session.id, habitId.data, {
+      title: title?.trim(),
+      description: description === undefined ? undefined : description.trim() || null,
       status,
+      targetPerWeek: target === undefined ? undefined : Number(target),
     });
-    revalidatePath('/dashboard/habitos');
+    refresh();
     return { success: true };
   } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
-    return { success: false, message: 'No se pudo actualizar el hábito' };
+    return failure(error, 'No se pudo actualizar el hábito');
   }
 }
 
-export async function registerHabitProgressAction(formData: FormData) {
+/** Marks (done=true) or unmarks (done=false) a habit on a day; today when `date` is omitted. */
+export async function setHabitCompletionAction(
+  habitId: string,
+  date: string | null,
+  done: boolean,
+): Promise<HabitActionResult> {
   const auth = await requireActiveUser();
   if (!auth.success) return { success: false, message: auth.message };
 
-  const habitIdParsed = habitIdSchema.safeParse(formData.get('habitId'));
-  if (!habitIdParsed.success) return { success: false, message: zodMessage(habitIdParsed.error) };
-
-  const deltaRaw = formData.get('delta');
-  const deltaNum = deltaRaw === null || deltaRaw === '' ? 10 : Number(deltaRaw);
-  const deltaParsed = habitDeltaSchema.safeParse(deltaNum);
-  if (!deltaParsed.success) return { success: false, message: zodMessage(deltaParsed.error) };
+  const parsed = z
+    .object({ habitId: habitIdSchema, date: dateSchema.nullable(), done: z.boolean() })
+    .safeParse({ habitId, date, done });
+  if (!parsed.success) return { success: false, message: zodMessage(parsed.error) };
 
   try {
-    await registerHabitProgress(auth.session.id, habitIdParsed.data, deltaParsed.data);
-    revalidatePath('/dashboard/habitos');
+    await setHabitCompletion(auth.session.id, parsed.data.habitId, {
+      date: parsed.data.date ?? undefined,
+      done: parsed.data.done,
+    });
+    refresh();
     return { success: true };
   } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
-    return { success: false, message: 'No se pudo registrar el progreso' };
+    return failure(error, 'No se pudo registrar el cumplimiento');
   }
 }
 
-export async function deleteHabitAction(formData: FormData) {
+export async function deleteHabitAction(formData: FormData): Promise<HabitActionResult> {
   const auth = await requireActiveUser();
   if (!auth.success) return { success: false, message: auth.message };
 
-  const habitIdParsed = habitIdSchema.safeParse(formData.get('habitId'));
-  if (!habitIdParsed.success) return { success: false, message: zodMessage(habitIdParsed.error) };
+  const habitId = habitIdSchema.safeParse(formData.get('habitId'));
+  if (!habitId.success) return { success: false, message: zodMessage(habitId.error) };
 
   try {
-    await deleteHabit(auth.session.id, habitIdParsed.data);
-    revalidatePath('/dashboard/habitos');
+    await deleteHabit(auth.session.id, habitId.data);
+    refresh();
     return { success: true };
   } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, message: error.message };
-    }
-    return { success: false, message: 'No se pudo eliminar el hábito' };
+    return failure(error, 'No se pudo eliminar el hábito');
   }
 }
