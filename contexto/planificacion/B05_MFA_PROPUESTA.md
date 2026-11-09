@@ -15,7 +15,7 @@ Estado: **propuesta, sin implementar**. No se ha activado MFA obligatorio ni se 
 ## Propuesta técnica (compatible con Supabase Auth)
 
 ### Etapa 1 — Exigir `aal2` a quien **ya** tiene un factor verificado
-No convierte el MFA en obligatorio: solo cierra el evitado para quienes ya lo activaron.
+No convierte el MFA en obligatorio: solo cierra la evasión para quienes ya lo activaron.
 
 - En `lib/auth/guard.ts`, `resolveSession()` obtiene el nivel con `supabase.auth.mfa.getAuthenticatorAssuranceLevel()` (se calcula a partir del JWT de la sesión) y devuelve un estado nuevo `mfa_required` cuando `nextLevel === 'aal2' && currentLevel !== 'aal2'`.
 - `requireActiveSession()` redirige ese estado a `/mfa/verify?from=<ruta>`.
