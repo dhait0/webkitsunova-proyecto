@@ -30,6 +30,7 @@ export type DashboardResponse = {
   stats: {
     activePatients: number;
     pendingMessages: number;
+    pendingRequests: number;
     sessionsToday: number;
     upcomingSessions: number;
     workshops: number;
@@ -43,6 +44,14 @@ export type DashboardResponse = {
     reason: string | null;
   } | null;
   todayAppointments: Array<{
+    id: string;
+    patientName: string;
+    startsAt: string;
+    status: string;
+    reason: string | null;
+  }>;
+  /** Appointment requests still waiting for this psychologist's answer, soonest first. */
+  pendingRequests: Array<{
     id: string;
     patientName: string;
     startsAt: string;
@@ -79,15 +88,32 @@ export async function getDashboard(userId: string): Promise<DashboardResponse> {
   const todayStart = startOfTodayUtc();
   const todayEnd = endOfTodayUtc();
 
-  const [availability, activePatients, pendingMessages, sessionsToday, upcomingSessions, workshops, resources, nextAppointment, todayAppointments, links] =
+  const [availability, activePatients, unreadRows, requestCount, requestRows, sessionsToday, upcomingSessions, workshops, resources, nextAppointment, todayAppointments, links] =
     await Promise.all([
       prisma.availabilitySlot.findMany({
         where: { profileId: profile.id },
         orderBy: [{ weekday: 'asc' }, { startMinutes: 'asc' }],
       }),
       prisma.psyPatient.count({ where: { psychologistId: userId, status: 'ACTIVE' } }),
-      prisma.conversationMember.count({
-        where: { userId, lastReadAt: null },
+      // Conversations whose latest message from someone else is newer than the last read.
+      prisma.$queryRaw<Array<{ n: number }>>`
+        select count(*)::int as n
+        from "ConversationMember" cm
+        where cm."userId" = ${userId}
+          and exists (
+            select 1 from "Message" m
+            where m."conversationId" = cm."conversationId"
+              and m."senderId" <> ${userId}
+              and (cm."lastReadAt" is null or m."createdAt" > cm."lastReadAt")
+          )`,
+      prisma.appointment.count({
+        where: { psychologistId: userId, status: 'PENDING', startsAt: { gte: now } },
+      }),
+      prisma.appointment.findMany({
+        where: { psychologistId: userId, status: 'PENDING', startsAt: { gte: now } },
+        orderBy: { startsAt: 'asc' },
+        take: 5,
+        include: { patient: { include: { profile: true } } },
       }),
       prisma.appointment.count({
         where: {
@@ -226,7 +252,8 @@ export async function getDashboard(userId: string): Promise<DashboardResponse> {
     },
     stats: {
       activePatients,
-      pendingMessages,
+      pendingMessages: unreadRows[0]?.n ?? 0,
+      pendingRequests: requestCount,
       sessionsToday,
       upcomingSessions,
       workshops,
@@ -234,6 +261,7 @@ export async function getDashboard(userId: string): Promise<DashboardResponse> {
     },
     nextAppointment: nextAppointment ? mapAppointment(nextAppointment) : null,
     todayAppointments: todayAppointments.map(mapAppointment),
+    pendingRequests: requestRows.map(mapAppointment),
     recentPatients,
   };
 }

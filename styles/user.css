@@ -1436,6 +1436,28 @@ a.user-list-item[aria-current='true'] {
   pointer-events: none;
 }
 
+/* ---------- Appointments ---------- */
+
+.user-scope-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.user-scope-tabs .user-pagination-btn {
+  min-width: 0;
+  padding: 0 16px;
+}
+
+.user-appointment-actions {
+  margin-top: 16px;
+}
+
+.user-cancel-box {
+  display: grid;
+  gap: 12px;
+  max-width: 440px;
+}
+
 /* ---------- Habits ---------- */
 
 .user-form-feedback:empty {

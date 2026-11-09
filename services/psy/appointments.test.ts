@@ -32,6 +32,7 @@ import { createNotification } from '@/services/psy/notifications.service';
 import {
   AppointmentConflictError,
   createAppointment,
+  cancelAppointmentByUser,
   getAppointment,
   listAppointments,
   listPatientAppointments,
@@ -327,6 +328,7 @@ describe('updateAppointmentStatus — transiciones de estado', () => {
   });
 
   it('activa el vínculo y recuenta pacientes al completar CONFIRMED → COMPLETED', async () => {
+    vi.setSystemTime(new Date('2026-01-16T00:00:00Z'));
     ;(prisma.appointment.findFirst as any).mockResolvedValue({
       ...appointment,
       status: 'CONFIRMED',
@@ -345,12 +347,123 @@ describe('updateAppointmentStatus — transiciones de estado', () => {
     expect(prisma.psychologistProfile.updateMany).toHaveBeenCalled();
   });
 
+  it('no deja completar ni marcar ausencia en una sesión que aún no empezó', async () => {
+    ;(prisma.appointment.findFirst as any).mockResolvedValue({ ...appointment, status: 'CONFIRMED' });
+
+    await expect(updateAppointmentStatus('psy-1', 'appointment-1', 'COMPLETED')).rejects.toThrow('aún no ha comenzado');
+    await expect(updateAppointmentStatus('psy-1', 'appointment-1', 'NO_SHOW')).rejects.toThrow('aún no ha comenzado');
+    expect(prisma.appointment.update).not.toHaveBeenCalled();
+  });
+
+  it('solo admite las transiciones válidas (PENDING no pasa directo a COMPLETED)', async () => {
+    vi.setSystemTime(new Date('2026-01-16T00:00:00Z'));
+    ;(prisma.appointment.findFirst as any).mockResolvedValue({ ...appointment, status: 'PENDING' });
+
+    await expect(updateAppointmentStatus('psy-1', 'appointment-1', 'COMPLETED')).rejects.toThrow('no admite ese cambio');
+    await expect(updateAppointmentStatus('psy-1', 'appointment-1', 'NO_SHOW')).rejects.toThrow('no admite ese cambio');
+    expect(prisma.appointment.update).not.toHaveBeenCalled();
+  });
+
+  it('confirmar una solicitud abre el vínculo, recuenta pacientes y avisa al paciente', async () => {
+    ;(prisma.appointment.findFirst as any).mockResolvedValue({ ...appointment, status: 'PENDING' });
+
+    await updateAppointmentStatus('psy-1', 'appointment-1', 'CONFIRMED');
+
+    expect(prisma.appointment.update).toHaveBeenCalledWith({
+      where: { id: 'appointment-1' },
+      data: { status: 'CONFIRMED', cancelReason: null },
+    });
+    expect(prisma.psyPatient.create).toHaveBeenCalled();
+    expect(prisma.psychologistProfile.updateMany).toHaveBeenCalled();
+    expect(createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'patient-1', title: 'Solicitud confirmada' }),
+    );
+  });
+
+  it('rechazar una solicitud pendiente lo comunica como rechazo, no como cancelación', async () => {
+    ;(prisma.appointment.findFirst as any).mockResolvedValue({ ...appointment, status: 'PENDING' });
+
+    await updateAppointmentStatus('psy-1', 'appointment-1', 'CANCELLED');
+
+    expect(createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'patient-1', title: 'Solicitud rechazada' }),
+    );
+  });
+
   it('actor limitado: devuelve null cuando la cita no pertenece al psicólogo', async () => {
     ;(prisma.appointment.findFirst as any).mockResolvedValue(null);
 
     const result = await updateAppointmentStatus('psy-otro', 'appointment-1', 'CANCELLED');
 
     expect(result).toBeNull();
+    expect(prisma.appointment.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('listPatientAppointments — próximas e historial', () => {
+  beforeEach(() => {
+    ;(prisma.appointment.findMany as any).mockResolvedValue([]);
+    ;(prisma.appointment.count as any).mockResolvedValue(0);
+  });
+
+  it('próximas: solo pendientes o confirmadas que aún no empiezan', async () => {
+    await listPatientAppointments('patient-1', { scope: 'upcoming' });
+    expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          patientUserId: 'patient-1',
+          startsAt: { gte: expect.any(Date) },
+          status: { in: ['PENDING', 'CONFIRMED'] },
+        },
+      }),
+    );
+  });
+
+  it('historial: lo ya empezado o cerrado, incluso una cita futura cancelada', async () => {
+    await listPatientAppointments('patient-1', { scope: 'past' });
+    expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          patientUserId: 'patient-1',
+          OR: [
+            { startsAt: { lt: expect.any(Date) } },
+            { status: { in: ['CANCELLED', 'COMPLETED', 'NO_SHOW'] } },
+          ],
+        },
+        orderBy: { startsAt: 'desc' },
+      }),
+    );
+  });
+});
+
+describe('cancelAppointmentByUser', () => {
+  const future = new Date('2026-02-01T10:00:00Z');
+
+  it('cancela una cita propia futura y avisa al psicólogo', async () => {
+    ;(prisma.appointment.findFirst as any).mockResolvedValue({ ...appointment, status: 'CONFIRMED', startsAt: future });
+
+    await cancelAppointmentByUser('patient-1', 'appointment-1', '  Surgió un imprevisto  ');
+
+    expect(prisma.appointment.findFirst).toHaveBeenCalledWith({ where: { id: 'appointment-1', patientUserId: 'patient-1' } });
+    expect(prisma.appointment.update).toHaveBeenCalledWith({
+      where: { id: 'appointment-1' },
+      data: { status: 'CANCELLED', cancelReason: 'Surgió un imprevisto' },
+    });
+    expect(createNotification).toHaveBeenCalledWith(expect.objectContaining({ userId: 'psy-1', kind: 'appointment' }));
+  });
+
+  it('no encuentra citas de otro paciente', async () => {
+    ;(prisma.appointment.findFirst as any).mockResolvedValue(null);
+    await expect(cancelAppointmentByUser('otro', 'appointment-1')).rejects.toThrow('Cita no encontrada');
+    expect(prisma.appointment.update).not.toHaveBeenCalled();
+  });
+
+  it('rechaza citas ya canceladas, completadas o que ya empezaron', async () => {
+    ;(prisma.appointment.findFirst as any).mockResolvedValue({ ...appointment, status: 'COMPLETED', startsAt: future });
+    await expect(cancelAppointmentByUser('patient-1', 'appointment-1')).rejects.toThrow('ya no se puede cancelar');
+
+    ;(prisma.appointment.findFirst as any).mockResolvedValue({ ...appointment, status: 'CONFIRMED', startsAt: new Date('2026-01-09T10:00:00Z') });
+    await expect(cancelAppointmentByUser('patient-1', 'appointment-1')).rejects.toThrow('ya comenzó');
     expect(prisma.appointment.update).not.toHaveBeenCalled();
   });
 });

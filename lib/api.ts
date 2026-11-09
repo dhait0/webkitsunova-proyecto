@@ -295,6 +295,7 @@ export type PsyDashboard = {
   stats: {
     activePatients: number;
     pendingMessages: number;
+    pendingRequests: number;
     sessionsToday: number;
     upcomingSessions: number;
     workshops: number;
@@ -302,6 +303,7 @@ export type PsyDashboard = {
   };
   nextAppointment: PsyAppointmentSummary | null;
   todayAppointments: PsyAppointmentSummary[];
+  pendingRequests: PsyAppointmentSummary[];
   recentPatients: PsyPatientSummary[];
 };
 

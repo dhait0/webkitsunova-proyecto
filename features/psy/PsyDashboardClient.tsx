@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { PsyDashboard } from '@/lib/api';
@@ -8,6 +8,7 @@ import { EmptyState, Panel, StatCard, PsyBadge } from '@/components/psy/PsyUi';
 import { formatRelative, formatTime, formatDateTime, moodLabels } from '@/lib/utils/format';
 import { psyAppointmentStatusLabels } from '@/content/siteContent';
 import type { SessionUser } from '@/lib/auth/types';
+import { updateAppointmentStatusAction } from '@/app/(psychologist)/psy/citas/actions';
 
 type Props = {
   initialData: PsyDashboard;
@@ -27,17 +28,90 @@ function PsyDashboardClient({ initialData }: Props) {
   }, [router]);
 
   const { profile, stats, nextAppointment, todayAppointments, recentPatients } = data;
+  const pendingRequests = data.pendingRequests ?? [];
+  const [isPending, startTransition] = useTransition();
+  const [requestError, setRequestError] = useState<string | null>(null);
+
+  function answerRequest(id: string, status: 'CONFIRMED' | 'CANCELLED') {
+    setRequestError(null);
+    startTransition(async () => {
+      try {
+        const result = await updateAppointmentStatusAction(
+          id,
+          status,
+          status === 'CANCELLED' ? 'El psicólogo no pudo aceptar la solicitud.' : undefined,
+        );
+        if (result.ok) {
+          router.refresh();
+        } else {
+          setRequestError(result.error);
+        }
+      } catch (caught) {
+        setRequestError(caught instanceof Error ? caught.message : 'No se pudo responder la solicitud');
+      }
+    });
+  }
 
   return (
     <>
       <section className="psy-stats-grid">
         <StatCard variant="psy" label="Pacientes activos" value={stats.activePatients} hint="Vínculos activos" />
+        <StatCard variant="psy" label="Solicitudes de cita" value={stats.pendingRequests ?? 0} hint="Esperan tu respuesta" />
         <StatCard variant="psy" label="Mensajes pendientes" value={stats.pendingMessages} hint="Conversaciones sin leer" />
         <StatCard variant="psy" label="Sesiones de hoy" value={stats.sessionsToday} hint="Pendientes y confirmadas" />
         <StatCard variant="psy" label="Próximas sesiones" value={stats.upcomingSessions} hint="Agenda futura" />
         <StatCard variant="psy" label="Talleres" value={stats.workshops} hint="Creados por ti" />
         <StatCard variant="psy" label="Recursos" value={stats.resources} hint="Creados por ti" />
       </section>
+
+      {pendingRequests.length > 0 ? (
+        <Panel
+          variant="psy"
+          eyebrow="Solicitudes"
+          title="Citas por responder"
+          actions={
+            <Link href="/psy/sesiones" className="secondary-btn">
+              Ver agenda
+            </Link>
+          }
+        >
+          {requestError ? <p role="alert">{requestError}</p> : null}
+          <ul className="psy-session-list">
+            {pendingRequests.map((request) => (
+              <li key={request.id} className="psy-session-item">
+                <div className="psy-session-when">
+                  <strong>{formatTime(request.startsAt)}</strong>
+                  <span>{formatDateTime(request.startsAt)}</span>
+                </div>
+                <div className="psy-session-who">
+                  <strong>{request.patientName}</strong>
+                  <span>Motivo: {request.reason ?? 'Sin motivo especificado'}</span>
+                </div>
+                <div className="psy-session-actions">
+                  <button
+                    type="button"
+                    className="primary-btn"
+                    disabled={isPending}
+                    onClick={() => answerRequest(request.id, 'CONFIRMED')}
+                    aria-label={`Confirmar solicitud de ${request.patientName}`}
+                  >
+                    Confirmar
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    disabled={isPending}
+                    onClick={() => answerRequest(request.id, 'CANCELLED')}
+                    aria-label={`Rechazar solicitud de ${request.patientName}`}
+                  >
+                    Rechazar
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
 
       <section className="psy-dashboard-panels">
         <Panel

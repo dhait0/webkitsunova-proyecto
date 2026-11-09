@@ -24,6 +24,13 @@ const allowedTransitions: Record<string, Array<'CONFIRMED' | 'COMPLETED' | 'CANC
   NO_SHOW: []
 };
 
+function actionLabel(from: string, to: 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW') {
+  if (to === 'CONFIRMED') return 'Confirmar';
+  if (to === 'CANCELLED') return from === 'PENDING' ? 'Rechazar' : 'Cancelar';
+  if (to === 'COMPLETED') return 'Marcar realizada';
+  return 'No asistió';
+}
+
 function AppointmentList({ scope, title, emptyTitle, emptyText, initialData }: AppointmentListProps) {
   const { data, loading, error, reload } = useAsync(
     () => getAppointmentsAction({ scope, limit: 50 }),
@@ -41,8 +48,12 @@ function AppointmentList({ scope, title, emptyTitle, emptyText, initialData }: A
         status === 'CANCELLED'
           ? window.prompt('Motivo de la cancelación (opcional)') ?? undefined
           : undefined;
-      await updateAppointmentStatusAction(id, status, reason);
-      await reload();
+      const result = await updateAppointmentStatusAction(id, status, reason);
+      if (!result.ok) {
+        setActionError(result.error);
+      } else {
+        await reload();
+      }
     } catch (caught) {
       setActionError(caught instanceof Error ? caught.message : 'No se pudo actualizar la sesión');
     } finally {
@@ -78,17 +89,24 @@ function AppointmentList({ scope, title, emptyTitle, emptyText, initialData }: A
               />
 
               <div className="psy-session-actions">
-                {allowedTransitions[appointment.status]?.map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    className="secondary-btn"
-                    disabled={busyId === appointment.id}
-                    onClick={() => void handleStatusChange(appointment.id, status)}
-                  >
-                    {psyAppointmentStatusLabels[status]}
-                  </button>
-                ))}
+                {allowedTransitions[appointment.status]
+                  ?.filter(
+                    (status) =>
+                      // Only a session that already started can be closed out.
+                      (status !== 'COMPLETED' && status !== 'NO_SHOW') ||
+                      new Date(appointment.startsAt).getTime() <= Date.now(),
+                  )
+                  .map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      className={status === 'CONFIRMED' ? 'primary-btn' : 'secondary-btn'}
+                      disabled={busyId === appointment.id}
+                      onClick={() => void handleStatusChange(appointment.id, status)}
+                    >
+                      {actionLabel(appointment.status, status)}
+                    </button>
+                  ))}
               </div>
             </li>
           ))}
