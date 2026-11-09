@@ -52,7 +52,7 @@ describe('ADMIN_NAV_SECTIONS', () => {
       section.items.filter((item) => !item.comingSoon).map((item) => item.to)
     );
 
-    expect(implemented).toEqual(['/admin', '/admin/users', '/admin/psychologists']);
+    expect(implemented).toEqual(['/admin', '/admin/users', '/admin/psychologists', '/admin/settings']);
   });
 
   it('flags every not-yet-built module as coming soon', () => {
@@ -66,7 +66,6 @@ describe('ADMIN_NAV_SECTIONS', () => {
       '/admin/workshops',
       '/admin/resources',
       '/admin/reports',
-      '/admin/settings',
     ]);
   });
 });

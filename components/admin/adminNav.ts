@@ -61,7 +61,13 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
     label: 'Sistema',
     items: [
       { to: '/admin/reports', label: 'Reportes', icon: 'flag', comingSoon: true },
-      { to: '/admin/settings', label: 'Configuración', icon: 'settings', comingSoon: true },
+      {
+        to: '/admin/settings',
+        label: 'Configuración',
+        icon: 'settings',
+        heading: 'Configuración',
+        subtitle: 'Tus datos personales y la seguridad de tu cuenta.',
+      },
     ],
   },
 ];
