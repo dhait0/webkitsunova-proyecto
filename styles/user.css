@@ -70,12 +70,13 @@
   max-width: 100%;
 }
 
-.user-root a {
+:where(.user-root) a {
   color: inherit;
   text-decoration: none;
 }
 
-.user-root button {
+/* :where() keeps the reset at zero class weight so .user-btn and friends win. */
+:where(.user-root) button {
   font: inherit;
   color: inherit;
   background: none;
@@ -609,6 +610,97 @@
   cursor: not-allowed;
 }
 
+.user-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* ---------- Form controls ---------- */
+
+.user-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.user-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--user-text-muted);
+}
+
+.user-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--user-hairline);
+  border-radius: var(--user-r-control);
+  background: var(--user-abyss);
+  color: var(--user-text);
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  transition: border-color 0.2s var(--user-ease), box-shadow 0.2s var(--user-ease),
+    background-color 0.2s var(--user-ease);
+}
+
+select.user-input {
+  appearance: none;
+  padding-right: 40px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--user-text-muted) 50%),
+    linear-gradient(135deg, var(--user-text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+textarea.user-input {
+  min-height: 112px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+.user-input::placeholder {
+  color: var(--user-text-dim);
+}
+
+.user-input:hover:not(:disabled):not([readonly]) {
+  border-color: var(--user-hairline-hot);
+}
+
+.user-input:focus-visible {
+  outline: none;
+  border-color: var(--user-cyan);
+  box-shadow: 0 0 0 3px rgba(93, 220, 255, 0.22);
+}
+
+.user-input[readonly] {
+  color: var(--user-text-muted);
+  background: rgba(4, 8, 26, 0.55);
+  cursor: default;
+}
+
+.user-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.user-input:user-invalid {
+  border-color: var(--user-error);
+}
+
+.user-input[type='date'] {
+  color-scheme: dark;
+}
+
+.user-root [role='alert'].user-lede {
+  color: var(--user-error);
+}
+
+.user-root form [role='status'].user-lede {
+  color: var(--user-ok);
+}
+
 .user-pill {
   display: inline-flex;
   align-items: center;
@@ -684,6 +776,7 @@
 
 .user-card-stack {
   display: grid;
+  align-content: start;
   gap: 14px;
 }
 
@@ -962,6 +1055,10 @@
 .user-list {
   display: grid;
   margin-top: 4px;
+}
+
+.user-list--cards {
+  gap: var(--user-gap-grid);
 }
 
 .user-list-item {

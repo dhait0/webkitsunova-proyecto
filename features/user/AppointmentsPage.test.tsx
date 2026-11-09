@@ -37,8 +37,8 @@ describe('AppointmentsPage', () => {
     expect(screen.getByText('Ansiedad')).toBeInTheDocument();
     expect(screen.getByText(/10 de febrero de 2026/)).toBeInTheDocument();
     expect(screen.getByText(/12 de febrero de 2026/)).toBeInTheDocument();
-    expect(screen.getByText('CONFIRMED')).toBeInTheDocument();
-    expect(screen.getByText('PENDING')).toBeInTheDocument();
+    expect(screen.getByText('Confirmada')).toBeInTheDocument();
+    expect(screen.getByText('Pendiente')).toBeInTheDocument();
   });
 
   it('no expone datos privados del psicólogo ni del paciente', () => {
