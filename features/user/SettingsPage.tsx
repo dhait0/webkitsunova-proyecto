@@ -71,6 +71,7 @@ export default function SettingsPage({ initialValues }: Props) {
                 value={initialValues.email}
                 readOnly
                 aria-readonly="true"
+                autoComplete="email"
               />
             </div>
 
@@ -133,6 +134,18 @@ export default function SettingsPage({ initialValues }: Props) {
           </div>
 
           <form action={onPasswordSubmit} className="user-card-stack">
+            {/* Lets password managers tie the new password to this account. */}
+            <input
+              type="text"
+              name="accountEmail"
+              value={initialValues.email}
+              autoComplete="username"
+              readOnly
+              hidden
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+
             <div className="user-field">
               <label className="user-label" htmlFor="currentPassword">Contraseña actual</label>
               <input
