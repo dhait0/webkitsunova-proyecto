@@ -21,6 +21,19 @@ type AppointmentsData = {
   };
 };
 
+const TYPE_LABELS: Record<string, string> = {
+  FIRST_SESSION: 'Primera sesión',
+  FOLLOW_UP: 'Seguimiento',
+  URGENT: 'Urgente',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pendiente',
+  CONFIRMED: 'Confirmada',
+  CANCELLED: 'Cancelada',
+  COMPLETED: 'Completada',
+};
+
 type Props = {
   data: AppointmentsData;
   error: string | null;
@@ -83,7 +96,7 @@ export default function AppointmentsPage({ data, error }: Props) {
         </div>
       </div>
 
-      <div className="user-list">
+      <div className="user-list user-list--cards">
         {appointments.map((appointment) => {
           const startsAt = new Date(appointment.startsAt).toLocaleString('es-CO', {
             weekday: 'long',
@@ -97,7 +110,7 @@ export default function AppointmentsPage({ data, error }: Props) {
           return (
             <article key={appointment.id} className="user-card user-raise">
               <div className="user-panel-head">
-                <span className="user-eyebrow">{appointment.type}</span>
+                <span className="user-eyebrow">{TYPE_LABELS[appointment.type] ?? appointment.type}</span>
                 <h2 className="user-title">{appointment.psychologistName}</h2>
               </div>
               <div className="user-profile-rows" style={{ marginTop: 16 }}>
@@ -116,7 +129,7 @@ export default function AppointmentsPage({ data, error }: Props) {
                           : ''
                     }`}
                   >
-                    {appointment.status}
+                    {STATUS_LABELS[appointment.status] ?? appointment.status}
                   </span>
                 </div>
                 {appointment.reason &&

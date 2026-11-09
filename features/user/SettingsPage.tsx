@@ -53,7 +53,7 @@ export default function SettingsPage({ initialValues }: Props) {
         </div>
       </div>
 
-      <div className="user-grid">
+      <div className="user-grid user-grid--duo">
         <article className="user-card user-card-stack user-raise">
           <div className="user-panel-head">
             <span className="user-eyebrow">Perfil</span>

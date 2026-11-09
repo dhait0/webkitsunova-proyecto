@@ -218,46 +218,23 @@ export default function ChatsPage({
             </div>
 
             {!activeConversation.blocked && (
-              <form onSubmit={handleSend} className="user-card user-raise">
-                <div
-                  className="user-profile-rows"
-                  style={{
-                    borderTop: '1px solid var(--user-hairline)',
-                    paddingTop: 16,
-                  }}
-                >
-                  <div className="user-profile-row">
-                    <label
-                      htmlFor="message-body"
-                      className="user-eyebrow"
-                      style={{ display: 'block', marginBottom: 6 }}
-                    >
-                      Escribir mensaje
-                    </label>
-                    <textarea
-                      id="message-body"
-                      name="body"
-                      value={body}
-                      onChange={(e) => setBody(e.target.value)}
-                      rows={3}
-                      disabled={sending}
-                      placeholder="Escribe tu mensaje..."
-                      style={{
-                        width: '100%',
-                        minHeight: 80,
-                        padding: 10,
-                        borderRadius: 'var(--user-r-control)',
-                        border: '1px solid var(--user-hairline)',
-                        background: 'var(--user-ground-2)',
-                        color: 'var(--user-text)',
-                        fontFamily: 'inherit',
-                        fontSize: '0.9375rem',
-                        resize: 'vertical',
-                      }}
-                    />
-                  </div>
+              <form onSubmit={handleSend} className="user-raise">
+                <div className="user-field user-composer">
+                  <label htmlFor="message-body" className="user-label">
+                    Escribir mensaje
+                  </label>
+                  <textarea
+                    id="message-body"
+                    name="body"
+                    className="user-input"
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    rows={3}
+                    disabled={sending}
+                    placeholder="Escribe tu mensaje..."
+                  />
                 </div>
-                <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                <div className="user-composer-actions">
                   <button
                     type="submit"
                     className="user-btn user-btn--primary"
