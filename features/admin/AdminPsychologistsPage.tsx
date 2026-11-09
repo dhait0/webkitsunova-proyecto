@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import {
   getPsychologists,
   approvePsychologist,
+  rejectPsychologist,
   updatePsychologistProfile,
   type AdminPsychologist,
   type AdminPsychologistsResponse,
@@ -23,6 +24,7 @@ import { getAdminPageHeading } from '@/components/admin/adminNav';
 import type { FilterOption } from '@/components/admin/types';
 import { useAdminList } from '@/hooks/useAdminList';
 import { useToasts } from '@/hooks/useToasts';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 
 const STATUS_OPTIONS: FilterOption[] = [
   { value: 'all', label: 'Todos los estados' },
@@ -45,6 +47,7 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
 
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [detailTarget, setDetailTarget] = useState<AdminPsychologist | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<AdminPsychologist | null>(null);
 
   const fetchPsychologists = useCallback(
     (query: { search: string; status: string; page: number; limit: number }) =>
@@ -87,11 +90,37 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
       if (res.success) {
         updateRow(psy.id, { verified: true, status: 'activo' });
         toasts.success(psy.verified ? 'Verificación renovada' : 'Psicólogo aprobado correctamente');
+      } else if (res.message) {
+        toasts.error(res.message);
       }
     } catch (err) {
       toasts.error((err as Error).message || 'Error al aprobar psicólogo');
     } finally {
       setPendingId(null);
+    }
+  }
+
+  async function handleReject(psy: AdminPsychologist) {
+    setRejectTarget(psy);
+  }
+
+  async function confirmReject() {
+    if (!rejectTarget) return;
+    const psy = rejectTarget;
+    setPendingId(psy.id);
+    try {
+      const res = await rejectPsychologist(psy.id);
+      if (res.success) {
+        updateRow(psy.id, { verified: false, status: 'pendiente' });
+        toasts.success('Solicitud de psicólogo rechazada');
+      } else if (res.message) {
+        toasts.error(res.message);
+      }
+    } catch (err) {
+      toasts.error((err as Error).message || 'Error al rechazar psicólogo');
+    } finally {
+      setPendingId(null);
+      setRejectTarget(null);
     }
   }
 
@@ -167,15 +196,28 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
               Ver
             </button>
             {psy.status !== 'suspendido' ? (
-              <button
-                type="button"
-                className="admin-btn admin-btn-primary"
-                onClick={() => handleApprove(psy)}
-                disabled={busy}
-              >
-                {busy ? <span className="admin-btn-spinner" /> : <Icon name="check" size={14} />}
-                {psy.verified ? 'Re-verificar' : 'Aprobar'}
-              </button>
+              <>
+                {(!psy.verified || psy.status === 'pendiente') && (
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-ghost"
+                    onClick={() => handleReject(psy)}
+                    disabled={busy}
+                  >
+                    <Icon name="close" size={14} />
+                    Rechazar
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="admin-btn admin-btn-primary"
+                  onClick={() => handleApprove(psy)}
+                  disabled={busy}
+                >
+                  {busy ? <span className="admin-btn-spinner" /> : <Icon name="check" size={14} />}
+                  {psy.verified ? 'Re-verificar' : 'Aprobar'}
+                </button>
+              </>
             ) : null}
           </div>
         );
@@ -222,7 +264,21 @@ function AdminPsychologistsPage({ initialData }: AdminPsychologistsPageProps = {
         />
       )}
 
-      <AdminPagination pagination={pagination} onPageChange={setPage} noun="psicólogos" />
+      <ConfirmDialog
+        open={rejectTarget !== null}
+        title="Rechazar solicitud"
+        message={
+          rejectTarget
+            ? `¿Rechazar la solicitud de ${fullName(rejectTarget)} (${rejectTarget.email})? Esta acción marcará el perfil como no aprobado y no verificado.`
+            : ''
+        }
+        confirmLabel="Rechazar"
+        cancelLabel="Cancelar"
+        danger
+        busy={pendingId === rejectTarget?.id}
+        onConfirm={confirmReject}
+        onCancel={() => setRejectTarget(null)}
+      />
 
       <AdminModal
         open={detailTarget !== null}

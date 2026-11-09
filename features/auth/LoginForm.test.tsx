@@ -84,7 +84,7 @@ describe('LoginForm', () => {
     await waitFor(() => {
       expect(refresh).toHaveBeenCalled();
     });
-    expect(push).toHaveBeenCalledWith('/dashboard');
+    expect(replace).toHaveBeenCalledWith('/dashboard');
   });
 
   it('routes a PSYCHOLOGIST to their own area after login', async () => {
@@ -113,7 +113,7 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
     await waitFor(() => {
-      expect(push).toHaveBeenCalledWith('/psy');
+      expect(replace).toHaveBeenCalledWith('/psy');
     });
   });
 
@@ -145,7 +145,7 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
     await waitFor(() => {
-      expect(push).toHaveBeenCalledWith('/mfa/verify?from=%2Fadmin');
+      expect(replace).toHaveBeenCalledWith('/mfa/verify?from=%2Fadmin');
     });
   });
 

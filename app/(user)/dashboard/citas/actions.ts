@@ -1,5 +1,6 @@
 'use server';
 
+import { z } from 'zod';
 import { requireUser } from '@/lib/auth/guard';
 import { prisma } from '@/lib/db/prisma';
 import {
@@ -7,6 +8,14 @@ import {
   createAppointment,
 } from '@/services/psy/appointments.service';
 import { getPsychologistProfile } from '@/services/psy/psychologists.service';
+
+const createAppointmentInputSchema = z.object({
+  psychologistId: z.string().min(1),
+  type: z.enum(['FIRST_SESSION', 'FOLLOW_UP', 'URGENT']),
+  durationMinutes: z.number().int().refine((n) => [30, 45, 60, 90].includes(n)),
+  reason: z.string().max(500).nullish(),
+  startsAt: z.union([z.string(), z.date()]),
+});
 
 export type CreateAppointmentActionInput = {
   psychologistId: string;
@@ -62,6 +71,11 @@ export async function createAppointmentAction(
     session = await requireUser();
   } catch {
     return { ok: false, error: 'No autenticado' };
+  }
+
+  const parsed = createAppointmentInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: 'Datos de reserva no válidos.' };
   }
 
   const patientUserId = session.id;

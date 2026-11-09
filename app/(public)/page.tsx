@@ -1,3 +1,6 @@
+import { redirect } from 'next/navigation';
+import { getSessionUser } from '@/lib/auth/guard';
+import { homeForRole } from '@/lib/auth/roles';
 import PublicFooter from '@/components/PublicFooter';
 import PublicHeader from '@/components/PublicHeader';
 import { FieldApp, FieldIndex } from '@/components/landing/FieldIndex';
@@ -8,7 +11,13 @@ import { FieldTails } from '@/components/landing/FieldTails';
 import { FoxFigure } from '@/components/landing/FoxFigure';
 import { fieldCover } from '@/content/siteContent';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getSessionUser();
+
+  if (session) {
+    redirect(homeForRole(session.role));
+  }
+
   return (
     <div className="kb-root">
       <a className="kb-skip" href="#registro">

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getPsyPreferences, updatePsyPreferences, type PsyPreferences } from '@/lib/api';
-import { ErrorBlock, LoadingBlock, Panel, SuccessBlock } from '@/components/psy/PsyUi';
+import { useState } from 'react';
+import type { PsyPreferences } from '@/lib/api';
+import { updatePreferencesAction } from '@/app/(psychologist)/psy/notificaciones/preferencias/actions';
+import { ErrorBlock, Panel, SuccessBlock } from '@/components/psy/PsyUi';
 
 const preferenceLabels: Array<{ key: keyof PsyPreferences; label: string; hint: string }> = [
   {
@@ -33,58 +34,36 @@ const preferenceLabels: Array<{ key: keyof PsyPreferences; label: string; hint: 
 ];
 
 type Props = {
-  initialPreferences?: PsyPreferences;
+  initialPreferences: PsyPreferences;
 };
 
 export function PsyNotificationPreferencesPage({ initialPreferences }: Props) {
-  const [preferences, setPreferences] = useState<PsyPreferences | null>(initialPreferences ?? null);
-  const [loading, setLoading] = useState(!initialPreferences);
+  const [preferences, setPreferences] = useState<PsyPreferences>(initialPreferences);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (initialPreferences) return;
-
-    let active = true;
-
-    getPsyPreferences()
-      .then((result) => {
-        if (active) setPreferences(result.preferences);
-      })
-      .catch((caught: unknown) => {
-        if (active) setError(caught instanceof Error ? caught.message : 'Error cargando preferencias');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [initialPreferences]);
-
   async function handleToggle(key: keyof PsyPreferences, value: boolean) {
-    if (!preferences) return;
+    const previous = preferences;
 
     setSaving(true);
     setError(null);
     setMessage(null);
+    setPreferences({ ...preferences, [key]: value });
 
     try {
-      const result = await updatePsyPreferences({ [key]: value });
-      setPreferences(result.preferences);
+      const result = await updatePreferencesAction({ [key]: value });
+      if (result && 'preferences' in result) {
+        setPreferences(result.preferences);
+      }
       setMessage('Preferencias guardadas');
     } catch (caught) {
+      setPreferences(previous);
       setError(caught instanceof Error ? caught.message : 'No se pudieron guardar');
     } finally {
       setSaving(false);
     }
   }
-
-  if (loading) return <LoadingBlock label="Cargando preferencias..." />;
-  if (error && !preferences) return <ErrorBlock message={error} />;
-  if (!preferences) return <ErrorBlock message="No hay preferencias disponibles" />;
 
   return (
     <Panel eyebrow="Notificaciones" title="Preferencias de notificación">

@@ -29,11 +29,24 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   if (!dbUser) return null;
 
+  let status = dbUser.status;
+
+  // Sign-up leaves the account PENDING. Supabase only issues a session once the
+  // email is confirmed, so a session on a PENDING account means it just was.
+  // SUSPENDED accounts are never touched.
+  if (status === 'PENDING' && user.email_confirmed_at) {
+    const { count } = await prisma.user.updateMany({
+      where: { id: user.id, status: 'PENDING' },
+      data: { status: 'ACTIVE' },
+    });
+    if (count > 0) status = 'ACTIVE';
+  }
+
   return {
     id: user.id,
     email: user.email ?? '',
     role: toAppRole(user.app_metadata?.role as string | undefined),
-    status: dbUser.status,
+    status,
     profile: {
       firstName: (user.user_metadata?.first_name as string | undefined) ?? null,
       lastName: (user.user_metadata?.last_name as string | undefined) ?? null,

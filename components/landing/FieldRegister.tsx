@@ -73,8 +73,9 @@ export function FieldRegister({ initialMode = 'register', onSuccess, redirectTo 
     changeMode,
     handleChange,
     handleSubmit,
-    handleGoogleAuth
-  } = useAuthForm(initialMode, { onSuccess, redirectTo });
+    handleGoogleAuth,
+    setFormData,
+  } = useAuthForm(initialMode, { onSuccess, redirectTo }) as any;
 
   return (
     <section id="registro" className="kb-register" aria-labelledby="registro-titulo">
@@ -107,18 +108,68 @@ export function FieldRegister({ initialMode = 'register', onSuccess, redirectTo 
         </label>
 
         {isRegister && (
-          <label className="kb-field">
-            <span>Nombre de usuario</span>
-            <input
-              type="text"
-              name="username"
-              autoComplete="username"
-              placeholder="tu_usuario"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
-          </label>
+          <>
+            <div className="kb-field">
+              <span>Tipo de cuenta *</span>
+              <div className="kb-modes" role="radiogroup" aria-label="Selecciona el tipo de cuenta" style={{gap: '0.5rem'}}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={(formData.role || 'USER') === 'USER'}
+                  onClick={() => setFormData((prev: any) => ({ ...prev, role: 'USER' }))}
+                  style={{
+                    flex: 1,
+                    padding: '0.625rem 1rem',
+                    border: (formData.role || 'USER') === 'USER' ? '2px solid #7c3aed' : '1px solid #d1d5db',
+                    background: (formData.role || 'USER') === 'USER' ? '#f3f0ff' : 'white',
+                    color: (formData.role || 'USER') === 'USER' ? '#6d28d9' : '#374151',
+                    fontWeight: (formData.role || 'USER') === 'USER' ? '600' : '400',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {(formData.role || 'USER') === 'USER' ? '✓ ' : ''}Soy usuario
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={formData.role === 'PSYCHOLOGIST'}
+                  onClick={() => setFormData((prev: any) => ({ ...prev, role: 'PSYCHOLOGIST' }))}
+                  style={{
+                    flex: 1,
+                    padding: '0.625rem 1rem',
+                    border: formData.role === 'PSYCHOLOGIST' ? '2px solid #7c3aed' : '1px solid #d1d5db',
+                    background: formData.role === 'PSYCHOLOGIST' ? '#f3f0ff' : 'white',
+                    color: formData.role === 'PSYCHOLOGIST' ? '#6d28d9' : '#374151',
+                    fontWeight: formData.role === 'PSYCHOLOGIST' ? '600' : '400',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {formData.role === 'PSYCHOLOGIST' ? '✓ ' : ''}Soy psicólogo
+                </button>
+              </div>
+              {formData.role === 'PSYCHOLOGIST' && (
+                <p className="kb-note" style={{marginTop: '0.5rem', background: '#fef3c7', color: '#92400e', padding: '0.5rem', borderRadius: '0.375rem'}}>
+                  ⚠️ Los psicólogos requieren aprobación administrativa antes de poder atender pacientes.
+                </p>
+              )}
+            </div>
+            <label className="kb-field">
+              <span>Nombre de usuario</span>
+              <input
+                type="text"
+                name="username"
+                autoComplete="username"
+                placeholder="tu_usuario"
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
+            </label>
+          </>
         )}
 
         <div className="kb-field">
