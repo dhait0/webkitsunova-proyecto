@@ -142,6 +142,18 @@ async function main() {
       throw new Error('The habit-tracking and rejection migrations are not applied here; apply them first.');
     }
 
+    // Never leave the project without an administrator you can sign in as.
+    const keptAdmins = keptUsers.filter((u) => u.role === 'ADMIN').length;
+    if (keptAdmins === 0 && process.env.DEMO_ACK_NO_PRESERVED_ADMIN !== 'yes-replace-all-admins') {
+      throw new Error(
+        'No ADMIN account is preserved (DEMO_KEEP_EMAILS). If you really want to replace every administrator, ' +
+          'set DEMO_ACK_NO_PRESERVED_ADMIN=yes-replace-all-admins.',
+      );
+    }
+    if (target.remote && (process.env.DEMO_PASSWORD ?? '').length < 16) {
+      throw new Error('Remote --apply requires DEMO_PASSWORD with at least 16 characters.');
+    }
+
     if (target.remote) {
       requireFreshBackup('DEMO_REPLACE_BACKUP', process.env.DEMO_REPLACE_BACKUP);
       requireFreshBackup('DEMO_REPLACE_AUTH_BACKUP', process.env.DEMO_REPLACE_AUTH_BACKUP);
@@ -170,12 +182,23 @@ async function main() {
       `\nRemoved: ${removedUsers.count} Prisma user(s), ${conversations.count} conversation(s), ${removedAuth} Auth user(s).`,
     );
 
-    const seeded = await seedDemoScenario(target, process.env.DEMO_PASSWORD);
+    let seeded: Awaited<ReturnType<typeof seedDemoScenario>>;
+    try {
+      seeded = await seedDemoScenario(target, process.env.DEMO_PASSWORD);
+    } catch (error) {
+      console.error(
+        '\nSEEDING FAILED AFTER THE DELETION. The previous data is gone from this project: restore it from the ' +
+          'backups with the recovery steps in contexto/planificacion/PROD_REEMPLAZO_DEMO_RUNBOOK.md (section 3), ' +
+          'or re-run this script, which is idempotent.',
+      );
+      throw error;
+    }
 
     // --- Post-checks ---------------------------------------------------------
     const publishableKey =
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
     console.log('\nLogin check:');
+    let failedLogins = 0;
     for (const email of DEMO_ACCOUNT_EMAILS) {
       if (!publishableKey) {
         console.log(`  ${email}: skipped (no publishable key in the environment)`);
@@ -183,7 +206,12 @@ async function main() {
       }
       const client = createClient(target.supabaseUrl, publishableKey, { auth: { persistSession: false } });
       const { error } = await client.auth.signInWithPassword({ email, password: seeded.password });
+      if (error) failedLogins += 1;
       console.log(`  ${email}: ${error ? `FAILED (${error.message})` : 'ok'}`);
+    }
+    if (failedLogins > 0) {
+      process.exitCode = 1;
+      console.error(`\n${failedLogins} demo account(s) cannot sign in. Do not close the session: investigate or restore.`);
     }
 
     if (seeded.generated) {

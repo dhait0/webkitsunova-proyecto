@@ -24,27 +24,24 @@ Son las únicas pendientes. Probadas sobre una copia restaurada del respaldo de 
 
 Antes de `--apply` hay que tomar **ambos** de nuevo si tienen más de 24 horas (el script lo exige). No incluyen la configuración del proyecto Supabase (plantillas de correo, SMTP, URL de redirección, proveedores): no la toca ningún paso de este procedimiento. Además conviene un respaldo desde el panel (Database → Backups).
 
-### Recuperación
-1. Detener el tráfico de escritura (o aceptar la ventana).
-2. `public`: `pg_restore --clean --if-exists --no-owner -d "$DIRECT_URL" prod-edbt-<fecha>.dump`.
-3. `auth` (cuentas, identidades y factores MFA; las sesiones se pierden y cada persona vuelve a iniciar sesión):
-   ```
-   psql "$DIRECT_URL" -c "delete from auth.users;"
-   for t in users identities mfa_factors mfa_recovery_code_sets mfa_recovery_codes; do
-     pg_restore --data-only -n auth -t $t -d "$DIRECT_URL" prod-edbt-AUTH-<fecha>.dump
-   done
-   ```
-   El orden importa (`identities` y `mfa_*` dependen de `users`). **No** usar `--disable-triggers` (exige ser dueño de las tablas) ni restaurar `sessions`, `refresh_tokens`, `audit_log_entries` ni `schema_migrations` (permisos/dependencias; son efímeras o propias de GoTrue).
-4. Comprobar recuentos contra el inventario (sección 2) y que un administrador real inicia sesión.
+### Recuperación (script validado)
+```
+RESTORE_DB_URL="$DIRECT_URL" RESTORE_CONFIRM=RESTORE-edbtowdipfeskqdmngji \
+RESTORE_PUBLIC_DUMP=<ruta public.dump> RESTORE_AUTH_DUMP=<ruta auth.dump> \
+scripts/restore-from-backup.sh
+```
+Vacía las tablas de la aplicación y carga las filas en orden de claves foráneas **sin deshabilitar triggers** (el rol `postgres` de Supabase no es superusuario), borra los usuarios de Auth y restaura `users`, `identities`, `mfa_factors` y los códigos de recuperación. Conserva esquema, RLS y permisos. Las sesiones no se restauran: cada persona vuelve a iniciar sesión. Requiere `psql` y `pg_restore` (o `PSQL`/`PG_RESTORE` apuntando a un contenedor).
 
-Ensayo de la restauración de `auth`: hecho sobre la pila local con datos sintéticos (7 cuentas): `users` 7, `identities` 7, las 7 cuentas inician sesión. Se descubrió que `--disable-triggers` y la restauración en una sola pasada fallan; el procedimiento anterior es el validado. **No se ha ensayado con el volcado real de producción** (no se copian cuentas reales a local).
+Salvaguardas: exige la frase `RESTORE-<ref>` presente en la URL (o `RESTORE-LOCAL` para localhost) y que ambos volcados existan.
+
+**Hallazgos del ensayo:** `pg_restore --disable-triggers` falla (no se es dueño de las tablas de `auth`); restaurar `auth` en una pasada falla por el orden de las claves foráneas; `pg_restore -t` interpreta el nombre literalmente (no se debe entrecomillar `User`); `sessions`, `refresh_tokens`, `audit_log_entries` y `schema_migrations` no deben restaurarse.
 
 ## 4. Orden de ejecución recomendado (cada paso exige autorización)
 1. **Autorización A — migraciones:** `supabase db push --db-url "$DIRECT_URL"` (pooler en modo sesión, puerto 5432), según `PROD_MIGRACION_HABITOS_RUNBOOK.md`. Aplica solo las dos pendientes.
 2. Fusionar el PR #44 a `main` (el workflow `deploy-migrations` no tendrá nada que aplicar) y esperar el despliegue de Vercel.
 3. Verificar con un usuario real: `/dashboard`, `/dashboard/habitos`, `/dashboard/citas`, `/psy`, `/admin`.
 4. Decidir qué cuentas conservar (`DEMO_KEEP_EMAILS`).
-5. **Autorización B — reemplazo:** tomar respaldos frescos (público y Auth) y ejecutar
+5. **Autorización B — reemplazo:** tomar respaldos frescos (público y Auth) y ejecutar (añadir `DEMO_ACK_NO_PRESERVED_ADMIN=yes-replace-all-admins` solo si se decide reemplazar también a los administradores)
    ```
    DEMO_REMOTE_PROJECT_REF=edbtowdipfeskqdmngji \
    DEMO_REMOTE_CONFIRM=REPLACE-DEMO-DATA-edbtowdipfeskqdmngji \
@@ -60,12 +57,24 @@ Ensayo de la restauración de `auth`: hecho sobre la pila local con datos sinté
 - **No hace:** cambiar esquema, migraciones, RLS, permisos, secretos ni configuración de Supabase; no toca otros proyectos.
 - **Salvaguardas:** destino remoto solo con `DEMO_REMOTE_PROJECT_REF` + confirmación exacta + API y base de datos del mismo proyecto; `--apply` remoto exige respaldos de menos de 24 h y las migraciones aplicadas; el seed ejecutado directamente sigue siendo solo local.
 
-## 6. Ensayo realizado (pila local desechable, dataset sintético equivalente en forma)
-17 usuarios Prisma (2 ADMIN, 5 PSYCHOLOGIST, 10 USER), 21 de Auth (4 huérfanos), citas, 6 conversaciones (una sin miembros), hábitos con registros, un taller y notificaciones; una cuenta preservada con su conversación y notificación.
-- Dry run: inventario correcto, nada modificado.
-- `--apply` con una cuenta preservada: 16 usuarios, 5 conversaciones y 20 usuarios de Auth eliminados; la cuenta preservada y sus datos intactos; las siete cuentas demo inician sesión.
-- `--apply` sin cuentas preservadas: estado final exacto: 1 ADMIN, 3 PSYCHOLOGIST aprobados, 3 USER; 12 citas, 15 franjas, 4 vínculos, 3 conversaciones (9 mensajes), 9 hábitos con 144 registros, 3 talleres con 5 inscripciones, 3 recursos, 3 reseñas, 4 reportes, 7 notificaciones; 0 huérfanos en Auth o Prisma; RLS 21/21; un solo vínculo ACTIVE por usuario.
-- Rechazos del guardia verificados: sin referencia, sin confirmación, con confirmación errónea, y el seed directo contra `.env` remoto.
+## 6. Ensayos realizados (pila local desechable)
+**Volcado real de `auth` (restaurado en una base aislada y borrada después, sin servicios conectados):** 27 usuarios, 27 identidades (todas `email`), 27 con hash de contraseña, 21 con correo confirmado, **0 factores MFA** (no hay MFA que recuperar hoy), 0 identidades sin usuario, 0 usuarios sin identidad. Roles en `raw_app_meta_data`: ADMIN 2, PSYCHOLOGIST 6, USER 13, sin rol 6 (los 4 huérfanos y 2 más). El rol `postgres` de producción tiene INSERT/DELETE sobre `auth.users`, `auth.identities` y `auth.mfa_factors`, es dueño de las 20 tablas de `public` y no es superusuario (consulta de catálogo, solo lectura).
+
+**Réplica representativa sintética (misma forma que producción: 23 usuarios — 2 ADMIN, 6 PSYCHOLOGIST, 15 USER —, 27 de Auth con 4 huérfanos, 25 franjas, 5 citas, 5 vínculos, 4 conversaciones, 8 mensajes y 1 factor MFA):**
+1. Respaldos `public` y `auth` tomados con los mismos comandos que en producción.
+2. `--apply` sin `DEMO_KEEP_EMAILS` ni confirmación de administradores: **rechazado**. Con `DEMO_ACK_NO_PRESERVED_ADMIN=yes-replace-all-admins`: 23 usuarios, 4 conversaciones y 27 usuarios de Auth eliminados; las siete cuentas demo inician sesión.
+3. Resultado exacto: 1 ADMIN, 3 PSYCHOLOGIST aprobados, 3 USER; 12 citas, 15 franjas, 4 vínculos (uno ACTIVE por usuario), 3 conversaciones (9 mensajes), 9 hábitos con 144 registros, 3 talleres con 5 inscripciones, 3 recursos, 3 reseñas, 4 reportes, 7 notificaciones; 0 huérfanos; RLS 21/21; `anon` → 401.
+4. El nuevo ADMIN, en navegador: ve las siete cuentas, abre el menú de acciones (editar, resetear contraseña, suspender, eliminar), lista a los tres psicólogos y renueva la verificación de uno.
+5. **Recuperación completa** con `scripts/restore-from-backup.sh`: recuentos idénticos a los previos (23/27/27/1 MFA/5/25/5/5/4/8), mismos 4 huérfanos de Auth, RLS 21/21, sin permisos nuevos para `anon`, y 7 de 7 credenciales anteriores (hash de contraseña conservado, incluido el rol ADMIN en los claims) inician sesión.
+6. Rechazos de las salvaguardas verificados: sin referencia, sin confirmación, confirmación errónea, seed directo contra `.env` remoto, restauración sin frase y con URL remota + frase local.
+
+**Lo que NO se ha ensayado:** el borrado y la restauración contra el hosting real de Supabase (solo se comprobaron los privilegios por catálogo), ni la restauración con el volcado real fuera de la base aislada.
+
+## 6bis. Garantía de acceso administrativo
+1. **Recomendado: conservar al menos un administrador real** (`DEMO_KEEP_EMAILS`): el script se niega a continuar si no se conserva ninguno salvo reconocimiento explícito.
+2. El nuevo ADMIN demo (`admin.demo@kitsunova.local`) se prueba al terminar; si falla el inicio de sesión de alguna cuenta el script sale con error y no hay que cerrar la sesión.
+3. Mecanismos independientes de la aplicación: el panel de Supabase (propietario del proyecto) puede restablecer contraseñas y crear usuarios; el script de restauración devuelve las cuentas anteriores con sus contraseñas; el rol de servicio permite recrear un administrador por la API de administración.
+4. Contraseña demo de producción: generada y guardada en `~/kitsunova-backups/demo-password-prod.txt` (permisos 600, fuera del repositorio, 32 caracteres). Usarla con `DEMO_PASSWORD="$(cat ~/kitsunova-backups/demo-password-prod.txt)"`.
 
 ## 7. Verificaciones posteriores
 - Recuentos del escenario (sección 6) y `0` usuarios huérfanos en ambos sentidos.
@@ -74,7 +83,7 @@ Ensayo de la restauración de `auth`: hecho sobre la pila local con datos sinté
 - Recorrido en navegador de USER, PSYCHOLOGIST y ADMIN; `/dashboard` sin error #441.
 
 ## 8. Riesgos
-- Operación **destructiva e irreversible sin respaldo**: la recuperación de `auth` está ensayada solo con datos sintéticos, no con el volcado real.
+- Operación **destructiva**: la recuperación está ensayada de extremo a extremo con datos sintéticos de la misma forma, pero no contra el hosting real ni con el volcado real.
 - Las cuentas de demostración comparten contraseña: usar una larga y única, y retirar las cuentas demo si el proyecto se usa con personas reales.
 - Si se pierde el acceso de administrador real, solo queda la cuenta demo.
 - No se ha podido verificar la configuración de variables de Vercel.
