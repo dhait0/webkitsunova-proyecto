@@ -1,6 +1,24 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import PsychologistProfilePage from '@/features/user/PsychologistProfilePage';
+
+const push = vi.hoisted(() => vi.fn());
+const startConversationFromPsychologistAction = vi.hoisted(() => vi.fn());
+const createAppointmentAction = vi.hoisted(() => vi.fn());
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push }),
+}));
+
+vi.mock('@/app/(user)/dashboard/mensajes/actions', () => ({
+  startConversationFromPsychologistAction: (...args: unknown[]) =>
+    startConversationFromPsychologistAction(...args),
+}));
+
+vi.mock('@/app/(user)/dashboard/citas/actions', () => ({
+  createAppointmentAction: (...args: unknown[]) => createAppointmentAction(...args),
+}));
 
 const baseProfile = {
   id: 'psy-1',
@@ -23,6 +41,9 @@ const baseProfile = {
 };
 
 describe('PsychologistProfilePage', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
   it('renderiza perfil real con campos públicos únicamente', () => {
     render(<PsychologistProfilePage profile={baseProfile} error={null} />);
 
@@ -65,6 +86,7 @@ describe('PsychologistProfilePage', () => {
 
     expect(screen.getByText(/Perfil no encontrado/)).toBeInTheDocument();
     expect(screen.queryByText('Dra. Laura Gómez')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Enviar mensaje/i })).not.toBeInTheDocument();
   });
 
   it('muestra estado de error cuando la consulta falla', () => {
@@ -72,5 +94,36 @@ describe('PsychologistProfilePage', () => {
 
     expect(screen.getByText('No se pudo cargar el perfil')).toBeInTheDocument();
     expect(screen.queryByText('Dra. Laura Gómez')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Enviar mensaje/i })).not.toBeInTheDocument();
+  });
+
+  it('navega al chat al enviar mensaje con éxito', async () => {
+    startConversationFromPsychologistAction.mockResolvedValue({
+      success: true,
+      conversationId: 'conv-123',
+    });
+    const user = userEvent.setup();
+    render(<PsychologistProfilePage profile={baseProfile} error={null} />);
+
+    await user.click(screen.getByRole('button', { name: /Enviar mensaje/i }));
+
+    expect(startConversationFromPsychologistAction).toHaveBeenCalledWith('psy-1');
+    expect(push).toHaveBeenCalledWith('/dashboard/chats?conversationId=conv-123');
+  });
+
+  it('muestra error cuando falla el envío de mensaje', async () => {
+    startConversationFromPsychologistAction.mockResolvedValue({
+      success: false,
+      error: 'No se pudo iniciar la conversación',
+    });
+    const user = userEvent.setup();
+    render(<PsychologistProfilePage profile={baseProfile} error={null} />);
+
+    await user.click(screen.getByRole('button', { name: /Enviar mensaje/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'No se pudo iniciar la conversación',
+    );
+    expect(push).not.toHaveBeenCalled();
   });
 });

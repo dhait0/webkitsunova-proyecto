@@ -1,9 +1,49 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import type { PsychologistProfilePublic } from '@/services/psy/psychologists.service';
+import { startConversationFromPsychologistAction } from '@/app/(user)/dashboard/mensajes/actions';
+import BookAppointmentForm from './BookAppointmentForm';
 
 type Props = {
   profile: PsychologistProfilePublic | null;
   error: string | null;
 };
+
+function MessagePsychologistButton({ psychologistUserId }: { psychologistUserId: string }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [msgError, setMsgError] = useState<string | null>(null);
+
+  function onClick() {
+    setMsgError(null);
+    startTransition(async () => {
+      const result = await startConversationFromPsychologistAction(psychologistUserId);
+      if (result.success) {
+        router.push(`/dashboard/chats?conversationId=${result.conversationId}`);
+      } else {
+        setMsgError(result.error ?? 'No se pudo iniciar la conversación.');
+      }
+    });
+  }
+
+  return (
+    <div className="user-card-stack">
+      <button
+        className="user-btn user-btn--primary"
+        type="button"
+        onClick={onClick}
+        disabled={isPending}
+      >
+        {isPending ? 'Abriendo chat…' : 'Enviar mensaje'}
+      </button>
+      <div aria-live="polite" aria-atomic="true">
+        {msgError ? <p role="alert" className="user-lede">{msgError}</p> : null}
+      </div>
+    </div>
+  );
+}
 
 export default function PsychologistProfilePage({ profile, error }: Props) {
   if (error) {
@@ -63,6 +103,7 @@ export default function PsychologistProfilePage({ profile, error }: Props) {
           {profile.isAcceptingNew ? (
             <span className="user-pill user-pill--ok">Aceptando pacientes</span>
           ) : null}
+          <MessagePsychologistButton psychologistUserId={profile.id} />
         </div>
       </div>
 
@@ -119,6 +160,8 @@ export default function PsychologistProfilePage({ profile, error }: Props) {
           </div>
         </div>
       )}
+
+      <BookAppointmentForm profile={profile} />
     </section>
   );
 }

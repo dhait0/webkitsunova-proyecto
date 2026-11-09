@@ -146,6 +146,44 @@ describe('createAppointmentAction — validación de psicólogo y paciente', () 
   });
 });
 
+describe('createAppointmentAction — validación de entrada (zod)', () => {
+  it('rechaza datos inválidos (psychologistId vacío)', async () => {
+    const result = await createAppointmentAction({ ...baseInput, psychologistId: '' });
+    expect(result).toEqual({ ok: false, error: 'Datos de reserva no válidos.' });
+    expect(createAppointment).not.toHaveBeenCalled();
+  });
+
+  it('rechaza tipo fuera del enum', async () => {
+    const result = await createAppointmentAction({
+      ...baseInput,
+      type: 'INVALID' as any,
+    });
+    expect(result).toEqual({ ok: false, error: 'Datos de reserva no válidos.' });
+    expect(createAppointment).not.toHaveBeenCalled();
+  });
+
+  it('rechaza durationMinutes no permitido', async () => {
+    const result = await createAppointmentAction({ ...baseInput, durationMinutes: 15 });
+    expect(result).toEqual({ ok: false, error: 'Datos de reserva no válidos.' });
+    expect(createAppointment).not.toHaveBeenCalled();
+  });
+
+  it('rechaza reason mayor a 500 caracteres', async () => {
+    const result = await createAppointmentAction({ ...baseInput, reason: 'x'.repeat(501) });
+    expect(result).toEqual({ ok: false, error: 'Datos de reserva no válidos.' });
+    expect(createAppointment).not.toHaveBeenCalled();
+  });
+
+  it('no acepta patientUserId del cliente (usa siempre el de la sesión)', async () => {
+    await createAppointmentAction({ ...baseInput, patientUserId: 'otro' } as any);
+    expect(createAppointment).toHaveBeenCalledWith(
+      'psy-1',
+      expect.objectContaining({ patientUserId: 'patient-1' }),
+    );
+    expect((createAppointment as any).mock.calls[0][1].patientUserId).toBe('patient-1');
+  });
+});
+
 describe('createAppointmentAction — horario y colisión', () => {
   it('rechaza horario en el pasado (slot no válido)', async () => {
     const pastInput = { ...baseInput, startsAt: new Date('2020-01-01T10:00:00Z') };
