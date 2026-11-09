@@ -1,23 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { PrismaClient, Role, AccountStatus, AppointmentType, AppointmentStatus, PatientLinkStatus } from '@prisma/client';
 
-const isProd = process.env.NODE_ENV === 'production' || process.env.DEMO_SEED_PROD === 'true';
-const allow = process.env.ALLOW_DEMO_SEED === 'true';
+import { randomBytes } from 'node:crypto';
+import { resolveDemoTarget } from './lib/demo-target';
 
-if (isProd && !allow) {
-  console.error('Demo seed disabled in production. Set ALLOW_DEMO_SEED=true explicitly if authorized.');
-  process.exit(1);
-}
+// Local stack only; the password comes from DEMO_PASSWORD or is generated and printed once.
+const target = resolveDemoTarget({ allowRemote: false });
+const generatedPassword = !process.env.DEMO_PASSWORD;
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? `Demo-${randomBytes(9).toString('base64url')}`;
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '';
-const supabaseSecretKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY ?? '';
-
-if (!supabaseUrl || !supabaseSecretKey) {
-  console.error('Missing Supabase env vars');
-  process.exit(1);
-}
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey, {
+const supabaseAdmin = createClient(target.supabaseUrl, target.serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
@@ -40,7 +32,7 @@ const USERS = Array.from({ length: 12 }, (_, i) => ({
 const ADMIN_EMAIL = 'admin@kitsunova.local';
 
 async function ensureAuthUser(email: string, role: Role) {
-  const pwd = 'DemoData123!';
+  const pwd = DEMO_PASSWORD;
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password: pwd,
@@ -203,6 +195,7 @@ async function main() {
   }
 
   console.log('Demo data ready');
+  if (generatedPassword) console.log(`Generated password for all accounts (shown once): ${DEMO_PASSWORD}`);
   console.log(`Psychologists: ${psyIds.length}, Users: ${userIds.length}, Availability slots added, Links/Appointments/Conversations/Messages created`);
 }
 
