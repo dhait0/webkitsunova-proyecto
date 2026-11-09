@@ -48,6 +48,66 @@ async function safeCount(count: () => Promise<number>): Promise<number | string>
   }
 }
 
+type KeptFingerprint = {
+  email: string;
+  authId: string;
+  credentialsDigest: string;
+  metadataDigest: string;
+  confirmed: boolean;
+  banned: boolean;
+  identities: number;
+  mfaFactors: number;
+  prismaId: string;
+  role: string;
+  status: string;
+  profiles: number;
+};
+
+/**
+ * What identifies a preserved account without exposing it: ids, digests of the
+ * password hash and metadata, identity and MFA counts, and the Prisma row.
+ * Taken before and after the replacement; any difference is a failure.
+ */
+async function fingerprintKept(prisma: PrismaClient, emails: string[]): Promise<KeptFingerprint[]> {
+  const result: KeptFingerprint[] = [];
+  for (const email of emails) {
+    const auth = await prisma.$queryRaw<
+      Array<{ id: string; cred: string; meta: string; confirmed: boolean; banned: boolean; identities: number; mfa: number }>
+    >`select u.id::text as id, md5(coalesce(u.encrypted_password, '')) as cred,
+             md5(coalesce(u.raw_app_meta_data::text, '')) as meta,
+             u.email_confirmed_at is not null as confirmed, u.banned_until is not null as banned,
+             (select count(*)::int from auth.identities i where i.user_id = u.id) as identities,
+             (select count(*)::int from auth.mfa_factors f where f.user_id = u.id) as mfa
+      from auth.users u where lower(u.email) = ${email}`;
+    const row = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+      select: { id: true, role: true, status: true, _count: { select: { habits: true } } },
+    });
+    const profiles = row ? await prisma.profile.count({ where: { userId: row.id } }) : 0;
+
+    if (auth.length !== 1) throw new Error(`Preserved account ${email}: expected exactly one Auth user, found ${auth.length}.`);
+    if (!row) throw new Error(`Preserved account ${email}: no Prisma row.`);
+    if (row.id !== auth[0].id) throw new Error(`Preserved account ${email}: Auth and Prisma ids differ.`);
+    if (row.status !== 'ACTIVE') throw new Error(`Preserved account ${email} is not ACTIVE.`);
+
+    result.push({
+      email,
+      authId: auth[0].id,
+      credentialsDigest: auth[0].cred,
+      metadataDigest: auth[0].meta,
+      confirmed: auth[0].confirmed,
+      banned: auth[0].banned,
+      identities: auth[0].identities,
+      mfaFactors: auth[0].mfa,
+      prismaId: row.id,
+      role: row.role,
+      status: row.status,
+      profiles,
+    });
+  }
+  return result;
+}
+
 async function listAuthUsers(admin: SupabaseClient) {
   const users: Array<{ id: string; email: string | null }> = [];
   for (let page = 1; ; page += 1) {
@@ -124,6 +184,12 @@ async function main() {
     const missingKeep = [...keep].filter((e) => !users.some((u) => u.email.toLowerCase() === e));
     if (missingKeep.length > 0) {
       console.log(`  Note: ${missingKeep.length} DEMO_KEEP_EMAILS entr(ies) match no Prisma user.`);
+    }
+
+    const keepList = [...keep];
+    const before = await fingerprintKept(prisma, keepList);
+    if (keepList.length > 0) {
+      console.log(`\nPreserved accounts verified (Auth + Prisma, same id, ACTIVE): ${before.map((f) => `${f.email} [${f.role}, identities=${f.identities}, mfa=${f.mfaFactors}]`).join('; ')}`);
     }
 
     if (!apply) {
@@ -209,6 +275,14 @@ async function main() {
       if (error) failedLogins += 1;
       console.log(`  ${email}: ${error ? `FAILED (${error.message})` : 'ok'}`);
     }
+    const after = await fingerprintKept(prisma, keepList);
+    const unchanged = JSON.stringify(before) === JSON.stringify(after);
+    console.log(`\nPreserved accounts unchanged (ids, credentials digest, role/metadata, identities, MFA, Prisma row): ${unchanged ? 'yes' : 'NO'}`);
+    if (!unchanged) {
+      process.exitCode = 1;
+      console.error('A preserved account changed during the replacement. Stop and restore from the backups.');
+    }
+
     if (failedLogins > 0) {
       process.exitCode = 1;
       console.error(`\n${failedLogins} demo account(s) cannot sign in. Do not close the session: investigate or restore.`);

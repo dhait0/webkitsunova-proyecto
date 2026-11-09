@@ -76,6 +76,9 @@ Salvaguardas: exige la frase `RESTORE-<ref>` presente en la URL (o `RESTORE-LOCA
 3. Mecanismos independientes de la aplicación: el panel de Supabase (propietario del proyecto) puede restablecer contraseñas y crear usuarios; el script de restauración devuelve las cuentas anteriores con sus contraseñas; el rol de servicio permite recrear un administrador por la API de administración.
 4. Contraseña demo de producción: generada y guardada en `~/kitsunova-backups/demo-password-prod.txt` (permisos 600, fuera del repositorio, 32 caracteres). Usarla con `DEMO_PASSWORD="$(cat ~/kitsunova-backups/demo-password-prod.txt)"`.
 
+## 6ter. Cuentas conservadas (`DEMO_KEEP_EMAILS`)
+Antes de borrar, el script comprueba que cada cuenta conservada existe en Auth **y** en Prisma con el mismo id y está ACTIVE, y guarda una huella (ids, resumen del hash de contraseña y de los metadatos/rol, identidades, factores MFA y fila Prisma). Al terminar la vuelve a calcular y falla (código de salida 1) si algo cambió. Ensayado con un ADMIN con un factor MFA: sin cambios, y sigue iniciando sesión con su contraseña original.
+
 ## 7. Verificaciones posteriores
 - Recuentos del escenario (sección 6) y `0` usuarios huérfanos en ambos sentidos.
 - Inicio de sesión de las siete cuentas (el script lo hace al terminar) y de las cuentas conservadas.
