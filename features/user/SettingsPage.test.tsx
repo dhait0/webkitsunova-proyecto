@@ -1,0 +1,42 @@
+import { describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import SettingsPage from '@/features/user/SettingsPage';
+
+vi.mock('@/app/(user)/dashboard/configuracion/actions', () => ({
+  updateProfileAction: vi.fn(),
+  changePasswordAction: vi.fn(),
+}));
+
+const initialValues = {
+  email: 'ana@example.com',
+  firstName: 'Ana',
+  lastName: 'Ruiz',
+  username: 'ana_ruiz',
+};
+
+describe('SettingsPage', () => {
+  it('renderiza valores iniciales y correo de solo lectura', () => {
+    render(<SettingsPage initialValues={initialValues} />);
+
+    expect(screen.getByDisplayValue('ana@example.com')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Ana')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Ruiz')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('ana_ruiz')).toBeInTheDocument();
+
+    const emailInput = screen.getByLabelText('Correo electrónico') as HTMLInputElement;
+    expect(emailInput.readOnly).toBe(true);
+  });
+
+  it('muestra formularios de perfil y cambio de contraseña con labels accesibles', () => {
+    render(<SettingsPage initialValues={initialValues} />);
+
+    expect(screen.getByLabelText('Nombre')).toBeInTheDocument();
+    expect(screen.getByLabelText('Apellido')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nombre de usuario')).toBeInTheDocument();
+    expect(screen.getByLabelText('Contraseña actual')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nueva contraseña')).toBeInTheDocument();
+    expect(screen.getByLabelText('Confirmar nueva contraseña')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar perfil' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Cambiar contraseña' })).toBeEnabled();
+  });
+});
