@@ -121,6 +121,7 @@ model User {
   reviewsReceived         Review[]               @relation("ReviewPsychologist")
   reviewsWritten          Review[]               @relation("ReviewUser")
   habits                  Habit[]
+  habitLogs               HabitLog[]
 }
 
 model Profile {
@@ -431,17 +432,36 @@ model PsyReferral {
 // ---------------------------------------------------------------------------
 
 model Habit {
-  id          String   @id @default(cuid())
-  userId      String
-  title       String
-  description String?
-  progress    Int      @default(0)
-  status      String   @default("active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String     @id @default(cuid())
+  userId        String
+  title         String
+  description   String?
+  /// Legacy manual counter. Progress is now derived from HabitLog.
+  progress      Int        @default(0)
+  /// active | paused | completed
+  status        String     @default("active")
+  /// Goal in days per week (1-7); 7 means every day.
+  targetPerWeek Int        @default(7)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs          HabitLog[]
 
   @@index([userId])
+}
+
+/// One row per habit and calendar day on which it was done.
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  userId    String
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([userId, date])
 }
 
 // ---------------------------------------------------------------------------

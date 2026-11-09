@@ -504,30 +504,87 @@ async function seedConversations() {
   }
 }
 
-async function seedHabits() {
-  const habits: Record<UserKey, Array<{ title: string; description: string; progress: number; status: string }>> = {
-    ana: [
-      { title: 'Respiración 4-7-8', description: 'Cinco minutos antes de las reuniones.', progress: 70, status: 'active' },
-      { title: 'Caminar 20 minutos', description: 'Después del almuerzo.', progress: 45, status: 'active' },
-      { title: 'Desconectar pantallas a las 10 pm', description: 'Rutina de sueño.', progress: 100, status: 'completed' },
-    ],
-    diego: [
-      { title: 'Mindfulness 10 minutos', description: 'Al despertar.', progress: 60, status: 'active' },
-      { title: 'Registro de estrés diario', description: 'Anotar el nivel de 1 a 10.', progress: 30, status: 'active' },
-      { title: 'Hidratación', description: 'Ocho vasos de agua al día.', progress: 100, status: 'completed' },
-    ],
-    sofia: [
-      { title: 'Tres logros diarios', description: 'Escribirlos antes de dormir.', progress: 55, status: 'active' },
-      { title: 'Decir "no" una vez al día', description: 'Practicar límites sanos.', progress: 25, status: 'active' },
-      { title: 'Lectura 15 minutos', description: 'Antes de dormir.', progress: 80, status: 'active' },
-    ],
-  };
+type HabitSeed = {
+  title: string;
+  description: string;
+  status: 'active' | 'paused' | 'completed';
+  /** Goal in days per week. */
+  target: number;
+  /** Share of days done before the forced run, 0..1. */
+  density: number;
+  /** Days in the current run (ending today when `today` is true, else yesterday). */
+  run: number;
+  today: boolean;
+};
 
-  for (const [user, list] of Object.entries(habits) as Array<[UserKey, (typeof habits)[UserKey]]>) {
+const HABITS: Record<UserKey, HabitSeed[]> = {
+  ana: [
+    { title: 'Respiración 4-7-8', description: 'Cinco minutos antes de las reuniones.', status: 'active', target: 5, density: 0.7, run: 6, today: true },
+    { title: 'Caminar 20 minutos', description: 'Después del almuerzo.', status: 'active', target: 3, density: 0.5, run: 0, today: false },
+    { title: 'Desconectar pantallas a las 10 pm', description: 'Rutina de sueño.', status: 'completed', target: 7, density: 0.85, run: 0, today: false },
+  ],
+  diego: [
+    { title: 'Mindfulness 10 minutos', description: 'Al despertar.', status: 'active', target: 7, density: 0.6, run: 3, today: true },
+    { title: 'Registro de estrés diario', description: 'Anotar el nivel de 1 a 10.', status: 'active', target: 5, density: 0.4, run: 2, today: false },
+    { title: 'Hidratación', description: 'Ocho vasos de agua al día.', status: 'paused', target: 7, density: 0.5, run: 0, today: false },
+  ],
+  sofia: [
+    { title: 'Tres logros diarios', description: 'Escribirlos antes de dormir.', status: 'active', target: 7, density: 0.55, run: 0, today: false },
+    { title: 'Decir "no" una vez al día', description: 'Practicar límites sanos.', status: 'active', target: 3, density: 0.35, run: 0, today: false },
+    { title: 'Lectura 15 minutos', description: 'Antes de dormir.', status: 'active', target: 5, density: 0.8, run: 4, today: true },
+  ],
+};
+
+const HABIT_HISTORY_DAYS = 28;
+
+/** Deterministic pseudo-random in [0, 1) so reruns produce the same pattern for the same day. */
+function unit(seed: number): number {
+  const x = Math.sin(seed * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function dayKeyOffset(offset: number): string {
+  const day = bogotaToday();
+  day.setUTCDate(day.getUTCDate() + offset);
+  return day.toISOString().slice(0, 10);
+}
+
+async function seedHabits() {
+  for (const [user, list] of Object.entries(HABITS) as Array<[UserKey, HabitSeed[]]>) {
     for (const [index, h] of list.entries()) {
       const id = `demo-habit-${user}-${index + 1}`;
-      const data = { userId: idOf(user), ...h };
+      const data = {
+        userId: idOf(user),
+        title: h.title,
+        description: h.description,
+        status: h.status,
+        targetPerWeek: h.target,
+        progress: 0,
+      };
       await prisma.habit.upsert({ where: { id }, create: { id, ...data }, update: data });
+
+      // Completion history: replaced on every run so it always ends today.
+      await prisma.habitLog.deleteMany({ where: { habitId: id } });
+      const runEnd = h.today ? 0 : -1;
+      const days: string[] = [];
+      for (let back = 0; back < HABIT_HISTORY_DAYS; back += 1) {
+        const offset = -back;
+        const inRun = h.run > 0 && offset <= runEnd && offset > runEnd - h.run;
+        const brokenBefore = h.run > 0 && offset === runEnd - h.run;
+        const beforeRun = h.run > 0 && offset < runEnd - h.run;
+        const rolled = unit(index * 101 + user.length * 17 + back) < h.density;
+        const live = h.status === 'active' || h.status === 'paused';
+        // Active habits with no forced run still skip today/yesterday so a pending day exists.
+        const recentGap = h.run === 0 && offset > -2 && h.status === 'active';
+        if (inRun || (!brokenBefore && (h.run === 0 || beforeRun) && rolled && !recentGap && (live || offset < -3))) {
+          days.push(dayKeyOffset(offset));
+        }
+      }
+      if (days.length > 0) {
+        await prisma.habitLog.createMany({
+          data: days.map((date) => ({ habitId: id, userId: idOf(user), date: new Date(`${date}T00:00:00.000Z`) })),
+        });
+      }
     }
   }
 }
@@ -628,6 +685,7 @@ async function summary() {
     Conversations: await prisma.conversation.count(),
     Messages: await prisma.message.count(),
     Habits: await prisma.habit.count(),
+    HabitLogs: await prisma.habitLog.count(),
     Workshops: await prisma.workshop.count(),
     WorkshopEnrollments: await prisma.workshopEnrollment.count(),
     Resources: await prisma.resource.count(),

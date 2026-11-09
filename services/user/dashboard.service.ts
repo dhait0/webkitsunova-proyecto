@@ -1,9 +1,9 @@
 import { prisma } from '@/lib/db/prisma';
+import { getHabitsOverview, type HabitsOverview } from './habits.service';
 
 export type UserDashboardSummary = {
-  activeHabits: number;
-  averageProgress: number;
-  nextHabit: { title: string; progress: number } | null;
+  /** Habits with statistics derived from the days they were completed. */
+  habits: HabitsOverview;
   nextAppointment: { startsAt: Date; psychologistName: string } | null;
   pendingAppointments: number;
   memberSince: Date;
@@ -24,16 +24,8 @@ function resolvePsychologistName(psychologist: {
 export async function getUserDashboardSummary(userId: string): Promise<UserDashboardSummary> {
   const now = new Date();
 
-  const [activeHabitRows, nextHabit, nextAppointmentRow, pendingAppointments, user] = await Promise.all([
-    prisma.habit.findMany({
-      where: { userId, status: 'active' },
-      select: { progress: true },
-    }),
-    prisma.habit.findFirst({
-      where: { userId, status: 'active' },
-      orderBy: { progress: 'asc' },
-      select: { title: true, progress: true },
-    }),
+  const [habits, nextAppointmentRow, pendingAppointments, user] = await Promise.all([
+    getHabitsOverview(userId),
     prisma.appointment.findFirst({
       where: {
         patientUserId: userId,
@@ -62,16 +54,8 @@ export async function getUserDashboardSummary(userId: string): Promise<UserDashb
     }),
   ]);
 
-  const activeHabits = activeHabitRows.length;
-  const averageProgress =
-    activeHabits === 0
-      ? 0
-      : Math.round(activeHabitRows.reduce((sum, h) => sum + h.progress, 0) / activeHabits);
-
   return {
-    activeHabits,
-    averageProgress,
-    nextHabit: nextHabit ? { title: nextHabit.title, progress: nextHabit.progress } : null,
+    habits,
     nextAppointment: nextAppointmentRow
       ? {
           startsAt: nextAppointmentRow.startsAt,
