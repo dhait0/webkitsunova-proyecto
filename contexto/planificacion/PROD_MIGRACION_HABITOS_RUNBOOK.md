@@ -40,3 +40,13 @@ Si se ejecuta por GitHub Actions, el workflow se dispara con un push a `main` qu
 - RLS: `ALTER TABLE "<tabla>" DISABLE ROW LEVEL SECURITY;` y `GRANT ALL ON TABLE "<tabla>" TO anon, authenticated;` (esto reabre el Data API; solo si algo lo exigiera, que no es el caso de la app actual).
 - Si algo más falla, restaurar desde el respaldo del paso previo.
 - Tras revertir manualmente, borrar la fila correspondiente de `supabase_migrations.schema_migrations` para que la migración vuelva a considerarse pendiente.
+
+## Registro de ejecución (2026-11-09)
+- Proyecto: `edbtowdipfeskqdmngji`, por el pooler en modo sesión. `migration list` y `db push --dry-run` mostraron solo `20240101000002` y `20261109000000` pendientes (sin seeds ni roles).
+- Consumidores de la API REST anónima: sin acceso a los logs de la API de Supabase (la CLI no tiene token). `pg_stat_statements` registró solo 3 llamadas con forma PostgREST, atribuibles a las comprobaciones de esta auditoría, y el código no usa `.from()`, `.rpc()`, Storage ni Realtime.
+- `supabase db push` aplicó las dos migraciones sin error. Historial remoto: `20240101000000`, `...01`, `...02`, `20261109000000`.
+- `"Habit"`: columnas correctas, índices `Habit_pkey` y `Habit_userId_idx`, FK `Habit_userId_fkey` → `"User"` con `ON DELETE CASCADE`.
+- RLS activo en las 20 tablas públicas; 0 permisos restantes para `anon` y `authenticated`.
+- `/rest/v1/User`, `/Habit` y `/Profile` con la clave publicable devuelven 401 (`42501`), sin filas.
+- Prisma conserva el acceso: `habit.count()` = 0, `user.count()` = 23 (sin cambios).
+- Pendiente de comprobar por el propietario con sesión: `/dashboard` y `/dashboard/habitos` en producción (sin sesión devuelven 307 a `/login`, como debe ser).
