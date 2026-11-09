@@ -1,46 +1,68 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth/guard';
+import { getUserDashboardSummary } from '@/services/user/dashboard.service';
 import {
   dashboardActivityItems,
   dashboardFocusItems,
   dashboardQuickActions,
-  dashboardStatusItems
+  dashboardStatusItems,
 } from '@/content/siteContent';
 
-const stats = [
-  {
-    label: 'Racha actual',
-    value: '12 días',
-    caption: 'Tu mejor racha: 21 días'
-  },
-  {
-    label: 'Hábitos activos',
-    value: '3',
-    caption: '1 necesita revisión'
-  },
-  {
-    label: 'Acciones esta semana',
-    value: '18',
-    caption: '4 hoy'
-  },
-  {
-    label: 'Sesiones',
-    value: '2',
-    caption: 'Próxima: jueves 16:00'
-  },
-  {
-    label: 'Nivel de la mascota',
-    value: '7',
-    caption: 'Faltan 300 XP para el nivel 8'
-  }
-] as const;
+function formatMemberSince(date: Date): string {
+  return new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(date);
+}
+
+function formatAppointmentDate(date: Date): string {
+  return new Intl.DateTimeFormat('es-ES', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
 
 export default async function DashboardHomePage() {
   const session = await requireUser();
+  const summary = await getUserDashboardSummary(session.id);
   const displayName =
     session.profile?.firstName?.trim() ||
     session.profile?.username?.trim() ||
     session.email;
+
+  const stats = [
+    {
+      label: 'Hábitos activos',
+      value: String(summary.activeHabits),
+      caption:
+        summary.activeHabits === 0
+          ? 'Crea tu primer hábito para empezar'
+          : `${summary.activeHabits} en seguimiento`,
+    },
+    {
+      label: 'Progreso promedio',
+      value: `${summary.averageProgress}%`,
+      caption:
+        summary.activeHabits === 0
+          ? 'Sin hábitos activos'
+          : 'Promedio de tus hábitos activos',
+    },
+    {
+      label: 'Citas pendientes',
+      value: String(summary.pendingAppointments),
+      caption:
+        summary.pendingAppointments === 0
+          ? 'No tienes citas pendientes'
+          : 'Pendientes de atención',
+    },
+    {
+      label: 'Próxima cita',
+      value: summary.nextAppointment ? formatAppointmentDate(summary.nextAppointment.startsAt) : 'Sin citas',
+      caption: summary.nextAppointment
+        ? `Con ${summary.nextAppointment.psychologistName}`
+        : 'Agenda cuando lo necesites',
+    },
+  ];
 
   return (
     <section className="user-page">
@@ -48,7 +70,6 @@ export default async function DashboardHomePage() {
         <div className="user-banner-copy">
           <div className="user-example">
             <span className="user-eyebrow">Panel privado</span>
-            <span className="user-example-stamp">Ejemplo</span>
           </div>
           <h2 className="user-headline">Tu progreso, en un solo lugar.</h2>
           <p className="user-lede">
@@ -59,8 +80,8 @@ export default async function DashboardHomePage() {
             <Link className="user-btn user-btn--primary" href="/dashboard/habitos">
               Revisar hábitos
             </Link>
-            <Link className="user-btn user-btn--quiet" href="/dashboard/chats">
-              Abrir chat
+            <Link className="user-btn user-btn--quiet" href="/dashboard/citas">
+              Ver citas
             </Link>
           </div>
         </div>
@@ -72,7 +93,13 @@ export default async function DashboardHomePage() {
           </div>
           <div className="user-side-card">
             <span className="user-eyebrow">Siguiente paso</span>
-            <strong>Completa Respiración</strong>
+            {summary.nextHabit ? (
+              <strong>{summary.nextHabit.title}</strong>
+            ) : (
+              <Link className="user-btn user-btn--quiet" href="/dashboard/habitos">
+                Crea tu primer hábito
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -94,7 +121,7 @@ export default async function DashboardHomePage() {
             </div>
             <div className="user-profile-row">
               <span className="user-eyebrow">Miembro desde</span>
-              <strong>Marzo 2026</strong>
+              <strong>{formatMemberSince(summary.memberSince)}</strong>
             </div>
             <div className="user-profile-row">
               <span className="user-eyebrow">Plan</span>
@@ -105,45 +132,35 @@ export default async function DashboardHomePage() {
 
         <article className="user-card user-raise">
           <div className="user-panel-head">
-            <span className="user-eyebrow">Compañera</span>
-            <h2 className="user-title">Kitsune te acompaña</h2>
+            <span className="user-eyebrow">Próxima cita</span>
+            <h2 className="user-title">Tu agenda</h2>
           </div>
-          <div className="user-mascot">
-            <div className="user-mascot-fox">
-              <img
-                src="/brand/zorro-c.png"
-                alt="Kitsune, tu compañera de acompañamiento"
-              />
-            </div>
-            <div className="user-mascot-body">
-              <div className="user-mascot-top">
-                <span className="user-mascot-tag">Asistente IA</span>
-                <span className="user-mascot-level">Nivel 7 · Ritmo estable</span>
+          {summary.nextAppointment ? (
+            <div className="user-profile-rows">
+              <div className="user-profile-row">
+                <span className="user-eyebrow">Cuándo</span>
+                <strong>{formatAppointmentDate(summary.nextAppointment.startsAt)}</strong>
               </div>
-              <div
-                className="user-bar"
-                role="progressbar"
-                aria-valuenow={68}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label="Progreso hacia el nivel 8"
-              >
-                <div className="user-bar-fill" style={{ width: '68%' }} />
+              <div className="user-profile-row">
+                <span className="user-eyebrow">Profesional</span>
+                <strong>{summary.nextAppointment.psychologistName}</strong>
               </div>
-              <p className="user-mascot-note">
-                Cada hábito completado la acerca a su siguiente cola. Llevas
-                680 de 1000 XP.
-              </p>
-              <div>
-                <Link
-                  className="user-btn user-btn--primary"
-                  href="/dashboard/habitos"
-                >
-                  Ver tu progreso
+              <div className="user-banner-actions">
+                <Link className="user-btn user-btn--primary" href="/dashboard/citas">
+                  Ver citas
                 </Link>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="user-profile-rows">
+              <p>Sin citas próximas.</p>
+              <div className="user-banner-actions">
+                <Link className="user-btn user-btn--primary" href="/dashboard/citas">
+                  Ir a citas
+                </Link>
+              </div>
+            </div>
+          )}
         </article>
       </div>
 
@@ -177,7 +194,7 @@ export default async function DashboardHomePage() {
       <article className="user-card user-raise">
         <div className="user-panel-head">
           <span className="user-eyebrow">Progreso</span>
-          <h2 className="user-title">Señales de la última semana</h2>
+          <h2 className="user-title">Resumen real</h2>
         </div>
         <div className="user-stat-grid">
           {stats.map((stat) => (
@@ -252,11 +269,6 @@ export default async function DashboardHomePage() {
           ))}
         </div>
       </article>
-
-      <p className="user-example-note">
-        Esta vista muestra datos ilustrativos mientras el módulo de usuario
-        conecta con su API.
-      </p>
     </section>
   );
 }

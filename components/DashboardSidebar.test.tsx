@@ -43,12 +43,13 @@ describe('DashboardSidebar', () => {
     renderSidebar();
 
     expect(screen.getByText('Kitsunova')).toBeInTheDocument();
-    expect(screen.getAllByRole('link')).toHaveLength(6);
+    expect(screen.getAllByRole('link')).toHaveLength(7);
     expect(screen.getByText('Inicio')).toBeInTheDocument();
     expect(screen.getByText('Hábitos')).toBeInTheDocument();
     expect(screen.getByText('Chats')).toBeInTheDocument();
     expect(screen.getByText('Citas')).toBeInTheDocument();
     expect(screen.getByText('Psicólogos')).toBeInTheDocument();
+    expect(screen.getByText('Configuración')).toBeInTheDocument();
   });
 
   it('shows user display name and role label', () => {

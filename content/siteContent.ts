@@ -133,7 +133,8 @@ export const dashboardSidebarItems = [
   { label: 'Hábitos', code: 'HB', to: '/dashboard/habitos' },
   { label: 'Chats', code: 'CH', to: '/dashboard/chats' },
   { label: 'Citas', code: 'CT', to: '/dashboard/citas' },
-  { label: 'Psicólogos', code: 'PS', to: '/dashboard/psicologos' }
+  { label: 'Psicólogos', code: 'PS', to: '/dashboard/psicologos' },
+  { label: 'Configuración', code: 'CF', to: '/dashboard/configuracion' }
 ] as const;
 
 /** Sidebar of the psychologist area (Mockups Psy 0/15/18). */
