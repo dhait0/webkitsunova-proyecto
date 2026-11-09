@@ -9,6 +9,7 @@ import {
 } from './shared';
 import { createNotification } from './notifications.service';
 import { recalculatePatientsCount } from './shared';
+import { fitsAvailability } from './availability';
 
 export type AppointmentScope = 'today' | 'upcoming' | 'past' | 'all';
 
@@ -241,6 +242,77 @@ export async function getAppointment(psychologistId: string, id: string) {
   };
 }
 
+/**
+ * Comprueba dentro de la transacción que el psicólogo puede recibir la reserva
+ * (cuenta activa, aprobado) y que el horario cae en su disponibilidad semanal,
+ * sin chocar con otra cita PENDING o CONFIRMED.
+ */
+async function assertSlotBookable(
+  tx: Prisma.TransactionClient,
+  psychologistId: string,
+  startsAt: Date,
+  durationMinutes: number,
+  options: { requireAcceptingNew: boolean },
+) {
+  const psychologist = await tx.user.findFirst({
+    where: {
+      id: psychologistId,
+      role: 'PSYCHOLOGIST',
+      status: 'ACTIVE',
+      profile: {
+        psychologistProfile: {
+          isApproved: true,
+          ...(options.requireAcceptingNew ? { isAcceptingNew: true } : {}),
+        },
+      },
+    },
+    select: {
+      profile: {
+        select: {
+          timezone: true,
+          availabilitySlots: {
+            select: { weekday: true, startMinutes: true, endMinutes: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!psychologist) {
+    throw new AppointmentConflictError('El psicólogo no está disponible para nuevas solicitudes');
+  }
+
+  if (startsAt.getTime() <= Date.now()) {
+    throw new AppointmentConflictError('El horario solicitado ya pasó');
+  }
+
+  const profile = psychologist.profile;
+  if (
+    !fitsAvailability(
+      profile?.availabilitySlots ?? [],
+      startsAt,
+      durationMinutes,
+      profile?.timezone,
+    )
+  ) {
+    throw new AppointmentConflictError('El horario está fuera de la disponibilidad del psicólogo');
+  }
+
+  const conflict = await tx.appointment.findFirst({
+    where: {
+      psychologistId,
+      status: { in: ['PENDING', 'CONFIRMED'] },
+      startsAt: { lt: endsAt(startsAt, durationMinutes) },
+      endsAt: { gt: startsAt },
+    },
+    select: { id: true },
+  });
+
+  if (conflict) {
+    throw new AppointmentConflictError('El horario ya está ocupado');
+  }
+}
+
 export async function createAppointment(psychologistId: string, input: AppointmentInput) {
   const patient = await prisma.user.findUnique({
     where: { id: input.patientUserId },
@@ -255,32 +327,39 @@ export async function createAppointment(psychologistId: string, input: Appointme
     throw new AppointmentConflictError('La cuenta del paciente no está activa');
   }
 
-  const conflict = await prisma.appointment.findFirst({
-    where: {
-      psychologistId,
-      status: { in: ['PENDING', 'CONFIRMED'] },
-      startsAt: { lt: endsAt(input.startsAt, input.durationMinutes) },
-      endsAt: { gt: input.startsAt },
-    },
-    select: { id: true },
-  });
+  let appointment;
+  try {
+    appointment = await prisma.$transaction(
+      async (tx) => {
+        await assertSlotBookable(
+          tx,
+          psychologistId,
+          input.startsAt,
+          input.durationMinutes,
+          { requireAcceptingNew: false },
+        );
 
-  if (conflict) {
-    throw new AppointmentConflictError('El horario ya está ocupado');
+        return tx.appointment.create({
+          data: {
+            psychologistId,
+            patientUserId: input.patientUserId,
+            type: input.type,
+            status: 'CONFIRMED',
+            startsAt: input.startsAt,
+            endsAt: endsAt(input.startsAt, input.durationMinutes),
+            reason: input.reason ?? null,
+            patientNote: input.patientNote ?? null,
+          },
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  } catch (error) {
+    if ((error as { code?: string } | null)?.code === 'P2034') {
+      throw new AppointmentConflictError('El horario ya está ocupado o fue reservado recientemente');
+    }
+    throw error;
   }
-
-  const appointment = await prisma.appointment.create({
-    data: {
-      psychologistId,
-      patientUserId: input.patientUserId,
-      type: input.type,
-      status: 'CONFIRMED',
-      startsAt: input.startsAt,
-      endsAt: endsAt(input.startsAt, input.durationMinutes),
-      reason: input.reason ?? null,
-      patientNote: input.patientNote ?? null,
-    },
-  });
 
   // Decision D2: the previous psychologist's link is closed before the new one
   // opens, so a user never holds two ACTIVE links.
@@ -434,33 +513,13 @@ export async function requestAppointmentByUser(
           throw new AppointmentConflictError('La cuenta del usuario no está activa');
         }
 
-        const psychologist = await tx.user.findFirst({
-          where: {
-            id: input.psychologistId,
-            role: 'PSYCHOLOGIST',
-            status: 'ACTIVE',
-            profile: { psychologistProfile: { isApproved: true, isAcceptingNew: true } },
-          },
-          select: { id: true },
-        });
-
-        if (!psychologist) {
-          throw new AppointmentConflictError('El psicólogo no está disponible para nuevas solicitudes');
-        }
-
-        const conflict = await tx.appointment.findFirst({
-          where: {
-            psychologistId: input.psychologistId,
-            status: { in: ['PENDING', 'CONFIRMED'] },
-            startsAt: { lt: endsAt(input.startsAt, input.durationMinutes) },
-            endsAt: { gt: input.startsAt },
-          },
-          select: { id: true },
-        });
-
-        if (conflict) {
-          throw new AppointmentConflictError('El horario ya está ocupado');
-        }
+        await assertSlotBookable(
+          tx,
+          input.psychologistId,
+          input.startsAt,
+          input.durationMinutes,
+          { requireAcceptingNew: true },
+        );
 
         const appointment = await tx.appointment.create({
           data: {

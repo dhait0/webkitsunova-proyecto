@@ -3,7 +3,7 @@
 import { getSessionUser } from '@/lib/auth/guard';
 import { prisma } from '@/lib/db/prisma';
 import { getProfessionalProfile, updateProfessionalProfile, replaceAvailability } from '@/services/psy/profile.service';
-import { minutesToHHmm } from '@/services/psy/shared';
+import { hhmmToMinutes, minutesToHHmm } from '@/services/psy/shared';
 
 export async function getProfileAction() {
   const session = await getSessionUser();
@@ -49,8 +49,8 @@ export async function updateAvailabilityAction(slots: Array<{
     .filter((slot) => slot.enabled)
     .map((slot) => ({
       weekday: slot.weekday,
-      startMinutes: parseInt(slot.start.replace(':', ''), 10),
-      endMinutes: parseInt(slot.end.replace(':', ''), 10),
+      startMinutes: hhmmToMinutes(slot.start),
+      endMinutes: hhmmToMinutes(slot.end),
       enabled: slot.enabled,
     }));
 
