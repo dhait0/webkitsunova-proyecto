@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getPsyDashboard, type PsyDashboard } from '@/lib/api';
-import { EmptyState, ErrorBlock, Panel, StatCard, PsyBadge } from '@/components/psy/PsyUi';
+import { useRouter } from 'next/navigation';
+import type { PsyDashboard } from '@/lib/api';
+import { EmptyState, Panel, StatCard, PsyBadge } from '@/components/psy/PsyUi';
 import { formatRelative, formatTime, formatDateTime, moodLabels } from '@/lib/utils/format';
 import { psyAppointmentStatusLabels } from '@/content/siteContent';
 import type { SessionUser } from '@/lib/auth/types';
@@ -14,30 +15,16 @@ type Props = {
 };
 
 function PsyDashboardClient({ initialData }: Props) {
+  const router = useRouter();
   const [data, setData] = useState(initialData);
-  const [reloadToken, setReloadToken] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    setReloadToken((n) => n + 1);
-  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    setError(null);
-    getPsyDashboard()
-      .then((result) => {
-        if (!cancelled) setData(result);
-      })
-      .catch((caught) => {
-        if (!cancelled) setError(caught instanceof Error ? caught.message : 'Error inesperado');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadToken]);
+    setData(initialData);
+  }, [initialData]);
 
-  if (error) return <ErrorBlock message={error} />;
+  const reload = useCallback(() => {
+    router.refresh();
+  }, [router]);
 
   const { profile, stats, nextAppointment, todayAppointments, recentPatients } = data;
 
