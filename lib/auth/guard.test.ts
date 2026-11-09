@@ -1,7 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { authorize, getSessionUser } from './guard';
+import { authorize, getSessionUser, requireRole, requireUser } from './guard';
 
 vi.mock('server-only', () => ({}));
+
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`REDIRECT:${url}`);
+  }),
+}));
 
 const getUser = vi.hoisted(() => vi.fn());
 const prismaUserFindUnique = vi.hoisted(() => vi.fn());
@@ -256,5 +262,50 @@ describe('activación al confirmar el correo', () => {
 
     expect(prismaUserUpdateMany).not.toHaveBeenCalled();
     expect(result).toBeNull();
+  });
+});
+
+describe('requireUser() / requireRole() con cuentas no válidas', () => {
+  it('redirige a /login cuando no hay sesión', async () => {
+    getUser.mockResolvedValue({ data: { user: null } });
+
+    await expect(requireUser()).rejects.toThrow('REDIRECT:/login');
+  });
+
+  it('explica el rebote cuando hay sesión de Supabase pero no fila en Prisma', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue(null);
+
+    await expect(requireUser()).rejects.toThrow('REDIRECT:/login?cuenta=sin_perfil');
+  });
+
+  it('no deja entrar a una cuenta SUSPENDED y la envía a /login?cuenta=inactiva', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'SUSPENDED' });
+
+    await expect(requireUser()).rejects.toThrow('REDIRECT:/login?cuenta=inactiva');
+    await expect(requireRole('USER')).rejects.toThrow('REDIRECT:/login?cuenta=inactiva');
+  });
+
+  it('no deja entrar a una cuenta PENDING con el correo sin confirmar', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'PENDING' });
+
+    await expect(requireUser()).rejects.toThrow('REDIRECT:/login?cuenta=inactiva');
+  });
+
+  it('admite una cuenta ACTIVE y respeta el rol exigido', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'ACTIVE' });
+
+    await expect(requireUser()).resolves.toMatchObject({ id: 'user-1', status: 'ACTIVE' });
+    await expect(requireRole('ADMIN')).rejects.toThrow('REDIRECT:/dashboard');
+  });
+
+  it('getSessionUser sigue devolviendo null sin fila en Prisma', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue(null);
+
+    await expect(getSessionUser()).resolves.toBeNull();
   });
 });

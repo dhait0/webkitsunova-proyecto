@@ -14,7 +14,7 @@ import { fieldCover } from '@/content/siteContent';
 export default async function HomePage() {
   const session = await getSessionUser();
 
-  if (session) {
+  if (session && session.status === 'ACTIVE') {
     redirect(homeForRole(session.role));
   }
 

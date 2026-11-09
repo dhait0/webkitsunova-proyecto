@@ -14,20 +14,24 @@ import type { SessionUser } from './types';
  * `middleware.ts` is a UX optimization in front of this, not a replacement.
  */
 
-export async function getSessionUser(): Promise<SessionUser | null> {
+type SessionState = { kind: 'anonymous' } | { kind: 'no_account' } | { kind: 'session'; user: SessionUser };
+
+async function resolveSession(): Promise<SessionState> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return null;
+  if (!user) return { kind: 'anonymous' };
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
     select: { status: true },
   });
 
-  if (!dbUser) return null;
+  // Authenticated in Supabase but without a Prisma row: the account was never
+  // provisioned (or was removed). Nothing may be served for it.
+  if (!dbUser) return { kind: 'no_account' };
 
   let status = dbUser.status;
 
@@ -43,30 +47,46 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 
   return {
-    id: user.id,
-    email: user.email ?? '',
-    role: toAppRole(user.app_metadata?.role as string | undefined),
-    status,
-    profile: {
-      firstName: (user.user_metadata?.first_name as string | undefined) ?? null,
-      lastName: (user.user_metadata?.last_name as string | undefined) ?? null,
-      username: (user.user_metadata?.username as string | undefined) ?? null,
+    kind: 'session',
+    user: {
+      id: user.id,
+      email: user.email ?? '',
+      role: toAppRole(user.app_metadata?.role as string | undefined),
+      status,
+      profile: {
+        firstName: (user.user_metadata?.first_name as string | undefined) ?? null,
+        lastName: (user.user_metadata?.last_name as string | undefined) ?? null,
+        username: (user.user_metadata?.username as string | undefined) ?? null,
+      },
     },
   };
 }
 
+export async function getSessionUser(): Promise<SessionUser | null> {
+  const state = await resolveSession();
+  return state.kind === 'session' ? state.user : null;
+}
+
 /**
- * Requires any authenticated session, regardless of role. Returns it for the
- * layout to pass down to the tree.
+ * Where a layout sends a visitor that may not enter. The `cuenta` reason lets
+ * the login page explain why instead of silently showing the form again.
+ */
+async function requireActiveSession(): Promise<SessionUser> {
+  const state = await resolveSession();
+
+  if (state.kind === 'anonymous') redirect('/login');
+  if (state.kind === 'no_account') redirect('/login?cuenta=sin_perfil');
+  if (state.user.status !== 'ACTIVE') redirect('/login?cuenta=inactiva');
+
+  return state.user;
+}
+
+/**
+ * Requires an authenticated session on an ACTIVE account, regardless of role.
+ * Returns it for the layout to pass down to the tree.
  */
 export async function requireUser(): Promise<SessionUser> {
-  const session = await getSessionUser();
-
-  if (!session) {
-    redirect('/login');
-  }
-
-  return session;
+  return requireActiveSession();
 }
 
 /**
@@ -74,12 +94,7 @@ export async function requireUser(): Promise<SessionUser> {
  * each area; the data layer still refuses non-psychologists.
  */
 export async function requireRole(role: AppRole): Promise<SessionUser> {
-  const session = await getSessionUser();
-
-  if (!session) {
-    redirect('/login');
-  }
-
+  const session = await requireActiveSession();
   const actual = toAppRole(session.role);
 
   if (actual !== role && actual !== 'ADMIN') {
