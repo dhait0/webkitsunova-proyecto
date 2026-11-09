@@ -185,6 +185,7 @@ describe('AdminUserPage', () => {
     const janeRow = (await screen.findByText('Jane Doe')).closest('tr') as HTMLElement;
     await openActionsMenu(user, janeRow);
     await clickMenuItem(user, 'Suspender');
+    await user.click(await screen.findByRole('button', { name: /^Suspender$/ }));
 
     expect(updateUserStatus).toHaveBeenCalledWith('u1', 'SUSPENDED', 'Acción de administrador');
     expect(await screen.findByText('Usuario suspendido')).toBeInTheDocument();
@@ -201,6 +202,7 @@ describe('AdminUserPage', () => {
     const johnRow = (await screen.findByText('John Roe')).closest('tr') as HTMLElement;
     await openActionsMenu(user, johnRow);
     await clickMenuItem(user, 'Activar');
+    await user.click(await screen.findByRole('button', { name: /^Activar$/ }));
 
     expect(updateUserStatus).toHaveBeenCalledWith('u2', 'ACTIVE', 'Acción de administrador');
     expect(await screen.findByText('Usuario reactivado')).toBeInTheDocument();
@@ -214,6 +216,7 @@ describe('AdminUserPage', () => {
     const janeRow = (await screen.findByText('Jane Doe')).closest('tr') as HTMLElement;
     await openActionsMenu(user, janeRow);
     await clickMenuItem(user, 'Suspender');
+    await user.click(await screen.findByRole('button', { name: /^Suspender$/ }));
 
     expect(await screen.findByText('No autorizado')).toBeInTheDocument();
     const row = (await screen.findByText('Jane Doe')).closest('tr') as HTMLElement;
