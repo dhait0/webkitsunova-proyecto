@@ -8,6 +8,17 @@ export function isoWeekday(date: Date): number {
   return day === 0 ? 7 : day;
 }
 
+/** Convierte "HH:mm" en minutos desde medianoche; lanza si el formato no es válido. */
+export function hhmmToMinutes(value: string): number {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value);
+  const hours = match ? Number(match[1]) : NaN;
+  const minutes = match ? Number(match[2]) : NaN;
+  if (!match || hours > 24 || minutes > 59) {
+    throw new Error('Hora no válida');
+  }
+  return hours * 60 + minutes;
+}
+
 export function minutesToHHmm(minutes: number): string {
   const h = Math.floor(minutes / 60) % 24;
   const m = minutes % 60;
