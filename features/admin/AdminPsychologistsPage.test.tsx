@@ -71,6 +71,25 @@ describe('AdminPsychologistsPage', () => {
     expect(within(luisRow).getByText('Verificado')).toBeInTheDocument();
   });
 
+  it('distingue pendientes de rechazados: solo el pendiente se puede rechazar y el rechazado se puede aprobar de nuevo', async () => {
+    mockList([
+      makePsy({ id: 'p1', name: 'Ana Pendiente', email: 'ana@example.com', status: 'pendiente' }),
+      makePsy({ id: 'p2', name: 'Rosa Rechazada', email: 'rosa@example.com', status: 'rechazado' }),
+    ]);
+
+    render(<AdminPsychologistsPage />);
+
+    const pendingRow = (await screen.findByText('Ana Pendiente')).closest('tr') as HTMLElement;
+    expect(within(pendingRow).getByText('Pendiente', { selector: 'span.status-badge, span.status-badge *' })).toBeInTheDocument();
+    expect(within(pendingRow).getByRole('button', { name: /Rechazar/ })).toBeInTheDocument();
+    expect(within(pendingRow).getByRole('button', { name: /^Aprobar$/ })).toBeInTheDocument();
+
+    const rejectedRow = (await screen.findByText('Rosa Rechazada')).closest('tr') as HTMLElement;
+    expect(within(rejectedRow).getByText('Rechazado')).toBeInTheDocument();
+    expect(within(rejectedRow).queryByRole('button', { name: /Rechazar/ })).not.toBeInTheDocument();
+    expect(within(rejectedRow).getByRole('button', { name: /Aprobar de nuevo/ })).toBeInTheDocument();
+  });
+
   it('shows the empty state when there are no psychologists', async () => {
     mockList([]);
 

@@ -10,6 +10,8 @@ export const USER_STATUS_LABELS: Record<string, string> = {
 export const PSY_STATUS_LABELS: Record<string, string> = {
   activo: 'Activo',
   revision: 'En revisión',
+  pendiente: 'Pendiente',
+  rechazado: 'Rechazado',
   suspendido: 'Suspendido',
 };
 
@@ -21,8 +23,8 @@ export function userStatusTone(status: string): BadgeTone {
 
 export function psyStatusTone(status: string): BadgeTone {
   if (status === 'activo') return 'success';
-  if (status === 'suspendido') return 'danger';
-  if (status === 'revision') return 'warning';
+  if (status === 'suspendido' || status === 'rechazado') return 'danger';
+  if (status === 'revision' || status === 'pendiente') return 'warning';
   return 'neutral';
 }
 
