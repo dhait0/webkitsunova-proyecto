@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db/prisma';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createAnonClient } from '@/lib/supabase/anon';
 
 export type RegisterUserPayload = {
   email: string;
@@ -25,19 +26,36 @@ export async function registerUser(
 
   const supabase = createAdminClient();
 
-  const { data, error } = await supabase.auth.admin.createUser({
+  // `signUp` (not `admin.createUser`) so Supabase sends the confirmation email.
+  // The role lives in `app_metadata`, which only the secret key can write, so
+  // it is set right after and before the visitor can confirm and sign in.
+  const { data, error } = await createAnonClient().auth.signUp({
     email: payload.email,
     password: payload.password,
-    email_confirm: false,
-    app_metadata: { role },
-    user_metadata: {
-      username: payload.username,
-      role,
+    options: {
+      data: {
+        username: payload.username,
+        role,
+      },
     },
   });
 
   if (error || !data.user) {
     return { success: false, message: error?.message ?? 'No se pudo crear la cuenta' };
+  }
+
+  // An already-registered address comes back without identities and creates nothing.
+  if (data.user.identities?.length === 0) {
+    return { success: false, message: 'No se pudo crear la cuenta' };
+  }
+
+  const { error: roleError } = await supabase.auth.admin.updateUserById(data.user.id, {
+    app_metadata: { role },
+  });
+
+  if (roleError) {
+    await supabase.auth.admin.deleteUser(data.user.id);
+    return { success: false, message: 'No se pudo crear la cuenta' };
   }
 
   try {

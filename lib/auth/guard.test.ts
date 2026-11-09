@@ -5,6 +5,7 @@ vi.mock('server-only', () => ({}));
 
 const getUser = vi.hoisted(() => vi.fn());
 const prismaUserFindUnique = vi.hoisted(() => vi.fn());
+const prismaUserUpdateMany = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(() => ({
@@ -14,7 +15,7 @@ vi.mock('@/lib/supabase/server', () => ({
 
 vi.mock('@/lib/db/prisma', () => ({
   prisma: {
-    user: { findUnique: prismaUserFindUnique },
+    user: { findUnique: prismaUserFindUnique, updateMany: prismaUserUpdateMany },
   },
 }));
 
@@ -52,6 +53,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getUser.mockReset();
   prismaUserFindUnique.mockReset();
+  prismaUserUpdateMany.mockReset();
 });
 
 describe('authorize()', () => {
@@ -216,5 +218,43 @@ describe('getSessionUser()', () => {
       where: { id: 'user-1' },
       select: { status: true },
     });
+  });
+});
+
+describe('activación al confirmar el correo', () => {
+  const confirmedUser = { ...userSession, email_confirmed_at: '2026-11-09T10:00:00Z' };
+
+  it('activa una cuenta PENDING cuando el correo está confirmado', async () => {
+    getUser.mockResolvedValue({ data: { user: confirmedUser } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'PENDING' });
+    prismaUserUpdateMany.mockResolvedValue({ count: 1 });
+
+    const result = await authorize(['USER']);
+
+    expect(prismaUserUpdateMany).toHaveBeenCalledWith({
+      where: { id: 'user-1', status: 'PENDING' },
+      data: { status: 'ACTIVE' },
+    });
+    expect(result?.status).toBe('ACTIVE');
+  });
+
+  it('no activa una cuenta PENDING con el correo sin confirmar', async () => {
+    getUser.mockResolvedValue({ data: { user: userSession } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'PENDING' });
+
+    const result = await authorize(['USER']);
+
+    expect(prismaUserUpdateMany).not.toHaveBeenCalled();
+    expect(result).toBeNull();
+  });
+
+  it('no reactiva una cuenta SUSPENDED aunque el correo esté confirmado', async () => {
+    getUser.mockResolvedValue({ data: { user: confirmedUser } });
+    prismaUserFindUnique.mockResolvedValue({ status: 'SUSPENDED' });
+
+    const result = await authorize(['USER']);
+
+    expect(prismaUserUpdateMany).not.toHaveBeenCalled();
+    expect(result).toBeNull();
   });
 });
