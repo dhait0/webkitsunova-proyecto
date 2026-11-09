@@ -1,8 +1,9 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@/lib/db/prisma', () => ({
   prisma: {
-    user: { findUnique: vi.fn() },
+    $transaction: vi.fn(),
+    user: { findUnique: vi.fn(), findFirst: vi.fn() },
     appointment: {
       findFirst: vi.fn(),
       findMany: vi.fn(),
@@ -62,8 +63,20 @@ const appointment = {
   cancelReason: null,
 };
 
+// 2026-01-15 es jueves; 10:00Z son las 05:00 en Bogotá (UTC-5).
+const psychologistRow = {
+  profile: {
+    timezone: 'America/Bogota',
+    availabilitySlots: [{ weekday: 4, startMinutes: 5 * 60, endMinutes: 12 * 60 }],
+  },
+};
+
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-01-10T00:00:00Z'));
+  ;(prisma.$transaction as any).mockImplementation((fn: any) => fn(prisma));
+  ;(prisma.user.findFirst as any).mockResolvedValue(psychologistRow);
   ;(prisma.user.findUnique as any).mockResolvedValue(patientActive);
   ;(prisma.appointment.findFirst as any).mockResolvedValue(null);
   ;(prisma.appointment.create as any).mockResolvedValue(appointment);
@@ -75,6 +88,10 @@ beforeEach(() => {
   ;(prisma.psyPatient.upsert as any).mockResolvedValue({});
   ;(prisma.psychologistProfile.updateMany as any).mockResolvedValue({});
   ;(createNotification as any).mockResolvedValue({});
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('createAppointment — contrato de reserva', () => {
@@ -173,6 +190,96 @@ describe('createAppointment — contrato de reserva', () => {
         durationMinutes: 60,
       }),
     ).resolves.toBeDefined();
+  });
+});
+
+describe('createAppointment — validación de disponibilidad en el servidor', () => {
+  const book = (overrides: Partial<{ startsAt: Date; durationMinutes: number }> = {}) =>
+    createAppointment('psy-1', {
+      patientUserId: 'patient-1',
+      type: 'FOLLOW_UP',
+      startsAt: now,
+      durationMinutes: 60,
+      ...overrides,
+    });
+
+  it('rechaza si el psicólogo no está aprobado o activo', async () => {
+    ;(prisma.user.findFirst as any).mockResolvedValue(null);
+
+    await expect(book()).rejects.toThrow('no está disponible');
+    expect(prisma.appointment.create).not.toHaveBeenCalled();
+  });
+
+  it('consulta solo psicólogos con rol, cuenta activa y perfil aprobado', async () => {
+    await book();
+
+    expect(prisma.user.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'psy-1',
+          role: 'PSYCHOLOGIST',
+          status: 'ACTIVE',
+          profile: { psychologistProfile: { isApproved: true } },
+        }),
+      }),
+    );
+  });
+
+  it('rechaza horarios en el pasado', async () => {
+    vi.setSystemTime(new Date('2026-01-16T00:00:00Z'));
+
+    await expect(book()).rejects.toThrow('ya pasó');
+    expect(prisma.appointment.create).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un día sin franja de disponibilidad', async () => {
+    // 2026-01-16 15:00Z = viernes 10:00 en Bogotá; solo hay franja el jueves.
+    await expect(book({ startsAt: new Date('2026-01-16T15:00:00Z') })).rejects.toThrow(
+      'fuera de la disponibilidad',
+    );
+    expect(prisma.appointment.create).not.toHaveBeenCalled();
+  });
+
+  it('rechaza una hora antes de la franja', async () => {
+    // 09:00Z = 04:00 en Bogotá; la franja empieza a las 05:00.
+    await expect(book({ startsAt: new Date('2026-01-15T09:00:00Z') })).rejects.toThrow(
+      'fuera de la disponibilidad',
+    );
+  });
+
+  it('rechaza una sesión que termina después de la franja', async () => {
+    // 16:30Z = 11:30 en Bogotá + 60 min excede el cierre de las 12:00.
+    await expect(
+      book({ startsAt: new Date('2026-01-15T16:30:00Z'), durationMinutes: 60 }),
+    ).rejects.toThrow('fuera de la disponibilidad');
+  });
+
+  it('acepta una sesión que termina justo al cierre de la franja', async () => {
+    await expect(
+      book({ startsAt: new Date('2026-01-15T16:00:00Z'), durationMinutes: 60 }),
+    ).resolves.toBeDefined();
+  });
+
+  it('rechaza si el psicólogo no tiene ninguna franja', async () => {
+    ;(prisma.user.findFirst as any).mockResolvedValue({
+      profile: { timezone: null, availabilitySlots: [] },
+    });
+
+    await expect(book()).rejects.toThrow('fuera de la disponibilidad');
+  });
+
+  it('ejecuta la comprobación y la escritura en una transacción serializable', async () => {
+    await book();
+
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
+  });
+
+  it('traduce el fallo de serialización (P2034) a conflicto de horario', async () => {
+    ;(prisma.$transaction as any).mockRejectedValue({ code: 'P2034' });
+
+    await expect(book()).rejects.toBeInstanceOf(AppointmentConflictError);
   });
 });
 
