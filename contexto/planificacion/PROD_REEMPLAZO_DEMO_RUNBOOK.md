@@ -90,3 +90,11 @@ Antes de borrar, el script comprueba que cada cuenta conservada existe en Auth *
 - Las cuentas de demostración comparten contraseña: usar una larga y única, y retirar las cuentas demo si el proyecto se usa con personas reales.
 - Si se pierde el acceso de administrador real, solo queda la cuenta demo.
 - No se ha podido verificar la configuración de variables de Vercel.
+
+## Registro de ejecución (2026-11-09, proyecto `edbtowdipfeskqdmngji`)
+1. Las dos migraciones (`20261110000000_habit_tracking`, `20261110000100_psychologist_rejection`) se aplicaron al fusionarse el PR #44 (el workflow `deploy-migrations` terminó en `success`). Verificado después: historial con las 6 versiones, `Habit.targetPerWeek` (integer, default 7, CHECK 1–7), `PsychologistProfile.rejectedAt`, `HabitLog` con clave primaria, claves foráneas, índice único `(habitId, date)`, RLS 21/21, 0 permisos para `anon`; recuentos de las tablas existentes sin cambios (23/23/5/25/5/4/8).
+2. Producción desplegada en `3107f1c` (Vercel `success`).
+3. Respaldos previos al reemplazo (`~/kitsunova-backups/prod-edbt-PRE-REPLACE-{public,auth}-<fecha>.dump`, permisos 600): 21 tablas de `public` con datos, historial de migraciones (6) y 27 tablas de `auth`; restaurados en una base aislada (borrada después) con recuentos idénticos y la cuenta conservada presente.
+4. Reemplazo con `DEMO_KEEP_EMAILS=admin@kitsunova.local`: 22 usuarios Prisma, 4 conversaciones y 26 usuarios de Auth eliminados; siete cuentas demo creadas. La cuenta conservada se verificó antes (ADMIN, ACTIVE, 1 identidad, mismo id en Auth y Prisma) y su huella (ids, hash de contraseña, rol y metadatos, identidades, MFA, fila Prisma) es idéntica después.
+5. Resultado: 8 usuarios (2 ADMIN, 3 PSYCHOLOGIST aprobados, 3 USER), 8 en Auth, 0 huérfanos; 12 citas, 15 franjas, 4 vínculos (1 ACTIVE por usuario), 3 conversaciones (9 mensajes), 9 hábitos con 144 registros, 3 talleres con 5 inscripciones, 3 recursos, 3 reseñas, 4 reportes, 7 notificaciones; 0 citas solapadas; RLS 21/21; `anon` → 401.
+6. Recorrido en la web real con las siete cuentas demo (solo lectura): sin errores 5xx ni React #441, sesión persistente tras recargar.
