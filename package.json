@@ -18,6 +18,8 @@
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "supabase:migration:new": "supabase migration new",
+    "demo:reset-local": "scripts/reset-local-db.sh",
+    "demo:seed": "tsx scripts/seed-demo-scenario.ts",
     "supabase:deploy": "supabase db push --db-url \"$DATABASE_URL\" --yes",
     "release": "npm run supabase:deploy && npm run typecheck && npm run test && vercel --prod"
   },
