@@ -15,10 +15,11 @@ Estado: **preparado, no ejecutado**. Nada de esto se ha aplicado a producción.
 
 Prueba previa (base local desechable en el estado del remoto, 19 tablas, con filas de ejemplo): las dos migraciones se aplican sin error; el número y el hash de las filas de `"User"` no cambian; `anon` y `authenticated` reciben `permission denied`; el rol `postgres` inserta y lee `"Habit"`; el borrado en cascada funciona; reaplicar la 000002 falla con `already exists` (no es idempotente: no repetir).
 
-## Antes de ejecutar
-1. **Corregir el secreto de GitHub** `PROD_DATABASE_URL` (y `PROD_DIRECT_URL`) para que apunten a `edbtowdipfeskqdmngji`. Usar la cadena de conexión directa o del pooler en modo sesión del panel de Supabase. No pegarla en chats ni en el repositorio.
-2. **Respaldo**: panel de Supabase → Database → Backups (o `supabase db dump --db-url "$DIRECT_URL" -f backup.sql` y `--data-only` aparte). Guardar fuera del repositorio. Comprobar que el archivo no está vacío.
-3. Confirmar el recuento actual: `select count(*) from "User"` (hoy 23) y las 19 tablas.
+## Antes de ejecutar (estado a 2026-11-09)
+1. **Secretos de GitHub corregidos**: `PROD_DATABASE_URL` y `PROD_DIRECT_URL` apuntan ahora a `edbtowdipfeskqdmngji`, por el pooler en modo sesión (puerto 5432; el modo transacción, 6543, no sirve para DDL). Los valores no se imprimieron ni se guardaron en el repositorio.
+2. **Respaldo realizado**: `pg_dump -Fc` de los esquemas `public` y `supabase_migrations`, guardado fuera del repositorio en `~/kitsunova-backups/` (directorio 700, archivo 600). Restauración verificada en una base desechable: los recuentos por tabla coinciden con el remoto (User 23, Profile 23, Appointment 5, AvailabilitySlot 25, ...). **No incluye el esquema `auth`**: las migraciones no lo tocan, pero conviene además un respaldo desde el panel de Supabase (Database → Backups).
+3. Recuento de referencia: `"User"` = 23, 19 tablas públicas.
+4. Prisma conecta como `postgres` con `BYPASSRLS`: RLS no le afecta. La aplicación solo usa Supabase para autenticación (`auth.*`); no hay `.from()`, `.rpc()`, Storage ni Realtime. Consumidores externos de la clave publicable: no se pueden descartar desde el repositorio; comprobar en el panel de Supabase (API logs) antes de aplicar.
 
 ## Ejecución
 ```
